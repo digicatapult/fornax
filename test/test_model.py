@@ -7,10 +7,10 @@ from test_base import TestCaseDB
 class TestNode(TestCaseDB):
 
     def setUp(self):
+        super().setUp()
         new_node_type = model.NodeType(id=0, description="A node type for testing")
         self.session.add(new_node_type)
         self.session.commit()
-        super().setUp()
 
     def test_node_round_trip(self):
         """ node round trip """
