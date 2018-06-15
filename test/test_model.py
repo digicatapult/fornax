@@ -21,6 +21,30 @@ class TestNode(TestCaseDB):
         self.assertEqual(new_node.label, found.label)
         self.assertEqual(new_node.type, 0)
 
+    def test_trgm(self):
+        """ Assert that pg_trgm is enabled """
+        new_node_type = model.NodeType(id=0, description="A node type for testing")
+        self.session.add(new_node_type)
+        self.session.commit()
+
+        # Insert some labelled nodes
+        labels = ['Matt', 'Dom', 'Callum', 'David', 'Anthony']
+        for label in labels:
+            new_node = model.Node(label=label, type=0)
+            self.session.add(new_node)
+            self.session.commit()
+
+        # Find a node using a label with an edit distance of at least one
+        # from any node label
+        found = self.session.query(
+            model.Node
+        ).order_by(
+            model.Node.label.op('<->')('Calum')
+        ).first()
+
+        self.assertIsNotNone(found)
+        self.assertEqual(found.label, 'Callum')
+
 
 class TestEdge(TestCaseDB):
 
@@ -60,30 +84,6 @@ class TestEdge(TestCaseDB):
         ).first()
         self.assertIsNotNone(found)
         self.assertEqual(found.id, 1)
-
-    def test_trgm(self):
-        """ Assert that pg_trgm is enabled """
-        new_node_type = model.NodeType(id=0, description="A node type for testing")
-        self.session.add(new_node_type)
-        self.session.commit()
-
-        # Insert some labelled nodes
-        labels = ['Matt', 'Dom', 'Callum', 'David', 'Anthony']
-        for label in labels:
-            new_node = model.Node(label=label, type=0)
-            self.session.add(new_node)
-            self.session.commit()
-
-        # Find a node using a label with an edit distance of at least one
-        # from any node label
-        found = self.session.query(
-            model.Node
-        ).order_by(
-            model.Node.label.op('<->')('Calum')
-        ).first()
-
-        self.assertIsNotNone(found)
-        self.assertEqual(found.label, 'Callum')
 
 
 if __name__ == '__main__':
