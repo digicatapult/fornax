@@ -36,11 +36,9 @@ class TestNode(TestCaseDB):
 
         # Find a node using a label with an edit distance of at least one
         # from any node label
-        found = self.session.query(
-            model.Node
-        ).order_by(
-            model.Node.label.op('<->')('Calum')
-        ).first()
+        query = self.session.query(model.Node)
+        query = query.order_by(model.Node.label.op('<->')('Calum'))
+        found = query.first()
 
         self.assertIsNotNone(found)
         self.assertEqual(found.label, 'Callum')
@@ -73,15 +71,15 @@ class TestEdge(TestCaseDB):
         self.assertIsNotNone(found)
         self.assertEqual(new_edge.start, found.start)
 
-        found = self.session.query(model.Node).join(
-            model.Edge, model.Node.id==model.Edge.start
-        ).first()
+        query = self.session.query(model.Node)
+        query = query.join(model.Edge, model.Node.id==model.Edge.start)
+        found = query.first()
         self.assertIsNotNone(found)
         self.assertEqual(found.id, 0)
 
-        found = self.session.query(model.Node).join(
-            model.Edge, model.Node.id==model.Edge.end
-        ).first()
+        query = self.session.query(model.Node)
+        query = query.join(model.Edge, model.Node.id==model.Edge.end)
+        found = query.first()
         self.assertIsNotNone(found)
         self.assertEqual(found.id, 1)
 
