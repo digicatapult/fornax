@@ -31,17 +31,17 @@ class TestSelect(TestCaseDB):
     def test_get_candidate(self):
         """ test get candidate """
         query = fornax.select.get_candidate(0.7, 'Mat')
-        nodes = query.with_session(self.session).all()
+        rows = query.with_session(self.session).all()
         self.assertEqual(
-            sorted([node.label for node in nodes]), 
+            sorted([row.label for row in rows]), 
             sorted(['Matt'])
         )
 
     def test_get_candidates_empty(self):
         """ test get_candidates with empty string """
         query = fornax.select.get_candidate(0.7, [])
-        nodes = query.with_session(self.session).all()
-        self.assertEqual([node.label for node in nodes], [])
+        rows = query.with_session(self.session).all()
+        self.assertEqual([row.label for row in rows], [])
 
     def test_get_candidates_negative_distance(self):
         """ test get candidate with negative distance"""
@@ -55,15 +55,15 @@ class TestSelect(TestCaseDB):
         """ test get neighbours """
         query = fornax.select.get_candidate(0.7, 'Matt')
         query = fornax.select.get_neighbours(query)
-        nodes = query.with_session(self.session).all()
-        self.assertEqual([node.label for node in nodes], ['Dom'])
+        rows = query.with_session(self.session).all()
+        self.assertEqual([row.label for row in rows], ['Dom'])
 
     def test_get_many_neighbours(self):
         """ test get many neighbours """
         query = self.session.query(model.Node).filter(model.Node.id < 2)
         query = fornax.select.get_neighbours(query)
-        nodes = query.with_session(self.session).all()
-        self.assertEqual([node.label for node in nodes], ['Dom'])
+        rows = query.with_session(self.session).all()
+        self.assertEqual([row.label for row in rows], ['Dom'])
 
     def test_get_neighbours_reccursive(self):
         """ get next nearest neighbours """
@@ -74,8 +74,8 @@ class TestSelect(TestCaseDB):
                 fornax.select.get_neighbours(query)
             )
         )
-        nodes = query.with_session(self.session).all()
-        self.assertEqual([node.label for node in nodes], ['Dom'])
+        rows = query.with_session(self.session).all()
+        self.assertEqual([row.label for row in rows], ['Dom'])
 
     def test_get_all_neighbours(self):
         """ get all the neighbours for a set of fuzzy labels """
@@ -87,9 +87,9 @@ class TestSelect(TestCaseDB):
             query = fornax.select.get_neighbours(query)
             queries.append(query)
         # Get the union of all the results
-        query = Query(model.Node).limit(0).union(*queries)
-        neighbour_nodes = query.with_session(self.session).all()
+        query = queries[0].union_all(*queries[1:])
+        rows = query.with_session(self.session).all()
         self.assertEqual(
-            sorted([node.label for node in neighbour_nodes]),
+            sorted([row.label for row in rows]),
             sorted(['Dom', 'David'])
         )

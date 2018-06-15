@@ -17,9 +17,9 @@ class TestNode(TestCaseDB):
         self.session.add(new_node)
         self.session.commit()
 
-        found = self.session.query(model.Node).first()
-        self.assertIsNotNone(found)
-        self.assertEqual(new_node.label, found.label)
+        row = self.session.query(model.Node).first()
+        self.assertIsNotNone(row)
+        self.assertEqual(new_node.label, row.label)
         self.assertEqual(new_node.type, 0)
 
     def test_trgm(self):
@@ -35,10 +35,10 @@ class TestNode(TestCaseDB):
         # from any node label
         query = self.session.query(model.Node)
         query = query.order_by(model.Node.label.op('<->')('Calum'))
-        found = query.first()
+        row = query.first()
 
-        self.assertIsNotNone(found)
-        self.assertEqual(found.label, 'Callum')
+        self.assertIsNotNone(row)
+        self.assertEqual(row.label, 'Callum')
 
 
 class TestEdge(TestCaseDB):
@@ -66,25 +66,25 @@ class TestEdge(TestCaseDB):
 
     def test_edge_round_trip(self):
         """ edge round trip """
-        found = self.session.query(model.Edge).first()
-        self.assertIsNotNone(found)
-        self.assertEqual(0, found.start)
+        row = self.session.query(model.Edge).first()
+        self.assertIsNotNone(row)
+        self.assertEqual(0, row.start)
 
     def test_edge_join_start(self):
         """ find a node by joining on the start of an edge """
         query = self.session.query(model.Node)
         query = query.join(model.Edge, model.Node.id==model.Edge.start)
-        found = query.first()
-        self.assertIsNotNone(found)
-        self.assertEqual(found.id, 0)
+        row = query.first()
+        self.assertIsNotNone(row)
+        self.assertEqual(row.id, 0)
 
     def test_edge_join_end(self):
         """ find a node by joining on the end of an edge """
         query = self.session.query(model.Node)
         query = query.join(model.Edge, model.Node.id==model.Edge.end)
-        found = query.first()
-        self.assertIsNotNone(found)
-        self.assertEqual(found.id, 1)
+        row = query.first()
+        self.assertIsNotNone(row)
+        self.assertEqual(row.id, 1)
 
 
 if __name__ == '__main__':
