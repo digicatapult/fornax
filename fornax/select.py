@@ -1,7 +1,5 @@
-from typing import List
-from sqlalchemy.orm import Query, aliased
-from sqlalchemy.sql import func, select, text
-from fornax.model import Node, Edge, EdgeType, NodeType
+from sqlalchemy.orm import Query
+from fornax.model import Node, Edge
 
 
 def get_candidate(distance: float, label: str) -> Query:
