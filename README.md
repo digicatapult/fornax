@@ -1,6 +1,6 @@
 # Fornax
 
-An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using a postgres backend.
+An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using a postgres backend and python3.
 
 ## Install
 
