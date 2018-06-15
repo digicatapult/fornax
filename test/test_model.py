@@ -1,6 +1,5 @@
 import unittest
 import fornax.model as model
-from sqlalchemy.sql import func
 from test_base import TestCaseDB
 
 
