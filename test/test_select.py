@@ -9,7 +9,7 @@ import fornax.select
 class TestSelect(TestCaseDB):
 
     def setUp(self):
-        """ populate the database """
+        """ populate the database with edge and node types """
         super().setUp()
         new_node_type = model.NodeType(id=0, description="A node type for testing")
         new_edge_type = model.EdgeType(id=0, description="An edge type for testing")
