@@ -74,7 +74,7 @@ class TestEdge(TestCaseDB):
         self.assertEqual(0, found.start)
 
     def test_edge_join_start(self):
-
+        """ find a node by joining on the start of an edge """
         query = self.session.query(model.Node)
         query = query.join(model.Edge, model.Node.id==model.Edge.start)
         found = query.first()
@@ -82,7 +82,7 @@ class TestEdge(TestCaseDB):
         self.assertEqual(found.id, 0)
 
     def test_edge_join_end(self):
-
+        """ find a node by joining on the end of an edge """
         query = self.session.query(model.Node)
         query = query.join(model.Edge, model.Node.id==model.Edge.end)
         found = query.first()
