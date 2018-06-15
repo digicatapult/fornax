@@ -24,7 +24,6 @@ class TestNode(TestCaseDB):
 
     def test_trgm(self):
         """ Assert that pg_trgm is enabled """
-
         # Insert some labelled nodes
         labels = ['Matt', 'Dom', 'Callum', 'David', 'Anthony']
         for label in labels:
@@ -67,7 +66,6 @@ class TestEdge(TestCaseDB):
 
     def test_edge_round_trip(self):
         """ edge round trip """
-
         found = self.session.query(model.Edge).first()
         self.assertIsNotNone(found)
         self.assertEqual(0, found.start)
