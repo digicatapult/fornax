@@ -6,14 +6,20 @@ An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.
 
 From the root directory:
 
-pip install -r requirements.txt . 
+```bash
+pip install -r requirements.txt .
+``` 
 
 Initialise a new postgres backend:
 
+```bash
 docker-compose up
+```
 
 ## Test
 
 From the root directory
 
+```bash
 python3 -m unittest discover -v -s ./test -p "test_*.py"
+```
