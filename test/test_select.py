@@ -76,3 +76,20 @@ class TestSelect(TestCaseDB):
         )
         nodes = query.with_session(self.session).all()
         self.assertEqual([node.label for node in nodes], ['Dom'])
+
+    def test_get_all_neighbours(self):
+        """ get all the neighbours for a set of fuzzy labels """
+        queries = []
+        for label in ['Mat', 'Calum']:
+            # Fuzzy match each label
+            query = fornax.select.get_candidate(0.7, label)
+            # Get all the neighbours of all the matches
+            query = fornax.select.get_neighbours(query)
+            queries.append(query)
+        # Get the union of all the results
+        query = Query(model.Node).limit(0).union(*queries)
+        neighbour_nodes = query.with_session(self.session).all()
+        self.assertEqual(
+            sorted([node.label for node in neighbour_nodes]),
+            sorted(['Dom', 'David'])
+        )
