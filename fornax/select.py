@@ -22,10 +22,18 @@ def get_neighbours(query: Query) -> Query:
         of each node
 
         query: a query that selects a table a nodes
-        returns: a query selecting a table of nodes
+        returns: a query selecting a table of nodes with their parent id
     """
     
     subquery = query.subquery()
-    query = Query(Node).join(Edge, Edge.end == Node.id)
+    query = Query(
+        [
+            Node.id, 
+            Node.label, 
+            Node.type, 
+            Edge.start.label('parent')
+        ]
+    )
+    query = query.join(Edge, Edge.end == Node.id)
     query = query.filter(Edge.start == subquery.c.id)
     return query
