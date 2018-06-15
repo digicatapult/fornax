@@ -6,7 +6,7 @@ An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.
 
 From the root directory:
 
-pip install . 
+pip install -r requirements.txt . 
 
 Initialise a new postgres backend:
 
