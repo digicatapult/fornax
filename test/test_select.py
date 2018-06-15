@@ -65,6 +65,15 @@ class TestSelect(TestCaseDB):
         rows = query.with_session(self.session).all()
         self.assertEqual([row.label for row in rows], ['Dom'])
 
+    def test_distance(self):
+        """ test distance"""
+        query = Query(model.Node)
+        query = query.filter(model.Node.id < 2)
+        query = fornax.select.get_neighbours(query)
+        row = query.with_session(self.session).first()
+        self.assertIsNotNone(row)
+        self.assertEqual(row.distance, 1)
+
     def test_get_neighbours_reccursive(self):
         """ get next nearest neighbours """
         #TODO: Move reccursion outside of testing 
