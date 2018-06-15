@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.expression import literal
 from fornax.model import Node, Edge
 
 
@@ -26,14 +27,15 @@ def get_neighbours(query: Query) -> Query:
     """
     
     subquery = query.subquery()
-    query = Query(
+    new_query = Query(
         [
             Node.id, 
             Node.label, 
             Node.type, 
-            Edge.start.label('parent')
+            Edge.start.label('parent'),
+            literal(1).label('distance')
         ]
     )
-    query = query.join(Edge, Edge.end == Node.id)
-    query = query.filter(Edge.start == subquery.c.id)
-    return query
+    new_query = new_query.join(Edge, Edge.end == Node.id)
+    new_query = new_query.filter(Edge.start == subquery.c.id)
+    return new_query
