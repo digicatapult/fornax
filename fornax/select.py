@@ -4,9 +4,18 @@ from fornax.model import Node, Edge
 
 
 def get_candidate(distance: float, label: str) -> Query:
-    """ 
-        return a sqlalchemy query object to fuzzy 
-        match a query node label to target node labels
+    """return a sqlalchemy query object to fuzzy 
+    match a query node label to target node labels
+    
+    Arguments:
+        distance {float} -- string matching distance
+        label {str} -- a label to match
+    
+    Raises:
+        ValueError -- if distance is not between zero and one
+    
+    Returns:
+        Query -- query object to select a table of nodes
     """
 
     if not 0 <= distance < 1:
@@ -17,15 +26,17 @@ def get_candidate(distance: float, label: str) -> Query:
 
 
 def get_neighbours(query: Query) -> Query:
-    """ 
-        starting with a query that selects a table of nodes
-        return a query that returns all of the neighbours
-        of each node
-
-        query: a query that selects a table a nodes
-        returns: a query selecting a table of nodes with their parent id
-    """
+    """starting with a query that selects a table of nodes
+    return a query that returns all of the neighbours
+    of each node
     
+    Arguments:
+        query {Query} -- a query that selects a table a nodes
+    
+    Returns:
+        Query -- a query selecting a table of nodes with their parent id
+    """
+
     subquery = query.subquery()
     new_query = Query(
         [
