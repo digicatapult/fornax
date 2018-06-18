@@ -131,3 +131,6 @@ class TestSelect(TestCaseDB):
                 'for key {}'.format(key)
             )
 
+
+if __name__ == '__main__':
+    unittest.main()
