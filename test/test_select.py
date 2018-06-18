@@ -1,4 +1,5 @@
 import unittest
+import numpy as np
 import fornax.model as model
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Query
@@ -102,3 +103,31 @@ class TestSelect(TestCaseDB):
             sorted([row.label for row in rows]),
             sorted(['Dom', 'David'])
         )
+
+    def test_to_dict(self):
+        """ get all the neighbours for a set of fuzzy labels """
+        queries = []
+        for label in ['Mat', 'Calum']:
+            # Fuzzy match each label
+            query = fornax.select.get_candidate(0.7, label)
+            # Get all the neighbours of all the matches
+            query = fornax.select.get_neighbours(query)
+            queries.append(query)
+        # Get the union of all the results
+        query = queries[0].union_all(*queries[1:])
+        rows = query.with_session(self.session).all()
+        d = fornax.select.to_dict(rows)
+        target = {
+            'id': np.array([1, 3]),
+            'label': np.array(['Dom', 'David']),
+            'distance': np.array([1, 1]),
+            'parent': np.array([0, 2]),
+            'type': [0, 0]
+        }
+        for key in target:
+            self.assertEqual(
+                sorted(d[key]), 
+                sorted(target[key]),
+                'for key {}'.format(key)
+            )
+

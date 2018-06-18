@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.expression import literal
 from fornax.model import Node, Edge
+import numpy as np
 
 
 def get_candidate(distance: float, label: str) -> Query:
@@ -50,3 +51,25 @@ def get_neighbours(query: Query) -> Query:
     new_query = new_query.join(Edge, Edge.end == Node.id)
     new_query = new_query.filter(Edge.start == subquery.c.id)
     return new_query
+
+
+def to_dict(rows):
+    """Creates a table like dictionary of values from a query result
+    
+    Arguments:
+        rows {[type]} -- [description]
+    
+    Raises:
+        ValueError -- if each row does not have the same set of labels
+    
+    Returns:
+        dict -- a dict of numpy arrays where each key is a column label
+    """
+
+    if not len(rows):
+        return dict()
+    if not all(row.keys() == rows[0].keys() for row in rows):
+        raise ValueError('inconsistent labels')
+    labels = rows[0].keys()
+    cols = tuple(np.array(col) for col in zip(*rows))
+    return {label:col for label, col in zip(labels, cols)}
