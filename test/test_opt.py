@@ -3,6 +3,7 @@ import fornax.opt as opt
 import fornax.model as model
 import fornax.select as select
 from test_base import TestCaseDB
+from sqlalchemy.orm import Query
 
 
 class TestOpt(TestCaseDB):
@@ -10,8 +11,6 @@ class TestOpt(TestCaseDB):
 
     def setUp(self):
         super().setUp()
-
-        self.h = 0.7
 
         new_node_types = [
             model.NodeType(id=0, description="query node type"),
