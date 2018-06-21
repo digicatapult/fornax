@@ -191,7 +191,8 @@ def get_neighbours(query: Query) -> Query:
             Node.label, 
             Node.type, 
             Edge.start.label('parent'),
-            literal(1).label('distance')
+            literal(1).label('distance'),
+            subquery.c.search_label
         ]
     )
     new_query = new_query.join(Edge, Edge.end == Node.id)
