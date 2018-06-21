@@ -195,7 +195,7 @@ def get_neighbours(query: Query) -> Query:
         ]
     )
     new_query = new_query.join(Edge, Edge.end == Node.id)
-    new_query = new_query.filter(Edge.start == subquery.c.id)
+    new_query = new_query.join(subquery, Edge.start == subquery.c.id)
     return new_query
 
 
