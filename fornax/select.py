@@ -160,7 +160,14 @@ def get_candidate(distance: float, label: str) -> Query:
 
     if not 0 <= distance < 1:
         raise ValueError("distances must be between zero and one")
-    query = Query(Node)
+    query = Query(
+        [
+            Node.id.label('id'), 
+            Node.label.label('label'), 
+            Node.type.label('type'),  
+            literal(label).label('search_label')
+        ]
+    )
     query = query.filter(Node.label.op('<->')(label) < distance)
     return query
 
