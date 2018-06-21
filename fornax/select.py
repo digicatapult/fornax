@@ -192,8 +192,20 @@ def exact_match(node_type, label):
     query = query.filter(Node.type == node_type)
     return query
 
+
+def same_match(args):
+    """[summary]
     
     Arguments:
+        args {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+
+    return args[0].search_label == args[1].search_label
+
+
     
     
     Returns:
