@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.orm import Query
-from sqlalchemy.sql.expression import literal
+from sqlalchemy.sql.expression import literal, alias
 from fornax.model import Node, Edge
 import numpy as np
 import itertools
