@@ -57,31 +57,6 @@ class Table:
         """
         return Frame(self.fields(), list(zip(*self.rows)))
 
-    def join(predicate, other, suffixes=['left', 'right']):
-    """[summary]
-    
-    Arguments:
-        predicate {[type]} -- [description]
-        tables {[type]} -- [description]
-        suffixes {[type]} -- [description]
-    
-    Returns:
-        [type] -- [description]
-    """
-
-    filtered_pairs = filter(predicate, itertools.product(self[:], other[:]))
-    dictionaries =  map(to_dict, zip(*filtered_pairs))
-    return dict(
-        collections.ChainMap(
-            *(
-                # namespace the keys to provent collisions
-                {'_'.join([k,key]):v for k,v in d.items()} 
-                for key, d 
-                in zip(suffixes, dictionaries)
-            )
-        )
-    )
-
 
 class Frame:
     """[summary]
