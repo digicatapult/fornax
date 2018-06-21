@@ -130,6 +130,43 @@ class TestSelect(TestCaseDB):
                 sorted(target[key]),
                 'for key {}'.format(key)
             )
+class TestTable(unittest.TestCase):
+
+    def setUp(self):
+        self.labels = ['id', 'label', 'type']
+        self.tuples = [
+            (0, 'a', 0),
+            (1, 'b', 0)
+        ]
+        self.table = fornax.select.Table(self.labels, self.tuples)
+
+    def test_length(self):
+        self.assertEqual(len(self.table), 2)
+
+    def test_first_row(self):
+        self.assertEqual(self.tuples[0], tuple(self.table[0]))
+
+    def test_last_row(self):
+        self.assertEqual(self.tuples[-1], tuple(self.table[-1]))
+
+    def test_slice_front(self):
+        self.assertEqual(self.tuples[0:], [tuple(row) for row in self.table[0:]])
+
+    def test_slice_back(self):
+        self.assertEqual(self.tuples[:-1], [tuple(row) for row in self.table[:-1]])
+
+    def test_to_frame(self):
+        self.assertEqual(
+            self.table.to_frame(), 
+            fornax.select.Frame(self.table.fields(), [(0, 1), ('a', 'b'), (0, 0)])
+        )
+
+    def test_fields(self):
+        first = self.table[0]
+        self.assertEqual(
+            [item for item in first],
+            [getattr(first, field) for field in self.table.fields()]
+        )
 
 
 if __name__ == '__main__':
