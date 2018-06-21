@@ -83,6 +83,66 @@ class Table:
     )
 
 
+class Frame:
+    """[summary]
+    
+    Returns:
+        [type] -- [description]
+    """
+
+    def __init__(self, field_names: List[str], columns: List[collections.namedtuple]):
+        """[summary]
+        
+        Arguments:
+            field_names {List[str]} -- [description]
+            items {List[collections.namedtuple]} -- [description]
+        
+        Returns:
+            [type] -- [description]
+        """
+
+        if not all(len(a)==len(b) for a, b in itertools.product(columns, columns)):
+            raise ValueError('all columns must have the same length')
+    
+        self._dict = {field:np.array(item) for field, item in zip(field_names, columns)}
+        self._length = len(columns[0])
+        self._fields = field_names
+
+    def fields(self):
+        return self._fields
+
+    def __getattr__(self, attr: str):
+        """[summary]
+        
+        Arguments:
+            attr {str} -- [description]
+        
+        Returns:
+            [type] -- [description]
+        """
+        return self._dict[attr]
+
+    def __len__(self):
+        return self._length
+
+    def __eq__(self, other):
+        if not set(self.fields()) == set(other.fields()):
+            return False
+        for key in other.fields():
+            if not all(a == b for a, b in zip(getattr(self, key), getattr(other, key))):
+                return False
+        return True
+
+    def to_table(self):
+        """[summary]
+        
+        Returns:
+            [type] -- [description]
+        """
+        attrs = self._dict.keys()
+        return Table(attrs, zip(*(self[attr] for attr in attrs)))
+
+
 def get_candidate(distance: float, label: str) -> Query:
     """return a sqlalchemy query object to fuzzy 
     match a query node label to target node labels

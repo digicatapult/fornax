@@ -169,5 +169,29 @@ class TestTable(unittest.TestCase):
         )
 
 
+class TestFrame(unittest.TestCase):
+
+    def setUp(self):
+        self.labels = ['first', 'second']
+        self.columns = [[1, 2, 3], [4, 5, 6]]
+        self.frame = fornax.select.Frame(self.labels, self.columns)
+
+    def test_length(self):
+        self.assertEqual(len(self.frame), len(self.columns[0]))
+
+    def test_get_item(self):
+        self.assertListEqual(list(self.frame.first), self.columns[0])
+        self.assertListEqual(list(self.frame.second), self.columns[1])
+
+    def test_numpy(self):
+        self.assertIsInstance(self.frame.first, np.ndarray)
+        self.assertIsInstance(self.frame.second, np.ndarray)
+
+    def test_assert_length(self):
+        self.assertRaises(
+            ValueError, 
+            fornax.select.Frame, self.labels, 
+            [self.columns[:-1], self.columns[1]]
+        )
 if __name__ == '__main__':
     unittest.main()
