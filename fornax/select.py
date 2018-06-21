@@ -175,6 +175,23 @@ def get_neighbours(query: Query) -> Query:
     return new_query
 
 
+def exact_match(node_type, label):
+    """[summary]
+    
+    Arguments:
+        node_type {[type]} -- [description]
+        label {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+
+    query = Query([Node, literal(label).label('search_label')])
+    query = query.filter(Node.label == label)
+    query = get_neighbours(query)
+    query = query.filter(Node.type == node_type)
+    return query
+
     
     Arguments:
     
