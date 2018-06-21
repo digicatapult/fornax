@@ -206,8 +206,28 @@ def same_match(args):
     return args[0].search_label == args[1].search_label
 
 
+def join_rows(predicate, tables, suffixes):
+    """[summary]
     
+    Arguments:
+        predicate {[type]} -- [description]
+        tables {[type]} -- [description]
+        suffixes {[type]} -- [description]
     
     Returns:
+        [type] -- [description]
     """
+
+    filtered_pairs = filter(predicate, itertools.product(*tables))
+    dictionaries =  map(to_dict, zip(*filtered_pairs))
+    return dict(
+        collections.ChainMap(
+            *(
+                # namespace the keys to provent collisions
+                {'_'.join([k,key]):v for k,v in d.items()} 
+                for key, d 
+                in zip(suffixes, dictionaries)
+            )
+        )
+    )
 
