@@ -1,11 +1,17 @@
 import unittest
+import collections
 import numpy as np
 import fornax.model as model
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.expression import literal
 from test_base import TestCaseDB
 
 import fornax.select
+
+DummyNode = collections.namedtuple(
+    'DummyNode', 'id, label, type, search_term'
+)
 
 class TestSelect(TestCaseDB):
 
@@ -61,14 +67,15 @@ class TestSelect(TestCaseDB):
 
     def test_get_many_neighbours(self):
         """ test get many neighbours """
-        query = self.session.query(model.Node).filter(model.Node.id < 2)
+        query = self.session.query(model.Node, literal("").label('search_label'))
+        query = query.filter(model.Node.id < 2)
         query = fornax.select.get_neighbours(query)
         rows = query.with_session(self.session).all()
         self.assertEqual([row.label for row in rows], ['Dom'])
 
     def test_distance(self):
         """ test distance"""
-        query = Query(model.Node)
+        query = self.session.query(model.Node, literal("").label('search_label'))
         query = query.filter(model.Node.id < 2)
         query = fornax.select.get_neighbours(query)
         row = query.with_session(self.session).first()
@@ -104,32 +111,15 @@ class TestSelect(TestCaseDB):
             sorted(['Dom', 'David'])
         )
 
-    def test_to_dict(self):
-        """ get all the neighbours for a set of fuzzy labels """
-        queries = []
-        for label in ['Mat', 'Calum']:
-            # Fuzzy match each label
-            query = fornax.select.get_candidate(0.7, label)
-            # Get all the neighbours of all the matches
-            query = fornax.select.get_neighbours(query)
-            queries.append(query)
-        # Get the union of all the results
-        query = queries[0].union_all(*queries[1:])
+    def test_rows_to_table(self):
+        query = fornax.select.get_candidate(0.7, 'Mat')
+        query = fornax.select.get_neighbours(query)
         rows = query.with_session(self.session).all()
-        d = fornax.select.to_dict(rows)
-        target = {
-            'id': np.array([1, 3]),
-            'label': np.array(['Dom', 'David']),
-            'distance': np.array([1, 1]),
-            'parent': np.array([0, 2]),
-            'type': [0, 0]
-        }
-        for key in target:
-            self.assertEqual(
-                sorted(d[key]), 
-                sorted(target[key]),
-                'for key {}'.format(key)
-            )
+        table = fornax.select.Table(rows[0]._fields, rows)
+        self.assertEqual(len(table), 1)
+        self.assertEqual(table[0].id, 1)
+
+
 class TestTable(unittest.TestCase):
 
     def setUp(self):
@@ -193,5 +183,74 @@ class TestFrame(unittest.TestCase):
             fornax.select.Frame, self.labels, 
             [self.columns[:-1], self.columns[1]]
         )
+
+# class TestJoinRows(unittest.TestCase):
+
+#     def setUp(self):
+#         self.left = [
+#             DummyNode(0, '', 0, 'a'),
+#             DummyNode(1, '', 0, 'b'),
+#             DummyNode(2, '', 0, 'b')
+#         ]
+
+#         self.right = [
+#             DummyNode(3, '', 0, 'b'),
+#             DummyNode(4, '', 0, 'b'),
+#             DummyNode(5, '', 0, 'a')
+#         ]
+
+#         self.frame = fornax.select.join_rows(
+#             lambda rows: rows[0].search_term == rows[1].search_term,
+#             (self.left, self.right),
+#             ('left', 'right')
+#         )
+
+#     def test_predicate(self):
+    
+#         self.assertListEqual(
+#             list(self.frame['search_term_left']),
+#             list(self.frame['search_term_right'])
+#         )
+#     def test_combinations_left(self):
+
+#         self.assertListEqual(
+#             list(self.frame['id_left']),
+#             [0, 1, 1, 2, 2]
+#         )
+    
+#     def test_combinations_right(self):
+
+#         self.assertListEqual(
+#             list(self.frame['id_right']),
+#             [5, 3, 4, 3, 4]
+#         )
+
+#     def test_empty(self):
+
+#         self.assertDictEqual(
+#             fornax.select.join_rows(
+#                 lambda x: True,
+#                 ([], []),
+#                 ('left', 'right')
+#             ),
+#             {}
+#         )
+
+#     def test_suffix(self):
+
+#         frame = fornax.select.join_rows(
+#             lambda x: False,
+#             (self.left, self.right),
+#             ('left', 'right')
+#         )
+
+#         self.assertDictEqual(
+#             frame,
+#             {
+#                 **{k+'_left': np.array([]) for k in DummyNode._fields},
+#                 **{k+'_right': np.array([]) for k in DummyNode._fields}
+#             }
+#         )
+
 if __name__ == '__main__':
     unittest.main()
