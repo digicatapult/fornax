@@ -8,58 +8,67 @@ import collections
 
 
 class Table:
-    """[summary]
-    
-    Returns:
-        [type] -- [description]
-    """
+    """An adaptor class abstrating a list of rows returned by a SQLAlchemy query"""
 
     def __init__(self, field_names: List[str], items: list):
-        """[summary]
+        """Construct a Table from a list of column names and a set of rows (tuples)
         
         Arguments:
-            field_names {List[str]} -- [description]
-            items {list} -- [description]
+            field_names {List[str]} -- List of column names
+            items {list} -- list of tuples, one for each row in the table
         
         Returns:
-            [type] -- [description]
+            Table -- a new table instance
         """
         self.Row = collections.namedtuple('Row', field_names)
         self.rows = [self.Row(*(field for field in item)) for item in items]
 
-    def fields(self):
-        """[summary]
+    def fields(self) -> List[str]:
+        """get the column names of the table
         
         Returns:
-            [type] -- [description]
+            List[str] -- list of column names
         """
         return self.Row._fields
 
     def __getitem__(self, index: int) -> collections.namedtuple:
-        """[summary]
+        """Get row i from a table
         
         Arguments:
-            index {int} -- [description]
+            index {int} -- index of a row in this Table
         
         Returns:
-            collections.namedtuple -- [description]
+            collections.namedtuple -- named tuple repreneting a row in a table with names self.fields()
         """
         return self.rows[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """number of rows in the table
+        
+        Returns:
+            int -- number of rows in the table
+        """
+
         return len(self.rows)
 
-    def join(self, predicate, other, suffixes=['_left', '_right']):
-        """[summary]
+    def join(self, predicate, other: Table, suffixes=['_left', '_right']):
+        """Equivalent to a SQL inner join between two tables
         
         Arguments:
-            other {[type]} -- [description]
+            predicate {func} -- a joining condition for a pair of rows 
+                                e.g. lambda pair: pair[0].id == ropairws[1].id
+            other {Table} -- table to join to
         
         Keyword Arguments:
-            suffixes {list} -- [description] (default: {['left', 'right']})
+            suffixes {list} -- append these strings to the column names of the 
+                               first and second table to avoid name conflicts 
+                               (default: {['_left', '_right']})
         
         Raises:
-            ValueError -- [description]
+            ValueError -- length of suffixes must be equal to 2
+        
+        Returns:
+            Table -- a new table joined on predicate
         """
 
         if not len(suffixes) == 2:
@@ -73,10 +82,10 @@ class Table:
         
 
     def to_frame(self):
-        """[summary]
+        """Convert the table to a Frame
         
         Returns:
-            [type] -- [description]
+            Frame -- a new Frame constructed from this table
         """
         return Frame(self.fields(), list(zip(*self.rows)))
 
