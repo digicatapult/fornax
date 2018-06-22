@@ -49,6 +49,29 @@ class Table:
     def __len__(self):
         return len(self.rows)
 
+    def join(self, predicate, other, suffixes=['_left', '_right']):
+        """[summary]
+        
+        Arguments:
+            other {[type]} -- [description]
+        
+        Keyword Arguments:
+            suffixes {list} -- [description] (default: {['left', 'right']})
+        
+        Raises:
+            ValueError -- [description]
+        """
+
+        if not len(suffixes) == 2:
+            raise ValueError
+        
+
+        field_names = [s + suffixes[0] for s in self.fields()]
+        field_names += [s + suffixes[1] for s in other.fields()]
+        rows = (a + b for a, b in filter(predicate, itertools.product(self.rows, other.rows)))
+        return Table(field_names, rows)
+        
+
     def to_frame(self):
         """[summary]
         
@@ -206,28 +229,4 @@ def same_match(args):
     return args[0].search_label == args[1].search_label
 
 
-def join_rows(predicate, tables, suffixes):
-    """[summary]
-    
-    Arguments:
-        predicate {[type]} -- [description]
-        tables {[type]} -- [description]
-        suffixes {[type]} -- [description]
-    
-    Returns:
-        [type] -- [description]
-    """
-
-    filtered_pairs = filter(predicate, itertools.product(*tables))
-    dictionaries =  map(to_dict, zip(*filtered_pairs))
-    return dict(
-        collections.ChainMap(
-            *(
-                # namespace the keys to provent collisions
-                {'_'.join([k,key]):v for k,v in d.items()} 
-                for key, d 
-                in zip(suffixes, dictionaries)
-            )
-        )
-    )
 

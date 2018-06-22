@@ -158,6 +158,22 @@ class TestTable(unittest.TestCase):
             [getattr(first, field) for field in self.table.fields()]
         )
 
+    def test_join_product(self):
+        table = self.table.join(lambda x: True, self.table)
+        self.assertEqual(len(table), len(self.tuples)**2)
+
+    def test_join_predicate(self):
+        table = self.table.join(lambda x: x[0].id == x[1].id, self.table)
+        self.assertEqual(len(table), len(self.tuples))
+
+    def test_join_empty(self):
+        table = self.table.join(lambda x: False, self.table)
+        self.assertListEqual(
+            list(table.fields()), 
+            [l+'_left' for l in self.labels] +
+            [r+'_right' for r in self.labels] 
+        )
+
 
 class TestFrame(unittest.TestCase):
 
@@ -184,73 +200,6 @@ class TestFrame(unittest.TestCase):
             [self.columns[:-1], self.columns[1]]
         )
 
-# class TestJoinRows(unittest.TestCase):
-
-#     def setUp(self):
-#         self.left = [
-#             DummyNode(0, '', 0, 'a'),
-#             DummyNode(1, '', 0, 'b'),
-#             DummyNode(2, '', 0, 'b')
-#         ]
-
-#         self.right = [
-#             DummyNode(3, '', 0, 'b'),
-#             DummyNode(4, '', 0, 'b'),
-#             DummyNode(5, '', 0, 'a')
-#         ]
-
-#         self.frame = fornax.select.join_rows(
-#             lambda rows: rows[0].search_term == rows[1].search_term,
-#             (self.left, self.right),
-#             ('left', 'right')
-#         )
-
-#     def test_predicate(self):
-    
-#         self.assertListEqual(
-#             list(self.frame['search_term_left']),
-#             list(self.frame['search_term_right'])
-#         )
-#     def test_combinations_left(self):
-
-#         self.assertListEqual(
-#             list(self.frame['id_left']),
-#             [0, 1, 1, 2, 2]
-#         )
-    
-#     def test_combinations_right(self):
-
-#         self.assertListEqual(
-#             list(self.frame['id_right']),
-#             [5, 3, 4, 3, 4]
-#         )
-
-#     def test_empty(self):
-
-#         self.assertDictEqual(
-#             fornax.select.join_rows(
-#                 lambda x: True,
-#                 ([], []),
-#                 ('left', 'right')
-#             ),
-#             {}
-#         )
-
-#     def test_suffix(self):
-
-#         frame = fornax.select.join_rows(
-#             lambda x: False,
-#             (self.left, self.right),
-#             ('left', 'right')
-#         )
-
-#         self.assertDictEqual(
-#             frame,
-#             {
-#                 **{k+'_left': np.array([]) for k in DummyNode._fields},
-#                 **{k+'_right': np.array([]) for k in DummyNode._fields}
-#             }
-#         )
 
 if __name__ == '__main__':
     unittest.main()
