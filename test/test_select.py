@@ -2,8 +2,6 @@ import unittest
 import collections
 import numpy as np
 import fornax.model as model
-from sqlalchemy.sql import func
-from sqlalchemy.orm import Query
 from sqlalchemy.sql.expression import literal
 from test_base import TestCaseDB
 
