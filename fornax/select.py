@@ -51,7 +51,7 @@ class Table:
 
         return len(self.rows)
 
-    def join(self, predicate, other: Table, suffixes=['_left', '_right']):
+    def join(self, predicate, other: 'Table', suffixes=['_left', '_right']):
         """Equivalent to a SQL inner join between two tables
         
         Arguments:
