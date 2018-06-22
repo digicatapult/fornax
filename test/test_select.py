@@ -7,10 +7,6 @@ from test_base import TestCaseDB
 
 import fornax.select
 
-DummyNode = collections.namedtuple(
-    'DummyNode', 'id, label, type, search_term'
-)
-
 class TestSelect(TestCaseDB):
 
     def setUp(self):
