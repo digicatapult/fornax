@@ -91,21 +91,20 @@ class Table:
 
 
 class Frame:
-    """[summary]
-    
-    Returns:
-        [type] -- [description]
-    """
+    """Column first indexed table (the transpose of a Table, like a pandas DataFrame)"""
 
-    def __init__(self, field_names: List[str], columns: List[collections.namedtuple]):
-        """[summary]
-        
-        Arguments:
-            field_names {List[str]} -- [description]
-            items {List[collections.namedtuple]} -- [description]
-        
-        Returns:
-            [type] -- [description]
+    def __init__(self, field_names: List[str], columns: List[List]):
+        """Construct a new Frame from a list of column names and each column of data as a list
+            
+            Arguments:
+                field_names {List[str]} -- list of column names
+                items {List[List]} -- each column
+            
+            Raises:
+                ValueError -- all columns must have the same length
+            
+            Returns:
+                Frame -- new Frame instance
         """
 
         if not all(len(a)==len(b) for a, b in itertools.product(columns, columns)):
@@ -115,24 +114,42 @@ class Frame:
         self._length = len(columns[0])
         self._fields = field_names
 
-    def fields(self):
-        return self._fields
-
-    def __getattr__(self, attr: str):
-        """[summary]
-        
-        Arguments:
-            attr {str} -- [description]
+    def fields(self) -> List[str]:
+        """Get column names
         
         Returns:
-            [type] -- [description]
+            List[str] -- list of column names
+        """
+        return self._fields
+
+    def __getattr__(self, attr: str) -> np.ndarray:
+        """get column with name attr
+        
+        Arguments:
+            attr {str} -- column name
+        
+        Returns:
+            np.ndarray -- column as numpy array
         """
         return self._dict[attr]
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Length of Frame (number of rows)
+        
+        Returns:
+            int -- number of rows in the frame (length of each column)
+        """
         return self._length
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'Frame') -> bool:
+        """Compare equal if all column names compare equal and all columns compare equal
+        
+        Arguments:
+            other {Frame} -- Frame to compare to
+        
+        Returns:
+            bool -- True if equal else False
+        """
         if not set(self.fields()) == set(other.fields()):
             return False
         for key in other.fields():
@@ -140,11 +157,11 @@ class Frame:
                 return False
         return True
 
-    def to_table(self):
-        """[summary]
+    def to_table(self) -> Table:
+        """Convert Frame to Table
         
         Returns:
-            [type] -- [description]
+            Table -- this Frame as a Table
         """
         attrs = self._dict.keys()
         return Table(attrs, zip(*(self[attr] for attr in attrs)))
