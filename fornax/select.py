@@ -1,7 +1,4 @@
 from typing import List
-from sqlalchemy.orm import Query, aliased
-from sqlalchemy.sql.expression import literal
-from fornax.model import QueryNode, QueryEdge, MatchingEdge
 import numpy as np
 import itertools
 import collections

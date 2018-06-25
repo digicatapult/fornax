@@ -37,7 +37,7 @@ class TestEdge(TestCaseDB):
         new_edges = [
             model.QueryEdge(start=0, end=1), 
             model.TargetEdge(start=0, end=1),
-            model.MatchingEdge(start=0, end=0, weight=1.)
+            model.Match(start=0, end=0, weight=1.)
         ]
         self.session.add_all(new_edges)
         self.session.commit()
@@ -88,7 +88,7 @@ class TestEdge(TestCaseDB):
     def test_match_edge_join_start(self):
         """ find a node by joining on the start of an edge """
         query = self.session.query(model.QueryNode)
-        query = query.join(model.MatchingEdge, model.QueryNode.id==model.MatchingEdge.start)
+        query = query.join(model.Match, model.QueryNode.id==model.Match.start)
         row = query.first()
         self.assertIsNotNone(row)
         self.assertEqual(row.id, 0)
@@ -96,7 +96,7 @@ class TestEdge(TestCaseDB):
     def test_match_edge_join_end(self):
         """ find a node by joining on the end of an edge """
         query = self.session.query(model.TargetNode)
-        query = query.join(model.MatchingEdge, model.TargetNode.id==model.MatchingEdge.end)
+        query = query.join(model.Match, model.TargetNode.id==model.Match.end)
         row = query.first()
         self.assertIsNotNone(row)
         self.assertEqual(row.id, 0)

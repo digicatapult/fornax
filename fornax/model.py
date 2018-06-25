@@ -31,7 +31,7 @@ class TargetEdge(Base):
         )
 
 
-class MatchingEdge(Base):
+class Match(Base):
 
     __tablename__ = 'matching_edge'
     start = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
