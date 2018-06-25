@@ -36,7 +36,12 @@ class Match(Base):
     __tablename__ = 'matching_edge'
     start = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
     end = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
-    weight = Column(Float, nullable=False)
+    weight = Column(
+        Float, 
+        CheckConstraint("weight>0", name="max_check"),
+        CheckConstraint("weight<=1", name="min_check"),
+        nullable=False
+    )
 
     def __repr__(self):
         return "<TargetEdge(id={}, start={}, end={}, weight={})>".format(

@@ -1,3 +1,4 @@
+import sqlalchemy
 import unittest
 import fornax.model as model
 from test_base import TestCaseDB
@@ -201,6 +202,20 @@ class TestMatch(TestCaseDB):
         self.assertLessEqual(
             [node.id for node in nodes],
             [1]
+        )
+
+    def test_test_min_check(self):
+        self.session.add(model.Match(start=0, end=0, weight=1.1))
+        self.assertRaises(
+            sqlalchemy.exc.IntegrityError,
+            self.session.commit
+        )    
+
+    def test_test_max_check(self):
+        self.session.add(model.Match(start=0, end=0, weight=0))
+        self.assertRaises(
+            sqlalchemy.exc.IntegrityError,
+            self.session.commit
         )
 
 if __name__ == '__main__':
