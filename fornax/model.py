@@ -39,8 +39,8 @@ class Match(Base):
     weight = Column(Float, nullable=False)
 
     def __repr__(self):
-        return "<TargetEdge(id={}, start={}, end={})>".format(
-            self.id, self.start, self.end
+        return "<TargetEdge(id={}, start={}, end={}, weight={})>".format(
+            self.id, self.start, self.end, self.weight
         )
 
 
