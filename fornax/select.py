@@ -1,10 +1,11 @@
 from typing import List
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, aliased
 from sqlalchemy.sql.expression import literal
-from fornax.model import Node, Edge
+from fornax.model import QueryNode, QueryEdge, MatchingEdge
 import numpy as np
 import itertools
 import collections
+import typing
 
 
 class Table:
@@ -167,92 +168,7 @@ class Frame:
         return Table(attrs, zip(*(self[attr] for attr in attrs)))
 
 
-def get_candidate(distance: float, label: str) -> Query:
-    """return a sqlalchemy query object to fuzzy 
-    match a query node label to target node labels
-    
-    Arguments:
-        distance {float} -- string matching distance
-        label {str} -- a label to match
-    
-    Raises:
-        ValueError -- if distance is not between zero and one
-    
-    Returns:
-        Query -- query object to select a table of nodes
-    """
 
-    if not 0 <= distance < 1:
-        raise ValueError("distances must be between zero and one")
-    query = Query(
-        [
-            Node.id.label('id'), 
-            Node.label.label('label'), 
-            Node.type.label('type'),  
-            literal(label).label('search_label')
-        ]
-    )
-    query = query.filter(Node.label.op('<->')(label) < distance)
-    return query
-
-
-def get_neighbours(query: Query) -> Query:
-    """starting with a query that selects a table of nodes
-    return a query that returns all of the neighbours
-    of each node
-    
-    Arguments:
-        query {Query} -- a query that selects a table a nodes
-    
-    Returns:
-        Query -- a query selecting a table of nodes with their parent id
-    """
-
-    subquery = query.subquery()
-    new_query = Query(
-        [
-            Node.id, 
-            Node.label, 
-            Node.type, 
-            Edge.start.label('parent'),
-            literal(1).label('distance'),
-            subquery.c.search_label
-        ]
-    )
-    new_query = new_query.join(Edge, Edge.end == Node.id)
-    new_query = new_query.join(subquery, Edge.start == subquery.c.id)
-    return new_query
-
-
-def exact_match(node_type, label):
-    """[summary]
-    
-    Arguments:
-        node_type {[type]} -- [description]
-        label {[type]} -- [description]
-    
-    Returns:
-        [type] -- [description]
-    """
-
-    query = Query([Node, literal(label).label('search_label')])
-    query = query.filter(Node.label == label)
-    query = get_neighbours(query)
-    query = query.filter(Node.type == node_type)
-    return query
-
-
-def same_match(args):
-    """[summary]
-    
-    Arguments:
-        args {[type]} -- [description]
-    
-    Returns:
-        [type] -- [description]
-    """
-
-    return args[0].search_label == args[1].search_label
 
 
 
