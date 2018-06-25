@@ -54,9 +54,16 @@ class QueryNode(Base):
         primaryjoin=id==QueryEdge.__table__.c.start,
         secondaryjoin=id==QueryEdge.__table__.c.end,
         join_depth=JOIN_DEPTH,
-        lazy="joined",
-
+        lazy="joined"
     )
+
+    matches = relationship(
+        "QueryNode",
+        secondary=Match.__table__,
+        primaryjoin=id==Match.__table__.c.start,
+        secondaryjoin=id==Match.__table__.c.end,
+    )
+
     def __repr__(self):
         return "<QueryNode(id={})>".format(self.id)
 
@@ -65,14 +72,23 @@ class TargetNode(Base):
 
     __tablename__ = 'target_node'
     id = Column(Integer, primary_key=True)
+
     neighbours = relationship(
         "TargetNode",
         secondary=TargetEdge.__table__,
         primaryjoin=id==TargetEdge.__table__.c.start,
         secondaryjoin=id==TargetEdge.__table__.c.end,
         join_depth=JOIN_DEPTH,
-        lazy="joined",
+        lazy="joined"
     )
+
+    matches = relationship(
+        "TargetNode",
+        secondary=Match.__table__,
+        primaryjoin=id==Match.__table__.c.end,
+        secondaryjoin=id==Match.__table__.c.start,
+    )
+
     def __repr__(self):
         return "<TargetNode(id={})>".format(self.id)
 
