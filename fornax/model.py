@@ -59,6 +59,7 @@ class QueryNode(Base):
 
     __tablename__ = 'query_node'
     id = Column(Integer, primary_key=True)
+    
     neighbours = relationship(
         "QueryNode",
         secondary=QueryEdge.__table__,
