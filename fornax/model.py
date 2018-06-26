@@ -70,10 +70,8 @@ class QueryNode(Base):
     )
 
     matches = relationship(
-        "QueryNode",
+        "TargetNode",
         secondary=Match.__table__,
-        primaryjoin=id==Match.__table__.c.start,
-        secondaryjoin=id==Match.__table__.c.end,
     )
 
     def __repr__(self):
@@ -93,13 +91,6 @@ class TargetNode(Base):
         secondaryjoin=id==TargetEdge.__table__.c.end,
         join_depth=JOIN_DEPTH,
         lazy="joined"
-    )
-
-    matches = relationship(
-        "TargetNode",
-        secondary=Match.__table__,
-        primaryjoin=id==Match.__table__.c.end,
-        secondaryjoin=id==Match.__table__.c.start,
     )
 
     def __repr__(self):
