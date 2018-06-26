@@ -191,19 +191,6 @@ class TestMatch(TestCaseDB):
             [0, 1]
         )
 
-    def test_select_by_match_right(self):
-        query = self.session.query(model.QueryNode)
-        query = query.filter(
-            model.TargetNode.matches.any(
-                model.Match.end == 1
-            )
-        )
-        nodes = query.all()
-        self.assertLessEqual(
-            [node.id for node in nodes],
-            [1]
-        )
-
     def test_test_min_check(self):
         self.session.add(model.Match(start=0, end=0, weight=1.1))
         self.assertRaises(
