@@ -37,7 +37,7 @@ class TargetEdge(Base):
 class Match(Base):
     """Joins Query Nodes to Candidate Target Nodes"""
 
-    __tablename__ = 'matching_edge'
+    __tablename__ = 'match'
     start = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
     end = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
     weight = Column(
@@ -47,10 +47,9 @@ class Match(Base):
         nullable=False
     )
 
-
     def __repr__(self):
-        return "<TargetEdge(id={}, start={}, end={}, weight={})>".format(
-            self.id, self.start, self.end, self.weight
+        return "<Match(start={}, end={}, weight={})>".format(
+            self.start, self.end, self.weight
         )
 
 
@@ -91,6 +90,11 @@ class TargetNode(Base):
         secondaryjoin=id==TargetEdge.__table__.c.end,
         join_depth=JOIN_DEPTH,
         lazy="joined"
+    )
+
+    matches = relationship(
+        "QueryNode",
+        secondary=Match.__table__,
     )
 
     def __repr__(self):
