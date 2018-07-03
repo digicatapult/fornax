@@ -2,7 +2,7 @@ from fornax.model import Base, Match, QueryNode, TargetNode, Integer
 from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
 from sqlalchemy import literal, and_, cast, not_
-import numpy as np
+
 
 def select(node_type: Base, h:int) -> Query:
     """SELECT statement as a function. Equivalent to:
