@@ -57,6 +57,7 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
     if h < 0:
         raise ValueError("max hopping distance 'h' must be greater than or equal to 0")
 
+    # keep track of with nodes are parents and children in each recursion
     parent_match = aliased(Match, name="parent_match")
     parent_node = aliased(Node, name="parent_node")
     child_match = aliased(Match, name="child_match")
@@ -81,13 +82,13 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
             seed_query.c.distance + 1,
             seed_query.c.path + cast(array([child_node.id]), ARRAY(Integer)).label("path"),
     ])
-    # new node is a neighbour of the previous node
+    # new node is a neighbour of a previous node
     neighbour_query = neighbour_query.filter(child_node.neighbours.any(Node.id == seed_query.c.node_id))
-    # node is within distance h
+    # node is within distance h of a match
     neighbour_query = neighbour_query.filter(seed_query.c.distance < h)
     # node has not been reached using a cyclical path
     neighbour_query = neighbour_query.filter(not_(seed_query.c.path.contains(array([child_node.id]))))
-    # track the start of the path
+    # track the match that started the path
     neighbour_query = neighbour_query.filter(child_match.start.label('match_start') == seed_query.c.match_start)
     neighbour_query = neighbour_query.filter(child_match.end.label('match_end') == seed_query.c.match_end)
     
