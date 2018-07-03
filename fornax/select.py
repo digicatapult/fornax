@@ -61,7 +61,7 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
     parent_node = aliased(Node, name="parent_node")
     child_match = aliased(Match, name="child_match")
     child_node = aliased(Node, name="child_node")
-    search_graph = Query([
+    seed_query = Query([
         parent_match.start.label('match_start'), 
         parent_match.end.label('match_end'), 
         parent_node.id.label('node_id'), 
@@ -71,31 +71,31 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
         parent_node
     ).cte(recursive=True)
     
-    query = search_graph.union(
+    neighbour_query = seed_query.union(
         Query([
             child_match.start.label('match_start'), 
             child_match.end.label('match_end'), 
             child_node.id.label('node_id'), 
-            search_graph.c.distance + 1,
-            search_graph.c.path + cast(array([child_node.id]), ARRAY(Integer)).label("path"),
+            seed_query.c.distance + 1,
+            seed_query.c.path + cast(array([child_node.id]), ARRAY(Integer)).label("path"),
         ]).filter(
-            child_node.neighbours.any(Node.id == search_graph.c.node_id)
+            child_node.neighbours.any(Node.id == seed_query.c.node_id)
         ).filter(
-            search_graph.c.distance < h
+            seed_query.c.distance < h
         ).filter(
-            not_(search_graph.c.path.contains(array([child_node.id])))
+            not_(seed_query.c.path.contains(array([child_node.id])))
         ).filter(
-            child_match.start.label('match_start') == search_graph.c.match_start
+            child_match.start.label('match_start') == seed_query.c.match_start
         ).filter(
-            child_match.end.label('match_end') == search_graph.c.match_end
+            child_match.end.label('match_end') == seed_query.c.match_end
         )
     ) 
 
     return Query([
-        query.c.match_start,
-        query.c.match_end,
-        query.c.node_id,
-        query.c.distance,
+        neighbour_query.c.match_start,
+        neighbour_query.c.match_end,
+        neighbour_query.c.node_id,
+        neighbour_query.c.distance,
     ])
 
 
