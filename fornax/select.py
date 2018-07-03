@@ -4,34 +4,11 @@ from sqlalchemy.orm import Query, aliased
 from sqlalchemy import literal, and_, cast, not_
 
 
-def select(node_type: Base, h:int) -> Query:
-    """SELECT statement as a function. Equivalent to:
-
-        SELECT match.start, match.end, node_type.id, h 
-        FROM match 
-        OUTER JOIN node_type
-    
-    Arguments:
-        node_type {Base} -- Either QueryNode or TargetNode
-        h {int} -- hopping distance
-    
-    Returns:
-        Query -- returns a SQLAlchemy query
-    """
-
-    return Query([
-        Match.start.label('match_start'),
-        Match.end.label('match_end'),
-        node_type.id.label('node_id'), 
-        literal(h).label('distance')
-    ])
-
-
 def match_nearest_neighbours(Node: Base, h: int) -> Query:
     """
     
-    Filter the select statement above to return all nodes within
-    hopping distance h of a matching edge.
+    Return a query to select all nodes within hopping distance h of a matching edge
+    where the paths contain no cycles.
 
     Usage:
         # Get the query node for each match and all of its neighbours
@@ -55,6 +32,24 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
     
     Returns:
         Query -- returns a SQLAlchemy query
+
+
+    See example in the postgres documentation:
+    https://www.postgresql.org/docs/current/static/queries-with.html
+
+    WITH RECURSIVE search_graph(id, link, data, depth, path, cycle) AS (
+        SELECT g.id, g.link, g.data, 1,
+            ARRAY[g.id],
+            false
+        FROM graph g
+    UNION ALL
+        SELECT g.id, g.link, g.data, sg.depth + 1,
+            path || g.id,
+            g.id = ANY(path)
+        FROM graph g, search_graph sg
+        WHERE g.id = sg.link AND NOT cycle
+    )
+    SELECT * FROM search_graph;
 
     """
 
