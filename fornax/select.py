@@ -147,6 +147,10 @@ def generate_query(h: int):
             query_node_subquery.c.match_start == target_node_subquery.c.match_start, 
             query_node_subquery.c.match_end == target_node_subquery.c.match_end           
         )
+    ).order_by(
+        query_node_subquery.c.match_start,
+        query_node_subquery.c.match_end,
+        query_node_subquery.c.node_id,
     )
 
     return query
