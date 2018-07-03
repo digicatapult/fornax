@@ -37,7 +37,7 @@ class TestOpt(TestCaseDB):
         labels = 'abcabcdabdecc'
         start_finish = [
             (1,2), (1,3), (1,4), (3,7), (4,5), (4,6), (5,7),           
-            (6,8), (8,9), (8, 12), (9,10), (10,11), (11,12), (11,13)
+            (6,8), (8,9), (8, 12), (9,10), (10,7), (10,11), (11,12), (11,13)
         ]
         new_nodes = [
             model.TargetNode(id=id_+1) 
@@ -73,11 +73,9 @@ class TestOpt(TestCaseDB):
     def test_query_match_nearest_neighbours_h_1(self):
         query = select.match_nearest_neighbours(model.QueryNode, h=1)
         query = query.with_session(self.session)
-        query = query.filter(model.Match.start == 2)
-        query = query.filter(model.Match.end == 2)
         rows = query.all()
         self.assertListEqual(
-            sorted(rows), 
+            sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
             sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 4, 1)])
         )
 
@@ -88,18 +86,16 @@ class TestOpt(TestCaseDB):
         query = query.filter(model.Match.end == 2)
         rows = query.all()
         self.assertListEqual(
-            sorted(rows), 
+            sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
             sorted([(2, 2, 1, 1), (2, 2, 2, 0)])
         )
 
     def test_query_match_nearest_neighbours_h_2(self):
         query = select.match_nearest_neighbours(model.QueryNode, h=2)
         query = query.with_session(self.session)
-        query = query.filter(model.Match.start == 2)
-        query = query.filter(model.Match.end == 2)
-        rows = query.all()
+        rows = sorted(query.all())
         self.assertListEqual(
-            sorted(rows), 
+            sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
             sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 1),  (2, 2, 5, 2)])
         )
 
@@ -110,6 +106,38 @@ class TestOpt(TestCaseDB):
         query = query.filter(model.Match.end == 2)
         rows = query.all()
         self.assertListEqual(
-            sorted(rows), 
+            sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
             sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 2)])
+        )
+
+    def test_generate_query_h_1(self):
+
+        query = select.generate_query(1)
+        rows = query.with_session(self.session).all()
+        self.assertListEqual(
+            sorted(filter(lambda x: all((x[0] == 4, x[1] == 7, x[2] == 2)), rows)),
+            sorted([
+                (4, 7, 2, 3, 1, 1, 0),
+                (4, 7, 2, 5, 1, 1, 0),
+                (4, 7, 2, 7, 1, 0, 0),
+                (4, 7, 2, 10, 1, 1, 0),
+            ])
+        )
+    
+    def test_generate_query_h_2(self):
+
+        query = select.generate_query(2)
+        rows = query.with_session(self.session).all()
+        self.assertListEqual(
+            sorted(filter(lambda x: all((x[0] == 4, x[1] == 7, x[2] == 2)), rows)),
+            sorted([
+                (4, 7, 2, 1, 1, 2, 0),
+                (4, 7, 2, 3, 1, 1, 0),
+                (4, 7, 2, 4, 1, 2, 0),
+                (4, 7, 2, 5, 1, 1, 0),
+                (4, 7, 2, 7, 1, 0, 0),
+                (4, 7, 2, 9, 1, 2, 0),
+                (4, 7, 2, 10, 1, 1, 0),
+                (4, 7, 2, 11, 1, 2, 0),
+            ])
         )
