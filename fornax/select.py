@@ -101,7 +101,7 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
         query.c.match_end,
         query.c.node_id,
         query.c.distance,
-    ]).distinct()
+    ])
 
 
 def generate_query(h: int):
