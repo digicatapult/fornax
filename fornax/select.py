@@ -91,7 +91,6 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
     # track the match that started the path
     neighbour_query = neighbour_query.filter(child_match.start.label('match_start') == seed_query.c.match_start)
     neighbour_query = neighbour_query.filter(child_match.end.label('match_end') == seed_query.c.match_end)
-    
 
     query = seed_query.union(neighbour_query)
     return Query([
