@@ -110,12 +110,11 @@ def generate_query(h: int):
     |     0       |     0     |       0       |       1        |          0          |          1           |      0     |
     |     0       |     0     |       1       |       1        |          1          |          0           |      0     |
 
-    The will be a row for
-
-        each match start:
-            each match end:
-                each query node where query_node_distance < h:
-                    each target node where target_node_distance < h
+        for each match start:
+            for each match end:
+                for each query node where query_node_distance < h:
+                    for each target node where target_node_distance < h
+                        compute row
     
     query_node_distance is the distance between the query node and the query node at match.start
 
