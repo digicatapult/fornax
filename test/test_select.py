@@ -111,33 +111,31 @@ class TestOpt(TestCaseDB):
         )
 
     def test_generate_query_h_1(self):
-
         query = select.generate_query(1)
         rows = query.with_session(self.session).all()
         self.assertListEqual(
-            sorted(filter(lambda x: all((x[0] == 4, x[1] == 7, x[2] == 2)), rows)),
+            sorted(rows),
             sorted([
-                (4, 7, 2, 3, 1, 1, 0),
+                (2, 5, 4, 7, 1, 1, 0),
+                (2, 9, 4, 10, 1, 1, 0),
                 (4, 7, 2, 5, 1, 1, 0),
-                (4, 7, 2, 7, 1, 0, 0),
-                (4, 7, 2, 10, 1, 1, 0),
+                (4, 10, 2, 9, 1, 1, 0)
             ])
         )
-    
+            
     def test_generate_query_h_2(self):
-
         query = select.generate_query(2)
         rows = query.with_session(self.session).all()
         self.assertListEqual(
-            sorted(filter(lambda x: all((x[0] == 4, x[1] == 7, x[2] == 2)), rows)),
+            sorted(rows),
             sorted([
-                (4, 7, 2, 1, 1, 2, 0),
-                (4, 7, 2, 3, 1, 1, 0),
-                (4, 7, 2, 4, 1, 2, 0),
+                (2, 5, 4, 7, 1, 1, 0),
+                (2, 5, 4, 10, 1, 2, 0),
+                (2, 9, 4, 7, 1, 2, 0),
+                (2, 9, 4, 10, 1, 1, 0),
                 (4, 7, 2, 5, 1, 1, 0),
-                (4, 7, 2, 7, 1, 0, 0),
                 (4, 7, 2, 9, 1, 2, 0),
-                (4, 7, 2, 10, 1, 1, 0),
-                (4, 7, 2, 11, 1, 2, 0),
+                (4, 10, 2, 5, 1, 2, 0),
+                (4, 10, 2, 9, 1, 1, 0)
             ])
         )

@@ -149,6 +149,19 @@ def generate_query(h: int):
             query_node_subquery.c.match_start == target_node_subquery.c.match_start, 
             query_node_subquery.c.match_end == target_node_subquery.c.match_end           
         )
+    ).join(
+        # only examine matching functions the mapping of v is in the set of candidate matches M
+        Match, 
+        and_(
+            Match.start == query_node_subquery.c.node_id,
+            Match.end == target_node_subquery.c.node_id
+        )
+    ).filter(
+        # only examine matching functions where v maps to u
+        and_(
+            query_node_subquery.c.match_start != query_node_subquery.c.node_id,
+            query_node_subquery.c.match_end != target_node_subquery.c.node_id
+        )
     ).order_by(
         query_node_subquery.c.match_start,
         query_node_subquery.c.match_end,
