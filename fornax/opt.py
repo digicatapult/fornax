@@ -1,4 +1,5 @@
 import numpy as np
+import collections
 from typing import List
 
 def proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
@@ -54,7 +55,7 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
         """
 
         columns = ['match_start', 'match_end', 'query_node_id', 'target_node_id', 'query_proximity', 'target_proximity', 'delta']
-        dtypes = ['int32', 'int32', 'int32', 'int32', 'float32', 'float32', 'float32']
+        dtypes = ['int', 'int', 'int', 'int', 'float', 'float', 'float']
 
         # create a numpy array - we will sort this list to find the best matches
         ranked = np.array(rows, dtype=list(zip(columns, dtypes)))
@@ -63,25 +64,33 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
         ranked['query_proximity'] = proximity(h, alpha, ranked['query_proximity'])
         ranked['target_proximity'] = proximity(h, alpha, ranked['target_proximity'])
 
-        # create an index of where to find the best node for each match
-        mask = np.logical_not(ranked[['match_start', 'match_end', 'query_node_id']][1:] == ranked[['match_start', 'match_end', 'query_node_id']][:-1])
-        mask = np.concatenate((np.array([True]), mask))
-        match_idx = ranked[mask][['match_start', 'match_end']]
-        match_mask = np.logical_not(match_idx[1:] == match_idx[:-1])
-        match_mask = np.where(np.concatenate((np.array([True]), match_mask)))[0][1:]
+        _, counts = np.unique(ranked[['match_start', 'match_end', 'query_node_id']], return_counts=True)
+        best_matching_function_idx = np.insert(np.cumsum(counts), 0, 0)[:-1]
 
-        for i in range(10):
+        matches, counts = np.unique(ranked[best_matching_function_idx][['match_start', 'match_end']], return_counts=True)
+        match_idx = np.insert(np.cumsum(counts), 0, 0)[:-1]
+
+        _, counts = np.unique(ranked[best_matching_function_idx][match_idx[:-1]]['match_start'], return_counts=True)
+        optimum_idx = np.insert(np.cumsum(counts), 0, 0)[:-1]
+
+        for i in range(5):
             # add the score in this iteration
             ranked['delta'] += delta_plus(ranked['query_proximity'], ranked['target_proximity'])
             # rank the results
             ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
             # take the best scores         
-            optimised = ranked[mask]
+            optimised = ranked[best_matching_function_idx]
             #  group by each match
-            matches = np.split(optimised, match_mask)
-            # sum the cost for each match
-            scores = {tuple(match[['match_start', 'match_end']][0]):np.sum(match['delta']) for match in matches}
+            score = np.vstack(
+                zip(
+                    matches['match_start'], 
+                    matches['match_end'], 
+                    np.add.reduceat(optimised['delta'], match_idx)
+                )
+            )
             # place the best score from the previous match in each row (U[i-1])
-            ranked['delta'] = np.vectorize(lambda x: scores.get(tuple(x), 1))(ranked[['query_node_id', 'target_node_id']])
+            d = {(a,b): c for (a,b,c) in score}
+            func = np.vectorize(lambda x: d.get(tuple(x), 1))
+            ranked['delta'] = func(ranked[['query_node_id', 'target_node_id']])
         
-        return scores
+        return d
