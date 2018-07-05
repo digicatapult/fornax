@@ -84,8 +84,8 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
             # take the best scores         
             optimised = ranked[best_matching_function_idx]
             #  group by each match
-            gen = zip(matches['match_start'], matches['match_end'], np.add.reduceat(optimised['delta'], match_idx))
-            score = np.array(list(gen), dtype=[('match_start', 'int'), ('match_end', 'int'), ('sum', 'float')])
+            zipped = zip(matches['match_start'], matches['match_end'], np.add.reduceat(optimised['delta'], match_idx))
+            score = np.array(list(zipped), dtype=[('match_start', 'int'), ('match_end', 'int'), ('sum', 'float')])
             score.sort(axis=0, order=('match_start', 'sum'))
             if optimum_match is not None:
                 finished = sum(a==b for a,b in zip(optimum_match, score[optimum_idx]))/len(optimum_match) > .9
