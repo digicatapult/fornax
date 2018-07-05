@@ -2,6 +2,8 @@ import numpy as np
 import collections
 from typing import List
 
+MAX_ITER = 10
+
 def proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
     Implements equation 1 in the paper
@@ -75,8 +77,9 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
 
         optimum_match = None
         finished = None
+        iters = 0
 
-        while not finished:
+        while not finished and iters < MAX_ITER:
             # add the score in this iteration
             ranked['delta'] += delta_plus(ranked['query_proximity'], ranked['target_proximity'])
             # rank the results
@@ -89,6 +92,7 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
             score.sort(axis=0, order=('match_start', 'sum'))
             if optimum_match is not None:
                 finished = sum(a==b for a,b in zip(optimum_match, score[optimum_idx]))/len(optimum_match) > .9
+                iters += 1
             optimum_match = score[optimum_idx]
             # place the best score from the previous match in each row (U[i-1])
             d = {(a,b): c for (a,b,c) in score}
