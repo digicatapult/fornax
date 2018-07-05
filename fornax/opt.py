@@ -3,6 +3,7 @@ import collections
 from typing import List
 
 MAX_ITER = 10
+CONVERGENCE_THRESHOLD = .95
 
 def proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
@@ -91,8 +92,8 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
             score = np.array(list(zipped), dtype=[('match_start', 'int'), ('match_end', 'int'), ('sum', 'float')])
             score.sort(axis=0, order=('match_start', 'sum'))
             if optimum_match is not None:
-                finished = sum(a==b for a,b in zip(optimum_match, score[optimum_idx]))/len(optimum_match) > .9
-                iters += 1
+                finished = sum(a==b for a,b in zip(optimum_match, score[optimum_idx]))/len(optimum_match) > CONVERGENCE_THRESHOLD
+            iters += 1
             optimum_match = score[optimum_idx]
             # place the best score from the previous match in each row (U[i-1])
             d = {(a,b): c for (a,b,c) in score}
