@@ -99,4 +99,4 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
             func = np.vectorize(lambda x: d.get(tuple(x), 1))
             ranked['delta'] = func(ranked[['query_node_id', 'target_node_id']])
         
-        return d, {(a,b): c for (a,b,c) in optimum_match}
+        return d, optimum_match

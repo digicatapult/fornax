@@ -88,7 +88,16 @@ class TestOpt(TestCaseDB):
         query = select.generate_query(h)
         rows = query.with_session(self.session).all()
         d, optimum_match = opt.optimise(h, alpha, rows)
-        self.assertDictEqual(optimum_match, {(1,8):0, (2,9):0, (3,6):0, (4,10):0, (5,11):0,})
+        self.assertSequenceEqual(
+            list(itertools.chain(*optimum_match)), 
+            list(itertools.chain(
+                (1, 8, 0), 
+                (2, 9, 0), 
+                (3, 6, 0), 
+                (4, 10, 0), 
+                (5, 11, 0)
+            ))
+        )
 
 #     def test_query_match_nearest_neighbours_h_1(self):
 #         query = select.match_nearest_neighbours(model.QueryNode, h=1)
