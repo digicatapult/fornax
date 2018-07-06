@@ -60,11 +60,19 @@ class TestOpt(TestCaseDB):
 
         self.session.add_all(
             [
-                model.Match(start=4, end=7, weight=1),
-                model.Match(start=4, end=10, weight=1),
+                model.Match(start=1, end=1, weight=1),
+                model.Match(start=1, end=4, weight=1),
+                model.Match(start=1, end=8, weight=1),
                 model.Match(start=2, end=2, weight=1),
                 model.Match(start=2, end=5, weight=1),
                 model.Match(start=2, end=9, weight=1),
+                model.Match(start=3, end=3, weight=1),
+                model.Match(start=3, end=6, weight=1),
+                model.Match(start=3, end=12, weight=1),
+                model.Match(start=3, end=13, weight=1),
+                model.Match(start=4, end=7, weight=1),
+                model.Match(start=4, end=10, weight=1),
+                model.Match(start=5, end=11, weight=1),
             ]
         )
         self.session.commit()
@@ -114,12 +122,10 @@ class TestOpt(TestCaseDB):
         query = select.generate_query(1)
         rows = query.with_session(self.session).all()
         self.assertListEqual(
-            sorted(rows),
+            sorted(filter(lambda x: x[:2] == (2,5), rows)),
             sorted([
+                (2, 5, 1, 4, 1, 1, 0),
                 (2, 5, 4, 7, 1, 1, 0),
-                (2, 9, 4, 10, 1, 1, 0),
-                (4, 7, 2, 5, 1, 1, 0),
-                (4, 10, 2, 9, 1, 1, 0)
             ])
         )
             
@@ -127,15 +133,13 @@ class TestOpt(TestCaseDB):
         query = select.generate_query(2)
         rows = query.with_session(self.session).all()
         self.assertListEqual(
-            sorted(rows),
+            sorted(filter(lambda x: x[:2] == (2,5), rows)),
             sorted([
+                (2, 5, 1, 1, 1, 2, 0),
+                (2, 5, 1, 4, 1, 1, 0),
+                (2, 5, 3, 3, 2, 2, 0),
+                (2, 5, 3, 6, 2, 2, 0),
                 (2, 5, 4, 7, 1, 1, 0),
                 (2, 5, 4, 10, 1, 2, 0),
-                (2, 9, 4, 7, 1, 2, 0),
-                (2, 9, 4, 10, 1, 1, 0),
-                (4, 7, 2, 5, 1, 1, 0),
-                (4, 7, 2, 9, 1, 2, 0),
-                (4, 10, 2, 5, 1, 2, 0),
-                (4, 10, 2, 9, 1, 1, 0)
             ])
         )
