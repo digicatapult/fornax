@@ -143,3 +143,6 @@ class TestOpt(TestCaseDB):
                 (2, 5, 4, 10, 1, 2, 0),
             ])
         )
+    
+if __name__ == '__main__':
+    unittest.main()
