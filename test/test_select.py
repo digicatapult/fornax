@@ -143,6 +143,19 @@ class TestOpt(TestCaseDB):
                 (2, 5, 4, 10, 1, 2, 0),
             ])
         )
+
+    def test_count_communities(self):
+        rows = select.count_communities(model.QueryNode, 2).with_session(self.session).all()
+        self.assertListEqual(
+            sorted(rows), 
+            sorted([
+                (1, 4),
+                (2, 5),
+                (3, 3),
+                (4, 4),
+                (5, 3)
+            ])
+        )
     
 if __name__ == '__main__':
     unittest.main()

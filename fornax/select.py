@@ -1,7 +1,7 @@
 from fornax.model import Base, Match, QueryNode, TargetNode, Integer
 from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
-from sqlalchemy import literal, and_, cast, not_
+from sqlalchemy import literal, and_, cast, not_, func
 
 
 def match_nearest_neighbours(Node: Base, h: int) -> Query:
@@ -100,6 +100,44 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
         query.c.distance,
     ])
 
+
+def count_communities(Node, h):
+
+    parent_match = aliased(Match, name="parent_match")
+    parent_node = aliased(Node, name="parent_node")
+    child_match = aliased(Match, name="child_match")
+    child_node = aliased(Node, name="child_node")
+
+    seed_query = Query([
+        parent_match.start.label('match_start'), 
+        parent_node.id.label('node_id'),
+        literal(0).label('distance'),
+        cast(array([parent_node.id]), ARRAY(Integer)).label("path"),
+    ])
+
+    seed_query = seed_query.join(parent_node)
+    seed_query = seed_query.cte(recursive=True)
+
+    neighbour_query = Query([
+            child_match.start.label('match_start'), 
+            child_node.id.label('node_id'),
+            seed_query.c.distance + 1,
+            seed_query.c.path + cast(array([child_node.id]), ARRAY(Integer)).label("path"),
+    ])
+    # new node is a neighbour of a previous node
+    neighbour_query = neighbour_query.filter(child_node.neighbours.any(Node.id == seed_query.c.node_id))
+    # node is within distance h of a match
+    neighbour_query = neighbour_query.filter(seed_query.c.distance < h)
+    # node has not been reached using a cyclical path
+    neighbour_query = neighbour_query.filter(not_(seed_query.c.path.contains(array([child_node.id]))))
+    # track the match that started the path
+    neighbour_query = neighbour_query.filter(child_match.start.label('match_start') == seed_query.c.match_start)
+
+    query = seed_query.union(neighbour_query)
+    return Query([
+        query.c.match_start,
+        func.count(query.c.node_id),
+    ]).group_by(query.c.match_start)
 
 def generate_query(h: int):
     """
