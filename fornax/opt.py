@@ -47,7 +47,7 @@ def delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         np.subtract(x, y)
     )
 
-def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
+def optimise(h: int, alpha: float, rows_a: List[tuple], rows_b: List[tuple]) -> dict:
         """[summary]
         
         Arguments:
@@ -61,7 +61,9 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
         dtypes = ['int', 'int', 'int', 'int', 'float', 'float', 'float']
 
         # create a numpy array - we will sort this list to find the best matches
-        ranked = np.array(rows, dtype=list(zip(columns, dtypes)))
+        ranked = np.array(rows_a, dtype=list(zip(columns, dtypes)))
+        sizes = {k:v for k,v in rows_b}
+        get_or_1 = np.vectorize(lambda x: d.get(tuple(x), 1))
 
         # calculate the proximity of the query and target nodes
         ranked['query_proximity'] = proximity(h, alpha, ranked['query_proximity'])
@@ -72,6 +74,8 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
 
         matches, counts = np.unique(ranked[best_matching_function_idx][['match_start', 'match_end']], return_counts=True)
         match_idx = np.insert(np.cumsum(counts), 0, 0)[:-1]
+        totals = np.array([sizes[i[0]] for i in matches])
+        misses = totals - counts
 
         _, counts = np.unique(ranked[best_matching_function_idx][match_idx[:-1]]['match_start'], return_counts=True)
         optimum_idx = np.insert(np.cumsum(counts), 0, 0)
@@ -90,6 +94,8 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
             #  group by each match
             zipped = zip(matches['match_start'], matches['match_end'], np.add.reduceat(optimised['delta'], match_idx))
             score = np.array(list(zipped), dtype=[('match_start', 'int'), ('match_end', 'int'), ('sum', 'float')])
+            score['sum'] += misses
+            score['sum'] /= totals
             score.sort(axis=0, order=('match_start', 'sum'))
             if optimum_match is not None:
                 finished = sum(a==b for a,b in zip(optimum_match, score[optimum_idx]))
@@ -98,7 +104,6 @@ def optimise(h: int, alpha: float, rows: List[tuple]) -> dict:
             optimum_match = score[optimum_idx]
             # place the best score from the previous match in each row (U[i-1])
             d = {(a,b): c for (a,b,c) in score}
-            func = np.vectorize(lambda x: d.get(tuple(x), 1))
-            ranked['delta'] = func(ranked[['query_node_id', 'target_node_id']])
+            ranked['delta'] = get_or_1(ranked[['query_node_id', 'target_node_id']])
         
         return d, optimum_match
