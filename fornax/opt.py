@@ -1,6 +1,6 @@
 import numpy as np
-import collections
 from typing import List
+import pandas as pd
 
 MAX_ITER = 10
 CONVERGENCE_THRESHOLD = .95
@@ -51,23 +51,33 @@ def optimise(h: int, alpha: float, rows_a: List[tuple], rows_b: List[tuple]) -> 
         """[summary]
         
         Arguments:
-            arr {List[tuple]} -- [description]
+            h {int} -- [description]
+            alpha {float} -- [description]
+            rows_a {List[tuple]} -- [description]
+            rows_b {List[tuple]} -- [description]
         
         Returns:
             dict -- [description]
         """
 
-        columns = ['match_start', 'match_end', 'query_node_id', 'target_node_id', 'query_proximity', 'target_proximity', 'delta']
-        dtypes = ['int', 'int', 'int', 'int', 'float', 'float', 'float']
+
+        columns = ['match_start', 'match_end', 'query_node_id', 'query_proximity', 'target_node_id', 'target_proximity', 'delta']
+        dtypes = list('iiiifff')
+
+        rows_a = pd.DataFrame.from_records(rows_a, columns=['match_start', 'match_end', 'query_node_id', 'query_proximity'])
+        rows_b = pd.DataFrame.from_records(rows_b, columns=['match_start', 'match_end', 'target_node_id', 'target_proximity'])
+        ranked = rows_a.merge(rows_b, on=['match_start', 'match_end'], how='inner')
+        ranked['delta'] = np.zeros(len(ranked))
 
         # create a numpy array - we will sort this list to find the best matches
-        ranked = np.array(rows_a, dtype=list(zip(columns, dtypes)))
-        sizes = {k:v for k,v in rows_b}
+        count_groups = rows_a.groupby(['match_start', 'match_end']).size().reset_index(name='counts')
+        sizes = {k:v for k,v in zip(count_groups['match_start'], count_groups['counts'])}
         get_or_1 = np.vectorize(lambda x: d.get(tuple(x), 1))
 
         # calculate the proximity of the query and target nodes
         ranked['query_proximity'] = proximity(h, alpha, ranked['query_proximity'])
         ranked['target_proximity'] = proximity(h, alpha, ranked['target_proximity'])
+        ranked = np.core.records.fromarrays(ranked.values.transpose(), names=columns, formats=dtypes)
 
         _, counts = np.unique(ranked[['match_start', 'match_end', 'query_node_id']], return_counts=True)
         best_matching_function_idx = np.insert(np.cumsum(counts), 0, 0)[:-1]
@@ -103,7 +113,7 @@ def optimise(h: int, alpha: float, rows_a: List[tuple], rows_b: List[tuple]) -> 
             iters += 1
             optimum_match = score[optimum_idx]
             # place the best score from the previous match in each row (U[i-1])
-            d = {(a,b): c for (a,b,c) in score}
+            d  = {(a,b): c for (a,b,c) in score}
             ranked['delta'] = get_or_1(ranked[['query_node_id', 'target_node_id']])
         
         return d, optimum_match

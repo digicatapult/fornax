@@ -4,7 +4,6 @@ import fornax.select as select
 from test_base import TestCaseDB
 from sqlalchemy.orm import Query
 
-
 class TestOpt(TestCaseDB):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
@@ -118,44 +117,5 @@ class TestOpt(TestCaseDB):
             sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 2)])
         )
 
-    def test_generate_query_h_1(self):
-        query = select.generate_query(1)
-        rows = query.with_session(self.session).all()
-        self.assertListEqual(
-            sorted(filter(lambda x: x[:2] == (2,5), rows)),
-            sorted([
-                (2, 5, 1, 4, 1, 1, 0),
-                (2, 5, 4, 7, 1, 1, 0),
-            ])
-        )
-            
-    def test_generate_query_h_2(self):
-        query = select.generate_query(2)
-        rows = query.with_session(self.session).all()
-        self.assertListEqual(
-            sorted(filter(lambda x: x[:2] == (2,5), rows)),
-            sorted([
-                (2, 5, 1, 1, 1, 2, 0),
-                (2, 5, 1, 4, 1, 1, 0),
-                (2, 5, 3, 3, 2, 2, 0),
-                (2, 5, 3, 6, 2, 2, 0),
-                (2, 5, 4, 7, 1, 1, 0),
-                (2, 5, 4, 10, 1, 2, 0),
-            ])
-        )
-
-    def test_count_communities(self):
-        rows = select.count_communities(model.QueryNode, 2).with_session(self.session).all()
-        self.assertListEqual(
-            sorted(rows), 
-            sorted([
-                (1, 4),
-                (2, 5),
-                (3, 3),
-                (4, 4),
-                (5, 3)
-            ])
-        )
-    
 if __name__ == '__main__':
     unittest.main()
