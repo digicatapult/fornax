@@ -47,30 +47,35 @@ def delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
         np.subtract(x, y)
     )
 
-def optimise(h: int, alpha: float, rows_a: List[tuple], rows_b: List[tuple]) -> dict:
-        """[summary]
+def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[tuple]) -> dict:
+        """
+        Join together query and target tables.
+        Perform the main iteration and optimisation step in the paper.
         
         Arguments:
-            h {int} -- [description]
-            alpha {float} -- [description]
-            rows_a {List[tuple]} -- [description]
-            rows_b {List[tuple]} -- [description]
+            h {int} -- max hopping distance
+            alpha {float} -- propagation factor
+            query_table {List[tuple]} -- query communities of neighbours found using match_nearest_neighbours
+            target_table {List[tuple]} -- target communities of neighbours found using match_nearest_neighbours
         
         Returns:
-            dict -- [description]
+            dict, dict -- optimum matches and scores
         """
 
+        #TODO: Split into joining code and optimisation code
+        #TODO: Return more sensible values
+        #TODO: Refactor and split this function for better testing
 
         columns = ['match_start', 'match_end', 'query_node_id', 'query_proximity', 'target_node_id', 'target_proximity', 'delta']
         dtypes = list('iiiifff')
 
-        rows_a = pd.DataFrame.from_records(rows_a, columns=['match_start', 'match_end', 'query_node_id', 'query_proximity'])
-        rows_b = pd.DataFrame.from_records(rows_b, columns=['match_start', 'match_end', 'target_node_id', 'target_proximity'])
-        ranked = rows_a.merge(rows_b, on=['match_start', 'match_end'], how='inner')
+        query_table = pd.DataFrame.from_records(query_table, columns=['match_start', 'match_end', 'query_node_id', 'query_proximity'])
+        target_table = pd.DataFrame.from_records(target_table, columns=['match_start', 'match_end', 'target_node_id', 'target_proximity'])
+        ranked = query_table.merge(target_table, on=['match_start', 'match_end'], how='inner')
         ranked['delta'] = np.zeros(len(ranked))
 
         # create a numpy array - we will sort this list to find the best matches
-        count_groups = rows_a.groupby(['match_start', 'match_end']).size().reset_index(name='counts')
+        count_groups = query_table.groupby(['match_start', 'match_end']).size().reset_index(name='counts')
         sizes = {k:v for k,v in zip(count_groups['match_start'], count_groups['counts'])}
         get_or_1 = np.vectorize(lambda x: d.get(tuple(x), 1))
 
