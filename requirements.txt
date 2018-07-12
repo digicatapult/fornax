@@ -1,3 +1,4 @@
+pandas
 psycopg2
 SQLAlchemy
 numpy
