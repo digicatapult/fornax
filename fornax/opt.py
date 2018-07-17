@@ -54,7 +54,7 @@ def _join(query_table: List[tuple], target_table: List[tuple]) -> np.array:
     
     Arguments:
         query_table {List[tuple]} -- List of 4 tuples with columns "['match_start', 'match_end', 'query_node_id', 'query_proximity']"
-        target_table {List[tuple]} -- List of 4 tuples with columns "['match_start', 'match_end', 'query_node_id', 'query_proximity']"
+        target_table {List[tuple]} -- List of 4 tuples with columns "['match_start', 'match_end', 'target_node_id', 'query_proximity']"
     
     Returns:
         np.array -- a numpy structured array with columns:
@@ -126,8 +126,8 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
     Arguments:
         h {int} -- max hopping distance
         alpha {float} -- propagation factor
-        query_table {List[tuple]} -- query communities of neighbours found using match_nearest_neighbours
-        target_table {List[tuple]} -- target communities of neighbours found using match_nearest_neighbours
+        query_table {List[tuple]} -- List of 4 tuples with columns "['match_start', 'match_end', 'query_node_id', 'query_proximity']"
+        target_table {List[tuple]} -- List of 4 tuples with columns "['match_start', 'match_end', 'target_node_id', 'query_proximity']"
     
     Returns:
         dict, dict -- optimum matches and scores
