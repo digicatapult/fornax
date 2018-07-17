@@ -4,6 +4,7 @@ import fornax.select as select
 from test_base import TestCaseDB
 from sqlalchemy.orm import Query
 
+
 class TestOpt(TestCaseDB):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
@@ -78,7 +79,8 @@ class TestOpt(TestCaseDB):
 
 
     def test_query_match_nearest_neighbours_h_1(self):
-        query = select.match_nearest_neighbours(model.QueryNode, h=1)
+        matches = self.session.query(model.Match)
+        query = select.match_nearest_neighbours(matches, model.QueryNode, h=1)
         query = query.with_session(self.session)
         rows = query.all()
         self.assertListEqual(
@@ -87,7 +89,8 @@ class TestOpt(TestCaseDB):
         )
 
     def test_target_match_nearest_neighbours_h_1(self):
-        query = select.match_nearest_neighbours(model.TargetNode, h=1)
+        matches = self.session.query(model.Match)
+        query = select.match_nearest_neighbours(matches, model.TargetNode, h=1)
         query = query.with_session(self.session)
         query = query.filter(model.Match.start == 2)
         query = query.filter(model.Match.end == 2)
@@ -98,7 +101,8 @@ class TestOpt(TestCaseDB):
         )
 
     def test_query_match_nearest_neighbours_h_2(self):
-        query = select.match_nearest_neighbours(model.QueryNode, h=2)
+        matches = self.session.query(model.Match) 
+        query = select.match_nearest_neighbours(matches, model.QueryNode, h=2)
         query = query.with_session(self.session)
         rows = sorted(query.all())
         self.assertListEqual(
@@ -107,7 +111,8 @@ class TestOpt(TestCaseDB):
         )
 
     def test_target_match_nearest_neighbours_h_2(self):
-        query = select.match_nearest_neighbours(model.TargetNode, h=2)
+        matches = self.session.query(model.Match)
+        query = select.match_nearest_neighbours(matches, model.TargetNode, h=2)
         query = query.with_session(self.session)
         query = query.filter(model.Match.start == 2)
         query = query.filter(model.Match.end == 2)
@@ -115,6 +120,28 @@ class TestOpt(TestCaseDB):
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
             sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 2)])
+        )
+
+    def test_join(self):
+
+        # delete a match to simulate misses in this query
+        match = self.session.query(model.Match)
+        match = match.filter(model.Match.start == 2)
+        match = match.filter(model.Match.end == 2)
+        match.delete()
+        self.session.commit()
+
+        matches = self.session.query(model.Match)
+        query = select.join(matches, 1)
+        records = query.with_session(self.session).all()
+        self.assertListEqual(
+            sorted(filter(lambda x: x[0] == x[1] == 1, records)), 
+            sorted([
+                (1, 1, 1, 1, 0, 0),
+                (1, 1, 1, 4, 0, 1),
+                (1, 1, 2, None, 1, None),
+                (1, 1, 3, 3, 1, 1),
+            ])
         )
 
 if __name__ == '__main__':

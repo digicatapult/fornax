@@ -1,10 +1,10 @@
 from fornax.model import Base, Match, QueryNode, TargetNode, Integer
 from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
-from sqlalchemy import literal, and_, cast, not_, func
+from sqlalchemy import literal, and_, cast, not_, func, or_
 
 
-def match_nearest_neighbours(Node: Base, h: int) -> Query:
+def match_nearest_neighbours(matches: Query, Node: Base, h: int) -> Query:
     """
     
     Return a query to select all nodes within hopping distance h of a matching edge
@@ -58,15 +58,15 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
         raise ValueError("max hopping distance 'h' must be greater than or equal to 0")
 
     # keep track of with nodes are parents and children in each recursion
-    parent_match = aliased(Match, name="parent_match")
+    matches_sub = matches.subquery()
     parent_node = aliased(Node, name="parent_node")
     child_match = aliased(Match, name="child_match")
     child_node = aliased(Node, name="child_node")
 
     # Get all of the nodes that have a match
     seed_query = Query([
-        parent_match.start.label('match_start'), 
-        parent_match.end.label('match_end'), 
+        matches_sub.c.start.label('match_start'), 
+        matches_sub.c.end.label('match_end'), 
         parent_node.id.label('node_id'), 
         literal(0).label('distance'),
         cast(array([parent_node.id]), ARRAY(Integer)).label("path"),
@@ -99,3 +99,27 @@ def match_nearest_neighbours(Node: Base, h: int) -> Query:
         query.c.node_id,
         query.c.distance,
     ])
+
+
+def join_neighbourhoods(matches: Query, h: int) -> Query:
+    query = match_nearest_neighbours(matches, QueryNode, h).subquery()
+    target = match_nearest_neighbours(matches, TargetNode, h).subquery()
+    right = target.join(Match, target.c.node_id == Match.end)
+
+    left = Query([
+        query.c.match_start,
+        query.c.match_end,
+        query.c.node_id.label('query_id'),
+        target.c.node_id.label('target_id'),
+        query.c.distance.label('query_distance'),
+        target.c.distance.label('target_distance'),
+    ])
+    left = left.outerjoin(right,
+        and_(
+            query.c.node_id == Match.start,
+            query.c.match_start == target.c.match_start,
+            query.c.match_end == target.c.match_end,
+        )
+    )
+
+    return left
