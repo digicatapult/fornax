@@ -170,6 +170,7 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
         # sum the cost for each target-query node pair to get a cost for each match-start, match-end pair
         first_query_nodes['match_start'] = uniq_matches['match_start']
         first_query_nodes['match_end'] = uniq_matches['match_end']
+        # sum the costs between the intervals described by first_query_node_idx
         first_query_nodes['sum'] = np.add.reduceat(first_target_nodes['delta'], first_query_node_idx)
         # normalise
         first_query_nodes['sum'] += misses
