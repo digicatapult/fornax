@@ -48,28 +48,6 @@ def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     )
 
 
-def _to_dataFrame(records: List[tuple]) -> pd.DataFrame:
-    """A a list of records and convert them into a dataFrame
-    with standard columns
-    
-    Arguments:
-        records {List[tuple]} -- List of 4 tuples with columns "['match_start', 'match_end', 'query_node_id', 'query_proximity']"
-    
-    Returns:
-        pd.DataFrame -- A pandas dataFrame with columns "['match_start', 'match_end', 'query_node_id', 'query_proximity']"
-    """
-
-    return pd.DataFrame.from_records(
-        records, 
-        columns=[
-            'match_start',
-            'match_end', 
-            'query_node_id', 
-            'query_proximity'
-        ]
-    )
-
-
 def _join(query_table: List[tuple], target_table: List[tuple]) -> np.array:
     """Perform an inner join using pandas between the query and target records.
     Joining on equal match start and match end.
@@ -155,7 +133,8 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
         dict, dict -- optimum matches and scores
     """
 
-    query_table, target_table = _to_dataFrame(query_table), _to_dataFrame(target_table)
+    query_table = pd.DataFrame.from_records(query_table, columns=['match_start', 'match_end', 'query_node_id', 'query_proximity'])
+    target_table = pd.DataFrame.from_records(target_table, columns=['match_start', 'match_end', 'target_node_id', 'query_proximity'])
     ranked = _join(query_table, target_table)
     ranked['query_proximity'] = _proximity(h, alpha, ranked['query_proximity'])
     ranked['target_proximity'] = _proximity(h, alpha, ranked['target_proximity'])
