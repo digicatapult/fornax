@@ -5,7 +5,7 @@ import pandas as pd
 MAX_ITER = 10
 CONVERGENCE_THRESHOLD = .95
 
-def proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
+def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
     Implements equation 1 in the paper
     
@@ -31,7 +31,7 @@ def proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
         np.power(alpha, distances)
     )
 
-def delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Comparator function. Equation 3 in the paper.
     
     Arguments:
@@ -48,7 +48,7 @@ def delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     )
 
 
-def to_dataFrame(records: List[tuple]) -> pd.DataFrame:
+def _to_dataFrame(records: List[tuple]) -> pd.DataFrame:
     """A a list of records and convert them into a dataFrame
     with standard columns
     
@@ -70,7 +70,7 @@ def to_dataFrame(records: List[tuple]) -> pd.DataFrame:
     )
 
 
-def join(query_table: List[tuple], target_table: List[tuple]) -> np.array:
+def _join(query_table: List[tuple], target_table: List[tuple]) -> np.array:
     """Perform an inner join using pandas between the query and target records.
     Joining on equal match start and match end.
     
@@ -90,7 +90,7 @@ def join(query_table: List[tuple], target_table: List[tuple]) -> np.array:
     return np.core.records.fromarrays(ranked.values.transpose(), names=columns, formats=dtypes)
 
 
-def unique_index(arr: np.array) -> (np.array, np.array, np.array):
+def _unique_index(arr: np.array) -> (np.array, np.array, np.array):
     """Given a sorted array, find all of the unique values, count them and
     find the index of the first each of the unique values in the array.
 
@@ -110,7 +110,7 @@ def unique_index(arr: np.array) -> (np.array, np.array, np.array):
     return counts, uniq, idx
 
 
-def totals_and_misses(query_table: pd.DataFrame, uniq_matches: np.array, counts):
+def _totals_and_misses(query_table: pd.DataFrame, uniq_matches: np.array, counts):
     """
     Count the number of query nodes in the query table around each match start. (totals)
     Count the number that don't have a match in the corresponding target community (misses)
@@ -131,7 +131,7 @@ def totals_and_misses(query_table: pd.DataFrame, uniq_matches: np.array, counts)
     return totals, misses
 
 
-def get_or_1(d: dict):
+def _get_or_1(d: dict):
     """
     return a function that vectorizes dictionary lookup 
     returning a default value of 1 if the key is not found
@@ -155,23 +155,23 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
         dict, dict -- optimum matches and scores
     """
 
-    query_table, target_table = to_dataFrame(query_table), to_dataFrame(target_table)
-    ranked = join(query_table, target_table)
-    ranked['query_proximity'] = proximity(h, alpha, ranked['query_proximity'])
-    ranked['target_proximity'] = proximity(h, alpha, ranked['target_proximity'])
+    query_table, target_table = _to_dataFrame(query_table), _to_dataFrame(target_table)
+    ranked = _join(query_table, target_table)
+    ranked['query_proximity'] = _proximity(h, alpha, ranked['query_proximity'])
+    ranked['target_proximity'] = _proximity(h, alpha, ranked['target_proximity'])
 
     # get the first index of each of the unique target node values in the sorted table
-    _, _, first_target_node_idx = unique_index(ranked[['match_start', 'match_end', 'query_node_id']])
+    _, _, first_target_node_idx = _unique_index(ranked[['match_start', 'match_end', 'query_node_id']])
     first_target_node_idx = first_target_node_idx[:-1]
 
     # get the first index of each of the unique query node values in the sorted table
     # get a get of match start,end tuples and their frequency
-    counts, uniq_matches, first_query_node_idx = unique_index(ranked[first_target_node_idx][['match_start', 'match_end']])
+    counts, uniq_matches, first_query_node_idx = _unique_index(ranked[first_target_node_idx][['match_start', 'match_end']])
     first_query_node_idx = first_query_node_idx[:-1]
 
     # get the first index of each of the unique target node values in the sorted table
-    totals, misses = totals_and_misses(query_table, uniq_matches, counts)
-    _, _, first_target_match_index = unique_index(ranked[first_target_node_idx][first_query_node_idx[:-1]]['match_start'])
+    totals, misses = _totals_and_misses(query_table, uniq_matches, counts)
+    _, _, first_target_match_index = _unique_index(ranked[first_target_node_idx][first_query_node_idx[:-1]]['match_start'])
 
     # a structured array for storing the sum of costs for all query-target node pairs in the communities around a matching pair
     first_query_nodes = np.array(
@@ -189,7 +189,7 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
 
     while not finished and iters < MAX_ITER:
         # add the score in this iteration
-        ranked['delta'] += delta_plus(ranked['query_proximity'], ranked['target_proximity'])
+        ranked['delta'] += _delta_plus(ranked['query_proximity'], ranked['target_proximity'])
         # sort the results
         ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
         # filter lowest cost target node for each query node in each community
@@ -212,6 +212,6 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
         first_target_matches = first_query_nodes[first_target_match_index]
         # place the best score from the previous match in each row (U[i-1])
         lookup  = {(a,b): c for (a,b,c) in first_query_nodes}
-        ranked['delta'] = get_or_1(lookup)(ranked[['query_node_id', 'target_node_id']])
+        ranked['delta'] = _get_or_1(lookup)(ranked[['query_node_id', 'target_node_id']])
     
     return lookup, first_target_matches
