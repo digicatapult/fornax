@@ -175,13 +175,7 @@ def optimise(h: int, alpha: float, query_table: List[tuple], target_table: List[
 
     # a structured array for storing the sum of costs for all query-target node pairs in the communities around a matching pair
     first_query_nodes = np.array(
-        list(
-            zip(
-                uniq_matches['match_start'], 
-                uniq_matches['match_end'], 
-                np.zeros(uniq_matches.shape[0])
-            )
-        ), 
+        list(zip(uniq_matches['match_start'], uniq_matches['match_end'], np.zeros(uniq_matches.shape[0]))), 
         dtype=[('match_start', 'int'), ('match_end', 'int'), ('sum', 'float')]
     )
 
