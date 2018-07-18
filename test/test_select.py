@@ -122,7 +122,7 @@ class TestOpt(TestCaseDB):
             sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 2)])
         )
 
-    def test_join(self):
+    def test_join_neighbourhoods(self):
 
         # delete a match to simulate misses in this query
         match = self.session.query(model.Match)
@@ -132,15 +132,15 @@ class TestOpt(TestCaseDB):
         self.session.commit()
 
         matches = self.session.query(model.Match)
-        query = select.join(matches, 1)
+        query = select.join_neighbourhoods(matches, 1)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 1, records)), 
             sorted([
-                (1, 1, 1, 1, 0, 0),
-                (1, 1, 1, 4, 0, 1),
-                (1, 1, 2, None, 1, None), # <- Node 2 has no correspondences
-                (1, 1, 3, 3, 1, 1),       #    in the target graph
+                (1, 1, 1, 1, 0, 0, 0, 0 ,0),
+                (1, 1, 1, 4, 0, 1, 0, 0, 0),
+                (1, 1, 2, None, 1, None, 0, 0, 0), # <- Node 2 has no correspondences
+                (1, 1, 3, 3, 1, 1, 0, 0, 0),       #    in the target graph
             ])
         )
 

@@ -106,11 +106,11 @@ def join_neighbourhoods(matches: Query, h: int) -> Query:
 
     Returns a query to generate a table of the form
 
-    | match.start | match.end | query_node.id | target_node.id | query_node_distance | target_node_distance |
-    |-------------|:---------:|--------------:|---------------:|--------------------:|---------------------:|
-    |     0       |     0     |       0       |       0        |          0          |          0           |
-    |     0       |     0     |       0       |       1        |          0          |          1           |
-    |     0       |     0     |       1       |       1        |          1          |          0           |
+    | match.start | match.end | query_node.id | target_node.id | query_node_distance | target_node_distance | delta | misses | totals |
+    |-------------|:---------:|--------------:|---------------:|--------------------:|---------------------:|:-----:|:------:|:------:|
+    |     0       |     0     |       0       |       0        |          0          |          0           |   0   |    0   |    0   |
+    |     0       |     0     |       0       |       1        |          0          |          1           |   0   |    0   |    0   |
+    |     0       |     0     |       1       |       1        |          1          |          0           |   0   |    0   |    0   |
 
         for each match start:
             for each match end:
@@ -123,6 +123,8 @@ def join_neighbourhoods(matches: Query, h: int) -> Query:
     target_node_distance is the distance between the target node and the target node at match.end
 
     Query nodes with no correspondances in the target graph will have Null values for target_node.id and target_node_distance
+
+    delta, misses and totals are place holders to be populated by opt.py
 
     Arguments:
         matches {query} -- the set of matches to solve for
@@ -144,6 +146,9 @@ def join_neighbourhoods(matches: Query, h: int) -> Query:
         target.c.node_id.label('target_id'),
         query.c.distance.label('query_distance'),
         target.c.distance.label('target_distance'),
+        literal(0),
+        literal(0),
+        literal(0)
     ])
     left = left.outerjoin(right,
         and_(
