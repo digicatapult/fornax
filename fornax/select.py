@@ -122,7 +122,10 @@ def join_neighbourhoods(matches: Query, h: int) -> Query:
 
     target_node_distance is the distance between the target node and the target node at match.end
 
+    Query nodes with no correspondances in the target graph will have Null values for target_node.id and target_node_distance
+
     Arguments:
+        matches {query} -- the set of matches to solve for
         h {int} -- max hopping distance
     
     Returns:
