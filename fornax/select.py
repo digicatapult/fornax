@@ -102,6 +102,34 @@ def match_nearest_neighbours(matches: Query, Node: Base, h: int) -> Query:
 
 
 def join_neighbourhoods(matches: Query, h: int) -> Query:
+    """
+
+    Returns a query to generate a table of the form
+
+    | match.start | match.end | query_node.id | target_node.id | query_node_distance | target_node_distance |
+    |-------------|:---------:|--------------:|---------------:|--------------------:|---------------------:|
+    |     0       |     0     |       0       |       0        |          0          |          0           |
+    |     0       |     0     |       0       |       1        |          0          |          1           |
+    |     0       |     0     |       1       |       1        |          1          |          0           |
+
+        for each match start:
+            for each match end:
+                for each query node where query_node_distance < h:
+                    for each target node where target_node_distance < h
+                        compute row
+    
+    query_node_distance is the distance between the query node and the query node at match.start
+
+    target_node_distance is the distance between the target node and the target node at match.end
+
+    Arguments:
+        h {int} -- max hopping distance
+    
+    Returns:
+        Query -- a sqlalchemy query object
+
+    """
+
     query = match_nearest_neighbours(matches, QueryNode, h).subquery()
     target = match_nearest_neighbours(matches, TargetNode, h).subquery()
     right = target.join(Match, target.c.node_id == Match.end)
