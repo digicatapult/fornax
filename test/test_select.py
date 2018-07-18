@@ -139,8 +139,8 @@ class TestOpt(TestCaseDB):
             sorted([
                 (1, 1, 1, 1, 0, 0),
                 (1, 1, 1, 4, 0, 1),
-                (1, 1, 2, None, 1, None),
-                (1, 1, 3, 3, 1, 1),
+                (1, 1, 2, None, 1, None), # <- Node 2 has no correspondences
+                (1, 1, 3, 3, 1, 1),       #    in the target graph
             ])
         )
 
