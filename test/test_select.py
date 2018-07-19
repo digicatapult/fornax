@@ -137,10 +137,10 @@ class TestOpt(TestCaseDB):
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 1, records)), 
             sorted([
-                (1, 1, 1, 1, 0, 0, 0, 0 ,0),
-                (1, 1, 1, 4, 0, 1, 0, 0, 0),
-                (1, 1, 2, None, 1, None, 0, 0, 0), # <- Node 2 has no correspondences
-                (1, 1, 3, 3, 1, 1, 0, 0, 0),       #    in the target graph
+                (1, 1, 1, 1, 0, 0, 0, 0 ,0, 0),
+                (1, 1, 1, 4, 0, 1, 0, 0, 0, 0),
+                (1, 1, 2, None, 1, None, 0, 0, 0, 0), # <- Node 2 has no correspondences
+                (1, 1, 3, 3, 1, 1, 0, 0, 0, 0),       #    in the target graph
             ])
         )
 

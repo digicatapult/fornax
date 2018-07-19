@@ -66,7 +66,8 @@ def match_nearest_neighbours(matches: Query, Node: Base, h: int) -> Query:
     # Get all of the nodes that have a match
     seed_query = Query([
         matches_sub.c.start.label('match_start'), 
-        matches_sub.c.end.label('match_end'), 
+        matches_sub.c.end.label('match_end'),
+        matches_sub.c.weight.label('weight'),  
         parent_node.id.label('node_id'), 
         literal(0).label('distance'),
         cast(array([parent_node.id]), ARRAY(Integer)).label("path"),
@@ -96,6 +97,7 @@ def match_nearest_neighbours(matches: Query, Node: Base, h: int) -> Query:
     return Query([
         query.c.match_start,
         query.c.match_end,
+        query.c.weight,
         query.c.node_id,
         query.c.distance,
     ])
@@ -106,11 +108,11 @@ def join_neighbourhoods(matches: Query, h: int) -> Query:
 
     Returns a query to generate a table of the form
 
-    | match.start | match.end | query_node.id | target_node.id | query_node_distance | target_node_distance | delta | misses | totals |
-    |-------------|:---------:|--------------:|---------------:|--------------------:|---------------------:|:-----:|:------:|:------:|
-    |     0       |     0     |       0       |       0        |          0          |          0           |   0   |    0   |    0   |
-    |     0       |     0     |       0       |       1        |          0          |          1           |   0   |    0   |    0   |
-    |     0       |     0     |       1       |       1        |          1          |          0           |   0   |    0   |    0   |
+    | match.start | match.end | query_node.id | target_node.id | query_node_distance | target_node_distance | delta | misses | totals | weight |
+    |-------------|:---------:|--------------:|---------------:|--------------------:|---------------------:|:-----:|:------:|:------:|:------:|
+    |     0       |     0     |       0       |       0        |          0          |          0           |   0   |    0   |    0   |    0   |
+    |     0       |     0     |       0       |       1        |          0          |          1           |   0   |    0   |    0   |    0   |
+    |     0       |     0     |       1       |       1        |          1          |          0           |   0   |    0   |    0   |    0   |
 
         for each match start:
             for each match end:
@@ -148,7 +150,8 @@ def join_neighbourhoods(matches: Query, h: int) -> Query:
         target.c.distance.label('target_distance'),
         literal(0),
         literal(0),
-        literal(0)
+        literal(0),
+        query.c.weight
     ])
     left = left.outerjoin(right,
         and_(

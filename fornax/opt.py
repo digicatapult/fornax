@@ -3,6 +3,7 @@ from typing import List
 
 MAX_ITER = 10
 CONVERGENCE_THRESHOLD = .95
+LAMBDA = .3
 
 def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
@@ -94,7 +95,7 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
         dtype=[
             ('match_start', 'i'), ('match_end', 'i'), ('query_node_id', 'i'), 
             ('target_node_id', 'f'), ('query_proximity', 'f'), ('target_proximity', 'f'), 
-            ('delta', 'f'), ('totals', 'i'), ('misses', 'i')
+            ('delta', 'f'), ('totals', 'i'), ('misses', 'i'), ('weight', 'f')
         ],
     )
 
@@ -137,7 +138,8 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
 
     while not finished and iters < MAX_ITER:
         # add the score in this iteration
-        ranked['delta'] += (_delta_plus(ranked['query_proximity'], ranked['target_proximity']) + ranked['misses'])/ranked['totals']
+        ranked['delta'] += LAMBDA*ranked['weight']
+        ranked['delta'] += (1-LAMBDA)*(_delta_plus(ranked['query_proximity'], ranked['target_proximity']) + ranked['misses'])/ranked['totals']
         # sort the results
         ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
         # filter lowest cost target node for each query node in each community
