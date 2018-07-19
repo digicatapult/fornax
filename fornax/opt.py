@@ -137,6 +137,7 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
 
     first_target_matches, finished, iters = None, None, 0
 
+
     while not finished and iters < MAX_ITER:
         # add the score in this iteration
         ranked['delta'] += LAMBDA*ranked['weight']
@@ -150,6 +151,8 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
         first_query_nodes['match_end'] = uniq_matches['match_end']
         # sum the costs between the intervals described by first_query_node_idx
         first_query_nodes['sum'] = np.add.reduceat(first_target_nodes['delta'], first_query_node_idx)
+        # normalise by the number of terms in the sum (not in the paper)
+        first_query_nodes['sum'] /= np.diff(np.append(first_query_node_idx, first_target_nodes.shape[0]))
         # sort for the best match end for each match start
         first_query_nodes.sort(axis=0, order=('match_start', 'sum'))
         # stopping critera
@@ -163,4 +166,6 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
         lookup  = {(a,b): c for (a,b,c) in first_query_nodes}
         ranked['delta'] = _get_or_1(lookup)(ranked[['query_node_id', 'target_node_id']])
     
+    # normalise by the number of iterations to give a cost between 0 and 1
+    lookup  = {(a,b): c/iters for (a,b,c) in first_query_nodes}
     return lookup, first_target_matches
