@@ -98,6 +98,7 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
             ('delta', 'f'), ('totals', 'i'), ('misses', 'i'), ('weight', 'f')
         ],
     )
+    ranked['weight'] -= 1.
 
     # give not found nodes have a distance larger than h
     nan_idx = np.isnan(ranked['target_proximity'])
