@@ -5,6 +5,7 @@ MAX_ITER = 10
 CONVERGENCE_THRESHOLD = .95
 LAMBDA = .3
 
+
 def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
     Implements equation 1 in the paper
@@ -31,6 +32,7 @@ def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
         np.power(alpha, distances)
     )
 
+
 def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Comparator function. Equation 3 in the paper.
     
@@ -43,7 +45,7 @@ def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
 
     return np.multiply(
-        np.greater(x, y), 
+        np.greater(x, y),
         np.subtract(x, y)
     )
 
@@ -91,10 +93,11 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
 
     # create a structured array from the records returned from the database
     ranked = np.array(
-        recrods, 
+        recrods,
         dtype=[
-            ('match_start', 'i'), ('match_end', 'i'), ('query_node_id', 'i'), 
-            ('target_node_id', 'f'), ('query_proximity', 'f'), ('target_proximity', 'f'), 
+            ('match_start', 'i'), ('match_end', 'i'), ('query_node_id', 'i'),
+            ('target_node_id', 'f'), ('query_proximity',
+                                      'f'), ('target_proximity', 'f'),
             ('delta', 'f'), ('totals', 'i'), ('misses', 'i'), ('weight', 'f')
         ],
     )
@@ -104,68 +107,86 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
     nan_idx = np.isnan(ranked['target_proximity'])
     ranked['target_proximity'][nan_idx] = h+1
     ranked['query_proximity'] = _proximity(h, alpha, ranked['query_proximity'])
-    ranked['target_proximity'] = _proximity(h, alpha, ranked['target_proximity'])
+    ranked['target_proximity'] = _proximity(
+        h, alpha, ranked['target_proximity'])
 
     # get the first index of each of the unique target node values in the sorted table
-    _, uniq_matches, first_target_node_idx = _unique_index(ranked[['match_start', 'match_end', 'query_node_id']])
+    _, uniq_matches, first_target_node_idx = _unique_index(
+        ranked[['match_start', 'match_end', 'query_node_id']])
     first_target_node_idx = first_target_node_idx[:-1]
-    _, totals = np.unique(uniq_matches[['match_start', 'match_end']], return_counts=True)
+    _, totals = np.unique(
+        uniq_matches[['match_start', 'match_end']], return_counts=True)
 
-    _, uniq_matches, _ = _unique_index(ranked[np.logical_not(nan_idx)][['match_start', 'match_end', 'query_node_id']])
-    keys, misses = np.unique(uniq_matches[['match_start', 'match_end']], return_counts=True)
+    _, uniq_matches, _ = _unique_index(ranked[np.logical_not(
+        nan_idx)][['match_start', 'match_end', 'query_node_id']])
+    keys, misses = np.unique(
+        uniq_matches[['match_start', 'match_end']], return_counts=True)
     misses = totals - misses
 
-    totals = {tuple(k):v for k,v in zip(list(keys), list(totals))}
-    misses = {tuple(k):v for k,v in zip(list(keys), list(misses))}
+    totals = {tuple(k): v for k, v in zip(list(keys), list(totals))}
+    misses = {tuple(k): v for k, v in zip(list(keys), list(misses))}
 
-    ranked['totals'] = np.vectorize(lambda x: totals.get(tuple(x)))(ranked[['match_start', 'match_end']])
-    ranked['misses'] = np.vectorize(lambda x: misses.get(tuple(x)))(ranked[['match_start', 'match_end']])
+    ranked['totals'] = np.vectorize(lambda x: totals.get(
+        tuple(x)))(ranked[['match_start', 'match_end']])
+    ranked['misses'] = np.vectorize(lambda x: misses.get(
+        tuple(x)))(ranked[['match_start', 'match_end']])
 
     # get the first index of each of the unique query node values in the sorted table
     # get a get of match start,end tuples and their frequency
-    _, uniq_matches, first_query_node_idx = _unique_index(ranked[first_target_node_idx][['match_start', 'match_end']])
+    _, uniq_matches, first_query_node_idx = _unique_index(
+        ranked[first_target_node_idx][['match_start', 'match_end']])
     first_query_node_idx = first_query_node_idx[:-1]
 
     # get the first index of each of the unique target node values in the sorted table
-    _, _, first_target_match_index = _unique_index(ranked[first_target_node_idx][first_query_node_idx[:-1]]['match_start'])
+    _, _, first_target_match_index = _unique_index(
+        ranked[first_target_node_idx][first_query_node_idx[:-1]]['match_start'])
 
     # a structured array for storing the sum of costs for all query-target node pairs in the communities around a matching pair
     first_query_nodes = np.array(
-        list(zip(uniq_matches['match_start'], uniq_matches['match_end'], np.zeros(uniq_matches.shape[0]))), 
+        list(zip(uniq_matches['match_start'], uniq_matches['match_end'], np.zeros(
+            uniq_matches.shape[0]))),
         dtype=[('match_start', 'int'), ('match_end', 'int'), ('sum', 'float')]
     )
 
     first_target_matches, finished, iters = None, None, 0
 
-
     while not finished and iters < MAX_ITER:
         # add the score in this iteration
         ranked['delta'] += LAMBDA*ranked['weight']
-        ranked['delta'] += (1-LAMBDA)*(_delta_plus(ranked['query_proximity'], ranked['target_proximity']) + ranked['misses'])/ranked['totals']
+        ranked['delta'] += (1-LAMBDA)*(
+            _delta_plus(ranked['query_proximity'], ranked['target_proximity']) + 
+            ranked['misses']
+        )/ranked['totals']
         # sort the results
-        ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
+        ranked = np.sort(
+            ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
         # filter lowest cost target node for each query node in each community
         first_target_nodes = ranked[first_target_node_idx]
         # sum the cost for each target-query node pair to get a cost for each match-start, match-end pair
         first_query_nodes['match_start'] = uniq_matches['match_start']
         first_query_nodes['match_end'] = uniq_matches['match_end']
         # sum the costs between the intervals described by first_query_node_idx
-        first_query_nodes['sum'] = np.add.reduceat(first_target_nodes['delta'], first_query_node_idx)
+        first_query_nodes['sum'] = np.add.reduceat(
+            first_target_nodes['delta'], first_query_node_idx)
         # normalise by the number of terms in the sum (not in the paper)
-        first_query_nodes['sum'] /= np.diff(np.append(first_query_node_idx, first_target_nodes.shape[0]))
+        first_query_nodes['sum'] /= np.diff(
+            np.append(first_query_node_idx, first_target_nodes.shape[0]))
         # sort for the best match end for each match start
         first_query_nodes.sort(axis=0, order=('match_start', 'sum'))
         # stopping critera
         if first_target_matches is not None:
-            finished = sum(a==b for a,b in zip(first_target_matches, first_query_nodes[first_target_match_index]))
-            finished = finished/len(first_target_matches) > CONVERGENCE_THRESHOLD
+            finished = sum(a == b for a, b in zip(
+                first_target_matches, first_query_nodes[first_target_match_index]))
+            finished = finished / \
+                len(first_target_matches) > CONVERGENCE_THRESHOLD
         iters += 1
         # filter lowest cost match end for each match start
         first_target_matches = first_query_nodes[first_target_match_index]
         # place the best score from the previous match in each row (U[i-1])
-        lookup  = {(a,b): c for (a,b,c) in first_query_nodes}
-        ranked['delta'] = _get_or_1(lookup)(ranked[['query_node_id', 'target_node_id']])
-    
+        lookup = {(a, b): c for (a, b, c) in first_query_nodes}
+        ranked['delta'] = _get_or_1(lookup)(
+            ranked[['query_node_id', 'target_node_id']])
+
     # normalise by the number of iterations to give a cost between 0 and 1
-    lookup  = {(a,b): c/iters for (a,b,c) in first_query_nodes}
+    lookup = {(a, b): c/iters for (a, b, c) in first_query_nodes}
     return lookup, first_target_matches
