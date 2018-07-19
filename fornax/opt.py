@@ -141,7 +141,8 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
     _, _, first_target_match_index = _unique_index(
         ranked[first_target_node_idx][first_query_node_idx[:-1]]['match_start'])
 
-    # a structured array for storing the sum of costs for all query-target node pairs in the communities around a matching pair
+    # a structured array for storing the sum of costs for all query-target 
+    # node pairs in the communities around a matching pair
     first_query_nodes = np.array(
         list(zip(uniq_matches['match_start'], uniq_matches['match_end'], np.zeros(
             uniq_matches.shape[0]))),
