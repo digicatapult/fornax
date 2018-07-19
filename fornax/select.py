@@ -78,7 +78,8 @@ def match_nearest_neighbours(matches: Query, Node: Base, h: int) -> Query:
     # recursivly get neighbouring nodes
     neighbour_query = Query([
             child_match.start.label('match_start'), 
-            child_match.end.label('match_end'), 
+            child_match.end.label('match_end'),
+            child_match.weight.label('weight'),  
             child_node.id.label('node_id'), 
             seed_query.c.distance + 1,
             seed_query.c.path + cast(array([child_node.id]), ARRAY(Integer)).label("path"),

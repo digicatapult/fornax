@@ -85,7 +85,7 @@ class TestOpt(TestCaseDB):
         rows = query.all()
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
-            sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 4, 1)])
+            sorted([(2, 2, 1, 1, 1), (2, 2, 1, 2, 0), (2, 2, 1, 4, 1)])
         )
 
     def test_target_match_nearest_neighbours_h_1(self):
@@ -97,7 +97,7 @@ class TestOpt(TestCaseDB):
         rows = query.all()
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
-            sorted([(2, 2, 1, 1), (2, 2, 2, 0)])
+            sorted([(2, 2, 1, 1, 1), (2, 2, 1, 2, 0)])
         )
 
     def test_query_match_nearest_neighbours_h_2(self):
@@ -107,7 +107,7 @@ class TestOpt(TestCaseDB):
         rows = sorted(query.all())
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
-            sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 1),  (2, 2, 5, 2)])
+            sorted([(2, 2, 1, 1, 1), (2, 2, 1, 2, 0), (2, 2, 1, 3, 2), (2, 2, 1, 4, 1),  (2, 2, 1, 5, 2)])
         )
 
     def test_target_match_nearest_neighbours_h_2(self):
@@ -119,7 +119,7 @@ class TestOpt(TestCaseDB):
         rows = query.all()
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 2, rows)), 
-            sorted([(2, 2, 1, 1), (2, 2, 2, 0), (2, 2, 3, 2), (2, 2, 4, 2)])
+            sorted([(2, 2, 1, 1, 1), (2, 2, 1, 2, 0), (2, 2, 1, 3, 2), (2, 2, 1, 4, 2)])
         )
 
     def test_join_neighbourhoods(self):
@@ -137,10 +137,10 @@ class TestOpt(TestCaseDB):
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 1, records)), 
             sorted([
-                (1, 1, 1, 1, 0, 0, 0, 0 ,0, 0),
-                (1, 1, 1, 4, 0, 1, 0, 0, 0, 0),
-                (1, 1, 2, None, 1, None, 0, 0, 0, 0), # <- Node 2 has no correspondences
-                (1, 1, 3, 3, 1, 1, 0, 0, 0, 0),       #    in the target graph
+                (1, 1, 1, 1, 0, 0, 0, 0 ,0, 1),
+                (1, 1, 1, 4, 0, 1, 0, 0, 0, 1),
+                (1, 1, 2, None, 1, None, 0, 0, 0, 1), # <- Node 2 has no correspondences
+                (1, 1, 3, 3, 1, 1, 0, 0, 0, 1),       #    in the target graph
             ])
         )
 
