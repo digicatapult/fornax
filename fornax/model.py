@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Float, CheckConstraint
+from sqlalchemy import Column, ForeignKey, Integer, Float, CheckConstraint, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -6,32 +6,6 @@ Base = declarative_base()
 
 """Eagerly load Nodes within a hopping distance of JOIN_DEPTH"""
 JOIN_DEPTH = 2
-
-
-class QueryEdge(Base):
-    """Joins Nodes it the Query Graph"""
-
-    __tablename__ = 'query_edge'
-    start = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
-    end = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
-
-    def __repr__(self):
-        return "<QueryEdge(id={}, start={}, end={})>".format(
-            self.id, self.start, self.end
-        )
-
-
-class TargetEdge(Base):
-    """Joins Nodes in the Target Graph"""
-
-    __tablename__ = 'target_edge'
-    start = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
-    end = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
-
-    def __repr__(self):
-        return "<TargetEdge(id={}, start={}, end={})>".format(
-            self.id, self.start, self.end
-        )
 
 
 class Match(Base):
@@ -46,6 +20,9 @@ class Match(Base):
         CheckConstraint("weight<=1", name="min_check"),
         nullable=False
     )
+    
+    query_node = relationship('QueryNode', back_populates="matches")
+    target_node = relationship('TargetNode', back_populates="matches")
 
     def __repr__(self):
         return "<Match(start={}, end={}, weight={})>".format(
@@ -58,23 +35,29 @@ class QueryNode(Base):
 
     __tablename__ = 'query_node'
     id = Column(Integer, primary_key=True)
+    label = Column(String)
+    type = Column(Integer)
     
-    neighbours = relationship(
-        "QueryNode",
-        secondary=QueryEdge.__table__,
-        primaryjoin=id==QueryEdge.__table__.c.start,
-        secondaryjoin=id==QueryEdge.__table__.c.end,
-        join_depth=JOIN_DEPTH,
-        lazy="joined"
-    )
+    def neighbours(self):
+        return [x.end_node for x in self.start_edges]
 
-    matches = relationship(
-        "TargetNode",
-        secondary=Match.__table__,
-    )
+    matches = relationship("Match")
 
     def __repr__(self):
         return "<QueryNode(id={})>".format(self.id)
+
+
+class QueryEdge(Base):
+    """Joins Nodes it the Query Graph"""
+
+    __tablename__ = 'query_edge'
+    start = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
+    end = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
+    start_node = relationship(QueryNode, primaryjoin=start == QueryNode.id, backref="start_edges")
+    end_node = relationship(QueryNode, primaryjoin=start == QueryNode.id, backref="end_edges")
+
+    def __repr__(self):
+        return "<QueryEdge(start={}, end={})>".format(self.start, self.end)
 
 
 class TargetNode(Base):
@@ -82,21 +65,27 @@ class TargetNode(Base):
 
     __tablename__ = 'target_node'
     id = Column(Integer, primary_key=True)
+    label = Column(String)
+    type = Column(Integer)
 
-    neighbours = relationship(
-        "TargetNode",
-        secondary=TargetEdge.__table__,
-        primaryjoin=id==TargetEdge.__table__.c.start,
-        secondaryjoin=id==TargetEdge.__table__.c.end,
-        join_depth=JOIN_DEPTH,
-        lazy="joined"
-    )
+    def neighbours(self):
+        return [x.end_node for x in self.start_edges]
 
-    matches = relationship(
-        "QueryNode",
-        secondary=Match.__table__,
-    )
+    matches = relationship("Match")
 
     def __repr__(self):
         return "<TargetNode(id={})>".format(self.id)
 
+
+class TargetEdge(Base):
+    """Joins Nodes in the Target Graph"""
+
+    __tablename__ = 'target_edge'
+    start = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
+    end = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
+
+    start_node = relationship(TargetNode, primaryjoin=start == TargetNode.id, backref="start_edges")
+    end_node = relationship(TargetNode, primaryjoin=start == TargetNode.id, backref="end_edges")
+
+    def __repr__(self):
+        return "<TargetEdge(start={}, end={})>".format(self.start, self.end)
