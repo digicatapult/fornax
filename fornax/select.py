@@ -1,165 +1,112 @@
-from fornax.model import Base, Match, QueryNode, TargetNode, Integer
+from fornax.model import Base, Match, QueryNode, QueryEdge, TargetNode, TargetEdge, Integer
 from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
-from sqlalchemy import literal, and_, cast, not_, func, or_
+from sqlalchemy import literal, and_, cast, not_, func, or_, alias
+from typing import List
 
 
-def match_nearest_neighbours(matches: Query, Node: Base, h: int) -> Query:
-    """
-    
-    Return a query to select all nodes within hopping distance h of a matching edge
-    where the paths contain no cycles.
-
-    Usage:
-        # Get the query node for each match and all of its neighbours
-        # within 1 hop
-        query = select.match_nearest_neighbours(QueryNode, h=1)
-    
-        # Get the target node for each match and all of its neighbours
-        # within 2 hops
-        query = select.match_nearest_neighbours(TargetNode, h=1)
-
-    Arguments:
-        node_type {Base} -- Either QueryNode or TargetNode
-    
-    Keyword Arguments:
-        h {int} -- h {int} -- hopping distance
-    
-    Raises:
-        ValueError -- if h < 0
-        ValueError -- if node_type is not QueryNode or TargetNode
-        NotImplementedError -- if h > 2
-    
-    Returns:
-        Query -- returns a SQLAlchemy query
-
-
-    See example in the postgres documentation:
-    https://www.postgresql.org/docs/current/static/queries-with.html
-
-    WITH RECURSIVE search_graph(id, link, data, depth, path, cycle) AS (
-        SELECT g.id, g.link, g.data, 1,
-            ARRAY[g.id],
-            false
-        FROM graph g
-    UNION ALL
-        SELECT g.id, g.link, g.data, sg.depth + 1,
-            path || g.id,
-            g.id = ANY(path)
-        FROM graph g, search_graph sg
-        WHERE g.id = sg.link AND NOT cycle
-    )
-    SELECT * FROM search_graph;
-
-    """
-
-
-    if h < 0:
-        raise ValueError("max hopping distance 'h' must be greater than or equal to 0")
-
-    # keep track of with nodes are parents and children in each recursion
-    matches_sub = matches.subquery()
-    parent_node = aliased(Node, name="parent_node")
-    child_match = aliased(Match, name="child_match")
-    child_node = aliased(Node, name="child_node")
-
-    # Get all of the nodes that have a match
-    seed_query = Query([
-        matches_sub.c.start.label('match_start'), 
-        matches_sub.c.end.label('match_end'),
-        matches_sub.c.weight.label('weight'),  
-        parent_node.id.label('node_id'), 
-        literal(0).label('distance'),
-        cast(array([parent_node.id]), ARRAY(Integer)).label("path"),
-    ])
-    seed_query = seed_query.join(parent_node)
-    seed_query = seed_query.cte(recursive=True)
-    
-    # recursivly get neighbouring nodes
-    neighbour_query = Query([
-            child_match.start.label('match_start'), 
-            child_match.end.label('match_end'),
-            child_match.weight.label('weight'),  
-            child_node.id.label('node_id'), 
-            seed_query.c.distance + 1,
-            seed_query.c.path + cast(array([child_node.id]), ARRAY(Integer)).label("path"),
-    ])
-    # new node is a neighbour of a previous node
-    neighbour_query = neighbour_query.filter(child_node.neighbours.any(Node.id == seed_query.c.node_id))
-    # node is within distance h of a match
-    neighbour_query = neighbour_query.filter(seed_query.c.distance < h)
-    # node has not been reached using a cyclical path
-    neighbour_query = neighbour_query.filter(not_(seed_query.c.path.contains(array([child_node.id]))))
-    # track the match that started the path
-    neighbour_query = neighbour_query.filter(child_match.start.label('match_start') == seed_query.c.match_start)
-    neighbour_query = neighbour_query.filter(child_match.end.label('match_end') == seed_query.c.match_end)
-
-    query = seed_query.union(neighbour_query)
+def query_neighbours(h) -> Query:
+    seed = Query([
+            Match.start.label('match'),
+            QueryNode.id.label('neighbour'),
+            literal(0).label('distance')
+    ]).join(QueryNode)
+    n = seed.union(_neighbours(QueryNode, seed, h)).subquery()
     return Query([
-        query.c.match_start,
-        query.c.match_end,
-        query.c.weight,
-        query.c.node_id,
-        query.c.distance,
+        n.c.match,
+        n.c.neighbour,
+        func.min(n.c.distance).label('distance')
+    ]).group_by(n.c.match, n.c.neighbour)
+
+
+def target_neighbours(h) -> Query:
+    seed = Query([
+            Match.end.label('match'),
+            TargetNode.id.label('neighbour'),
+            literal(0).label('distance')
+    ]).join(TargetNode)
+    n = seed.union(_neighbours(TargetNode, seed, h)).subquery()
+    return Query([
+        n.c.match,
+        n.c.neighbour,
+        func.min(n.c.distance).label('distance')
+    ]).group_by(n.c.match, n.c.neighbour)
+
+
+def _neighbours(Node: Base, seed: Query, h, max_=None) -> Query:
+
+    if max_ is None:
+        max_, h = h, 1
+
+    if Node.__tablename__ == QueryNode.__tablename__:
+        Edge = QueryEdge
+    elif Node.__tablename__ == TargetNode.__tablename__:
+        Edge = TargetEdge
+    else:
+        raise ValueError("Unrecognised node type")
+
+    seed = seed.subquery()
+    neighbours = Query([
+        seed.c.match.label('match'), 
+        Edge.end.label('neighbour'), 
+        literal(h).label('distance'),
+    ])
+    neighbours = neighbours.distinct()
+    neighbours = neighbours.join(Edge, Edge.start == seed.c.neighbour)
+
+    if h == max_:
+        return neighbours
+    else:
+        return neighbours.union(_neighbours(Node, neighbours, h+1, max_=max_))
+
+
+def join(h: int) -> Query:
+
+    left = query_neighbours(h).subquery()
+    right = target_neighbours(h).subquery()
+    NeighbourMatch = alias(Match, "neighbour_match")
+
+    left_joined = Query([
+        Match.start,
+        Match.end,
+        left.c.neighbour.label("neighbour_start"),
+        left.c.distance,
+        Match.weight,
     ])
 
+    left_joined = left_joined.join(left, Match.start == left.c.match)
+    left_joined = left_joined.subquery()
 
-def join_neighbourhoods(matches: Query, h: int) -> Query:
-    """
-
-    Returns a query to generate a table of the form
-
-    | match.start | match.end | query_node.id | target_node.id | query_node_distance | target_node_distance | delta | misses | totals | weight |
-    |-------------|:---------:|--------------:|---------------:|--------------------:|---------------------:|:-----:|:------:|:------:|:------:|
-    |     0       |     0     |       0       |       0        |          0          |          0           |   0   |    0   |    0   |    0   |
-    |     0       |     0     |       0       |       1        |          0          |          1           |   0   |    0   |    0   |    0   |
-    |     0       |     0     |       1       |       1        |          1          |          0           |   0   |    0   |    0   |    0   |
-
-        for each match start:
-            for each match end:
-                for each query node where query_node_distance < h:
-                    for each target node where target_node_distance < h
-                        compute row
-    
-    query_node_distance is the distance between the query node and the query node at match.start
-
-    target_node_distance is the distance between the target node and the target node at match.end
-
-    Query nodes with no correspondances in the target graph will have Null values for target_node.id and target_node_distance
-
-    delta, misses and totals are place holders to be populated by opt.py
-
-    Arguments:
-        matches {query} -- the set of matches to solve for
-        h {int} -- max hopping distance
-    
-    Returns:
-        Query -- a sqlalchemy query object
-
-    """
-
-    query = match_nearest_neighbours(matches, QueryNode, h).subquery()
-    target = match_nearest_neighbours(matches, TargetNode, h).subquery()
-    right = target.join(Match, target.c.node_id == Match.end)
-
-    left = Query([
-        query.c.match_start,
-        query.c.match_end,
-        query.c.node_id.label('query_id'),
-        target.c.node_id.label('target_id'),
-        query.c.distance.label('query_distance'),
-        target.c.distance.label('target_distance'),
-        literal(0),
-        literal(0),
-        literal(0),
-        query.c.weight
+    right_joined = Query([
+        Match.start,
+        Match.end,
+        NeighbourMatch.c.start.label("neighbour_start"),
+        right.c.neighbour.label("neighbour_end"),
+        right.c.distance,
     ])
-    left = left.outerjoin(right,
+
+    right_joined = right_joined.join(right, Match.end == right.c.match)
+    right_joined = right_joined.join(NeighbourMatch, NeighbourMatch.c.end == right.c.neighbour)
+    right_joined = right_joined.subquery()
+
+    joined = Query([
+        left_joined.c.start,
+        left_joined.c.end,
+        left_joined.c.neighbour_start,
+        right_joined.c.neighbour_end,
+        left_joined.c.distance,
+        right_joined.c.distance,
+        literal(0),
+        literal(0),
+        literal(0),
+        left_joined.c.weight
+    ]).outerjoin(
+        right_joined,
         and_(
-            query.c.node_id == Match.start,
-            query.c.match_start == target.c.match_start,
-            query.c.match_end == target.c.match_end,
+            left_joined.c.start == right_joined.c.start,
+            left_joined.c.end == right_joined.c.end,
+            left_joined.c.neighbour_start == right_joined.c.neighbour_start,
         )
     )
 
-    return left
+    return joined
