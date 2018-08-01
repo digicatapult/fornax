@@ -79,7 +79,7 @@ def _get_or_1(d: dict):
     return np.vectorize(lambda x: d.get(tuple(x), 1))
 
 
-def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
+def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
     """[summary]
     
     Arguments:
@@ -93,7 +93,7 @@ def optimise(h: int, alpha: float, recrods: List[tuple]) -> dict:
 
     # create a structured array from the records returned from the database
     ranked = np.array(
-        recrods,
+        records,
         dtype=[
             ('match_start', 'i'), ('match_end', 'i'), ('query_node_id', 'i'),
             ('target_node_id', 'f'), ('query_proximity',
