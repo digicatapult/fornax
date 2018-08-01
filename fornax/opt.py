@@ -101,35 +101,36 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
             ('delta', 'f'), ('totals', 'i'), ('misses', 'i'), ('weight', 'f')
         ],
     )
-    ranked['weight'] -= 1.
+
+    ranked = np.sort(
+        ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
+
+
+    # weight of 1 is a cost of zero
+    ranked['weight'] = 1. - ranked['weight'] 
 
     # give not found nodes have a distance larger than h
-    nan_idx = np.isnan(ranked['target_proximity'])
+    nan_idx = np.isnan(ranked['target_node_id'])
     ranked['target_proximity'][nan_idx] = h+1
     ranked['query_proximity'] = _proximity(h, alpha, ranked['query_proximity'])
-    ranked['target_proximity'] = _proximity(
-        h, alpha, ranked['target_proximity'])
+    ranked['target_proximity'] = _proximity(h, alpha, ranked['target_proximity'])
 
     # get the first index of each of the unique target node values in the sorted table
-    _, uniq_matches, first_target_node_idx = _unique_index(
-        ranked[['match_start', 'match_end', 'query_node_id']])
+    _, uniq_matches, first_target_node_idx = _unique_index(ranked[['match_start', 'match_end', 'query_node_id']])
     first_target_node_idx = first_target_node_idx[:-1]
-    _, totals = np.unique(
-        uniq_matches[['match_start', 'match_end']], return_counts=True)
+    keys, totals = np.unique(uniq_matches[['match_start', 'match_end']], return_counts=True)
+    totals = {(k[0], k[1]):t for k, t in zip(keys, totals)}
 
-    _, uniq_matches, _ = _unique_index(ranked[np.logical_not(
-        nan_idx)][['match_start', 'match_end', 'query_node_id']])
-    keys, misses = np.unique(
-        uniq_matches[['match_start', 'match_end']], return_counts=True)
-    misses = totals - misses
+    _, uniq_matches, _ = _unique_index(ranked[nan_idx][['match_start', 'match_end', 'query_node_id']])
+    keys, missed = np.unique(uniq_matches[['match_start', 'match_end']], return_counts=True)
+    misses = {(k[0], k[1]):t for k,t in zip(keys, missed)}
+    # totals = {tuple(k): v for k, v in zip(list(keys), list(totals))}
 
-    totals = {tuple(k): v for k, v in zip(list(keys), list(totals))}
-    misses = {tuple(k): v for k, v in zip(list(keys), list(misses))}
 
     ranked['totals'] = np.vectorize(lambda x: totals.get(
-        tuple(x)))(ranked[['match_start', 'match_end']])
+        (x[0], x[1])))(ranked[['match_start', 'match_end']])
     ranked['misses'] = np.vectorize(lambda x: misses.get(
-        tuple(x)))(ranked[['match_start', 'match_end']])
+        (x[0], x[1]), 0))(ranked[['match_start', 'match_end']])
 
     # get the first index of each of the unique query node values in the sorted table
     # get a get of match start,end tuples and their frequency
