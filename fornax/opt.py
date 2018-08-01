@@ -155,7 +155,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
     while not finished and iters < MAX_ITER:
         # add the score in this iteration
         ranked['delta'] += LAMBDA*ranked['weight']
-        ranked['delta'] += (1-LAMBDA)*(
+        ranked['delta'] += (1.-LAMBDA)*(
             _delta_plus(ranked['query_proximity'], ranked['target_proximity']) + 
             ranked['misses']
         )/ranked['totals']
