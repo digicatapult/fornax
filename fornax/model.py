@@ -66,6 +66,7 @@ class TargetNode(Base):
     __tablename__ = 'target_node'
     id = Column(Integer, primary_key=True)
     label = Column(String)
+    mbid = Column(String)
     type = Column(Integer)
 
     def neighbours(self):
