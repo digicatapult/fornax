@@ -16,8 +16,8 @@ class Match(Base):
     end = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
     weight = Column(
         Float, 
-        CheckConstraint("weight>0", name="max_check"),
-        CheckConstraint("weight<=1", name="min_check"),
+        CheckConstraint("weight>0", name="min_check"),
+        CheckConstraint("weight<=1", name="max_check"),
         nullable=False
     )
     
