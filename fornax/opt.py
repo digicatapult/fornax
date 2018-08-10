@@ -77,9 +77,10 @@ def group_by(columns, arr):
     return stacked, filtered
 
 def group_by_first(columns, arr):
-    keys, counts = np.unique(arr[columns], return_counts=True)
+
+    _, counts = np.unique(arr[columns], return_counts=True)
     indices = np.cumsum(np.insert(counts, 0, 0))[:-1]
-    return keys, arr[indices]
+    return arr[indices]
 
 
 def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
@@ -113,7 +114,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
     ranked['weight'] = 1. - ranked['weight']
 
     # for each (match_start, match_end) pair how many query nodes are there?
-    keys, first = group_by_first(['match_start', 'match_end', 'query_node_id'], ranked)
+    first = group_by_first(['match_start', 'match_end', 'query_node_id'], ranked)
     # each group will have a row per query node for each match pair
     # if a query node has no target then the target_node_id field will be Nan
     keys, groups = group_by(['match_start', 'match_end'], first)
@@ -153,7 +154,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
         ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
         
         # find the lowest cost target_node for each query node
-        keys, stacked = group_by_first(['match_start', 'match_end', 'query_node_id'], ranked)
+        stacked = group_by_first(['match_start', 'match_end', 'query_node_id'], ranked)
         
         # sum the costs from the previous iteration
         keys, groups = group_by(['match_start', 'match_end'], stacked)
@@ -162,7 +163,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
         sums = np.core.records.fromarrays(stacked.transpose(), names=names, formats=formats)
         sums = np.sort(sums, order=['match_start', 'delta'])
         prv_result = result
-        _, result = group_by_first('match_start', sums)
+        result = group_by_first('match_start', sums)
         if prv_result is not None:
             diff = result[['match_start', 'match_end']] == prv_result[['match_start', 'match_end']]
             finished = (sum(diff) / len(result)) > .9
