@@ -77,7 +77,18 @@ def group_by(columns, arr):
     return stacked, filtered
 
 def group_by_first(columns, arr):
-
+    """
+    Split an array into n slices where 'columns' all compare equal within each slide
+    Take the first row of each slice
+    Combine each of the rows into a single array through concatination
+    
+    Arguments:
+        columns {[str]} -- a list of column names
+        arr {[type]} -- a numpy structured array
+    
+    Returns:
+        np.array - new concatinated array
+    """
     _, counts = np.unique(arr[columns], return_counts=True)
     indices = np.cumsum(np.insert(counts, 0, 0))[:-1]
     return arr[indices]
