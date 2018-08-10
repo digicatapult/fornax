@@ -106,8 +106,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
         dict -- [description]
     """
 
-# create a structured array from the database records
-
+    # create a structured array from the database records
     ranked = np.array(
         records,
         dtype=[
