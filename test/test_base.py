@@ -13,7 +13,7 @@ class TestCaseDB(unittest.TestCase):
     def setUpClass(cls):
         """ Create the engine, create one connection and start a transaction """
         engine = create_engine(
-            'postgresql://postgres:fornax@localhost:5433/postgres', 
+            'sqlite://', 
             echo=False
         )
         connection = engine.connect()
