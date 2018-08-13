@@ -186,7 +186,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
         apply = np.vectorize(lambda x: sums_lookup.get(tuple(x), iters))
         ranked['delta'] = ranked['weight'] + apply(ranked[['query_node_id', 'target_node_id']])
 
-    sums['delta'] /= (iters + 1)
-    result['delta'] /= (iters + 1)
+    sums['delta'] /= iters + 1
+    result['delta'] /= iters + 1
     sums_lookup = {(r[0], r[1]):r[2] for r in sums}
     return sums_lookup, result
