@@ -54,7 +54,7 @@ class QueryEdge(Base):
     start = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
     end = Column(Integer, ForeignKey("query_node.id"), primary_key=True)
     start_node = relationship(QueryNode, primaryjoin=start == QueryNode.id, backref="start_edges")
-    end_node = relationship(QueryNode, primaryjoin=start == QueryNode.id, backref="end_edges")
+    end_node = relationship(QueryNode, primaryjoin=end == QueryNode.id, backref="end_edges")
 
     def __repr__(self):
         return "<QueryEdge(start={}, end={})>".format(self.start, self.end)
@@ -86,7 +86,7 @@ class TargetEdge(Base):
     end = Column(Integer, ForeignKey("target_node.id"), primary_key=True)
 
     start_node = relationship(TargetNode, primaryjoin=start == TargetNode.id, backref="start_edges")
-    end_node = relationship(TargetNode, primaryjoin=start == TargetNode.id, backref="end_edges")
+    end_node = relationship(TargetNode, primaryjoin=end == TargetNode.id, backref="end_edges")
 
     def __repr__(self):
         return "<TargetEdge(start={}, end={})>".format(self.start, self.end)
