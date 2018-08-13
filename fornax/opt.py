@@ -157,7 +157,7 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
     proximity_score /= ranked['totals']
     ranked['weight'] += LAMBDA*label_score + (1.-LAMBDA)*proximity_score
 
-    prv_result, result = None, None
+    prv_result, result, finished = None, None, False
     for iters in range(10):
 
         # order the relationships by their cost
@@ -177,8 +177,8 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
         if prv_result is not None:
             diff = result[['match_start', 'match_end']] == prv_result[['match_start', 'match_end']]
             finished = (sum(diff) / len(result)) > .9
-            if finished:
-                break
+        if finished:
+            break
         
         # create a lookup table for the sums
         sums_lookup = {(r[0], r[1]):r[2] for r in sums}
