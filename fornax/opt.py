@@ -174,17 +174,18 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
         sums = np.sort(sums, order=['match_start', 'delta'])
         prv_result = result
         result = group_by_first('match_start', sums)
-        if prv_result is not None:
-            diff = result[['match_start', 'match_end']] == prv_result[['match_start', 'match_end']]
-            finished = (sum(diff) / len(result)) > .9
-        if finished:
-            break
-        
+
         # create a lookup table for the sums
         sums_lookup = {(r[0], r[1]):r[2] for r in sums}
         # record the costs from this iteration
         apply = np.vectorize(lambda x: sums_lookup.get(tuple(x), iters))
         ranked['delta'] = ranked['weight'] + apply(ranked[['query_node_id', 'target_node_id']])
+
+        if prv_result is not None:
+            diff = result[['match_start', 'match_end']] == prv_result[['match_start', 'match_end']]
+            finished = (sum(diff) / len(result)) > .9
+        if finished:
+            break
 
     sums['delta'] /= iters + 1
     result['delta'] /= iters + 1
