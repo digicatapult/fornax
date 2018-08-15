@@ -301,3 +301,18 @@ def get_neighbours(ranked, sums):
             neighbours[key][value[0]] = value[1]
 
     return neighbours
+
+def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
+
+    prv_frame = Frame(records)
+    optimiser = Optimiser()
+
+    # optimise until optimiser.optimise returns None
+    for frame in iter(lambda: optimiser.optimise(prv_frame), None):
+        prv_frame = frame
+
+    optimiser.sums['delta'] /= optimiser.iters + 1
+    optimiser.result['delta'] /= optimiser.iters + 1
+    sums_lookup = {(r[0], r[1]):r[2] for r in optimiser.sums}
+    return sums_lookup, optimiser.result
+
