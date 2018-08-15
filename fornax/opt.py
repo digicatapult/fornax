@@ -151,11 +151,8 @@ class Frame:
 
         self.records[key] = item
 
-    def sort(self):
-        """Sort the Frame inplace in order of 
-        'match_start', 'match_end', 'query_node_id', 'delta'.
-        """
-        order = ['match_start', 'match_end', 'query_node_id', 'delta']
+    def sort(self, order = ['match_start', 'match_end', 'query_node_id', 'delta']):
+        """Sort the Frame inplace in order of columns specified in 'order'"""
         self.records = np.sort(self.records, order=order, axis=0)
     
     def _init_proximity(self):
@@ -262,21 +259,6 @@ class Optimiser:
         self.iters += 1
 
         return frame
-
-
-def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
-
-    prv_frame = Frame(records)
-    optimiser = Optimiser()
-
-    # optimise until optimiser.optimise returns None
-    for frame in iter(lambda: optimiser.optimise(prv_frame), None):
-        prv_frame = frame
-
-    optimiser.sums['delta'] /= optimiser.iters + 1
-    optimiser.result['delta'] /= optimiser.iters + 1
-    sums_lookup = {(r[0], r[1]):r[2] for r in optimiser.sums}
-    return sums_lookup, optimiser.result
 
 
 def greedy_grab(idx, neighbours, path=None):
