@@ -191,3 +191,45 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
     result['delta'] /= iters + 1
     sums_lookup = {(r[0], r[1]):r[2] for r in sums}
     return sums_lookup, result
+
+
+def greedy_grab(idx, neighbours, path=None):
+    if path is None:
+        path = set([idx])
+    else:
+        if idx in path:
+            return path
+        else:
+            path = path.union(set([idx]))
+    for item in neighbours[idx].items():
+        path = path.union(greedy_grab(item, neighbours, path))
+    return path
+
+def get_neighbours(ranked, sums):
+
+    # if there's a dead heat then a node will always be ignored
+
+    best = []
+    _, groups = group_by('match_start', sums)
+    for group in groups:
+        first = group['delta'][0]
+        sliced = group[[delta==first for delta in group['delta']]]
+        best.append(sliced)
+
+    result = np.hstack(best)
+    best = set(result[['match_start', 'match_end']].tolist())
+    keys, groups = group_by(['match_start', 'match_end'], ranked)
+
+    neighbours = {}
+    for key, group in zip(keys, groups):
+        key = tuple(key)
+        if key not in best:
+            continue
+        neighbours[key] = {}
+        for value in reversed(group[['query_node_id', 'target_node_id']]):
+            value = tuple(value)
+            if key[0] == value[0]:
+                continue
+            neighbours[key][value[0]] = value[1]
+
+    return neighbours
