@@ -2,12 +2,6 @@ import numpy as np
 from itertools import starmap
 from typing import List
 
-MAX_ITER = 10
-CONVERGENCE_THRESHOLD = .95
-LAMBDA = .3
-
-
-h, alpha, LAMBDA = 2, .3, .3
 
 def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
@@ -34,7 +28,6 @@ def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
         np.less_equal(distances, h),
         np.power(alpha, distances)
     )
-
 
 def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Comparator function. Equation 3 in the paper.
@@ -68,7 +61,7 @@ def group_by(columns, arr):
     if not len(columns):
         raise ValueError("group_by requires a non empty list of column names")
     
-    uniq, counts = np.unique(arr[columns], return_counts=True)
+    _, counts = np.unique(arr[columns], return_counts=True)
     indices = np.insert(np.cumsum(counts), 0, 0)
     split = np.split(arr, indices)
     filtered = list(filter(lambda x: len(x), split))
@@ -94,103 +87,196 @@ def group_by_first(columns, arr):
     return arr[indices]
 
 
-def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
-    """[summary]
-    
-    Arguments:
-        h {int} -- [description]
-        alpha {float} -- [description]
-        recrods {List[tuple]} -- [description]
-    
-    Returns:
-        dict -- [description]
+class Frame:
+
+    """A class to represent a table of values returned from fornex.search
+    The class represents a table with names self.columns.
     """
 
-    # create a structured array from the database records
-    ranked = np.array(
-        records,
-        dtype=[
-            ('match_start', 'i'), ('match_end', 'i'), ('query_node_id', 'i'),
-            ('target_node_id', 'f'), ('query_proximity', 'f'), ('target_proximity', 'f'),
-            ('delta', 'f'), ('totals', 'i'), ('misses', 'i'), ('weight', 'f')
-        ],
-    )
 
-    ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id'], axis=0)
-    nan_idx = np.isnan(ranked['target_node_id'])
-    ranked['target_proximity'][nan_idx] = h+1
-    ranked['query_proximity'] = _proximity(h, alpha, ranked['query_proximity'])
-    ranked['target_proximity'] = _proximity(h, alpha, ranked['target_proximity'])
-    ranked['weight'] = 1. - ranked['weight']
+    columns = 'match_start match_end query_node_id target_node_id \
+    query_proximity target_proximity delta totals misses weight'.split()
+    types = 'i i i f f f f i i f'.split()
 
-    # for each (match_start, match_end) pair how many query nodes are there?
-    first = group_by_first(['match_start', 'match_end', 'query_node_id'], ranked)
-    # each group will have a row per query node for each match pair
-    # if a query node has no target then the target_node_id field will be Nan
-    keys, groups = group_by(['match_start', 'match_end'], first)
-
-    # how many of those query nodes have no corresponding target nodes?
-    misses = {
-        tuple(key): np.sum(np.isnan(group['target_node_id'])) 
-        for key, group in zip(keys, groups)
-    }
-
-    # how many do have corresponding target nodes?
-    totals = {
-        tuple(key): len(group) - misses[tuple(key)] 
-        for key, group in zip(keys, groups)
-    }
-
-    # apply therse counts to the table
-    apply = np.vectorize(lambda x: totals.get(tuple(x)))
-    ranked['totals'] = apply(ranked[['match_start', 'match_end']])
-
-    apply = np.vectorize(lambda x: misses.get(tuple(x)))
-    ranked['misses'] = apply(ranked[['match_start', 'match_end']])
-
-    names, formats = 'match_start, match_end, delta', 'i, i, f'
-
-    # calculate proximity and label costs for each row
-    label_score = ranked['weight']
-    proximity_score = _delta_plus(ranked['query_proximity'], ranked['target_proximity'])
-    proximity_score += ranked['misses']
-    proximity_score /= ranked['totals']
-    ranked['weight'] += LAMBDA*label_score + (1.-LAMBDA)*proximity_score
-
-    prv_result, result, finished = None, None, False
-    for iters in range(10):
-
-        # order the relationships by their cost
-        ranked = np.sort(ranked, order=['match_start', 'match_end', 'query_node_id', 'delta'], axis=0)
+    def __init__(self, records, h=2, alpha=.3, lambda_=.3):
+        """Create a new Frame instance
         
-        # find the lowest cost target_node for each query node
-        stacked = group_by_first(['match_start', 'match_end', 'query_node_id'], ranked)
+        Arguments:
+            records {[type]} -- A list of tuples with dimensions Nx10.
+        
+        Keyword Arguments:
+            h {int} -- max hopping distance (default: {2})
+            alpha {float} -- proximity factor (default: {.3})
+            lambda_ {float} -- label weight (default: {.3})
+        """
+
+        # init constants
+        self.lambda_, self.h, self.alpha = lambda_, h, alpha
+
+        # create a numpy structured array
+        self.records = np.array(records, dtype=list(zip(self.columns, self.types)))
+        # group the different node ids together
+        self.sort()
+        # initialise query and target proximity columns
+        self._init_proximity()
+        # initialise totals and misses columns
+        self._totals_and_misses()
+
+        # calculate proximity and label costs for each row
+        label_score = self.records['weight']
+        proximity_score = _delta_plus(self.records['query_proximity'], self.records['target_proximity'])
+        proximity_score += self.records['misses']
+        proximity_score /= self.records['totals']
+        self.records['weight'] += self.lambda_*label_score + (1.-self.lambda_)*proximity_score
+
+    def __getitem__(self, key):
+        """Get the column with name key
+        
+        Arguments:
+            key {[str]} -- string or list of strings representing column names
+        
+        Returns:
+            [np.array] -- a numpy array 
+        """
+
+        return self.records[key]
+
+    def __setitem__(self, key, item):
+        """Set the column with name key to item
+        
+        Arguments:
+            key {[str]} -- a column names
+            item {[np.array]} -- a numpy array with the same dimensions as the existing column
+        """
+
+        self.records[key] = item
+
+    def sort(self):
+        """Sort the Frame inplace in order of 
+        'match_start', 'match_end', 'query_node_id', 'delta'.
+        """
+        order = ['match_start', 'match_end', 'query_node_id', 'delta']
+        self.records = np.sort(self.records, order=order, axis=0)
+    
+    def _init_proximity(self):
+        """Apply the proximity function to the hopping distances in columns target_proximity and query_proximity
+        """
+
+        nan_idx = np.isnan(self.records['target_node_id'])
+        self.records['target_proximity'][nan_idx] = self.h + 1
+        self.records['query_proximity'] = _proximity(self.h, self.alpha, self.records['query_proximity'])
+        self.records['target_proximity'] = _proximity(self.h, self.alpha, self.records['target_proximity'])
+        self.records['weight'] = 1. - self.records['weight']
+
+    def _totals_and_misses(self):
+        """Populates columns totals and misses
+
+        Totals represents the number of neighbouring query nodes within h hops of each query node
+        Misses represents totals minus the number of neighbouring target nodes within h hops of each target query matching pair
+        """
+
+        # for each (match_start, match_end) pair how many query nodes are there?
+        first = group_by_first(['match_start', 'match_end', 'query_node_id'], self.records)
+        # each group will have a row per query node for each match pair
+        # if a query node has no target then the target_node_id field will be Nan
+        keys, groups = group_by(['match_start', 'match_end'], first)
+
+        # how many of those query nodes have no corresponding target nodes?
+        misses = {tuple(key): np.sum(np.isnan(group['target_node_id'])) for key, group in zip(keys, groups)}
+
+        # how many do have corresponding target nodes?
+        totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
+
+        # apply therse counts to the table
+        apply = np.vectorize(lambda x: totals.get(tuple(x)))
+        self.records['totals'] = apply(self.records[['match_start', 'match_end']])
+
+        apply = np.vectorize(lambda x: misses.get(tuple(x)))
+        self.records['misses'] = apply(self.records[['match_start', 'match_end']])
+
+
+class Optimiser:
+    """Optimiser take a Frame and sucessivly reorders it by calling optimise(frame)."""
+
+    def __init__(self, max_iter=10, convergence_threshold=.95):
+        """Create a new optimiser instance
+        
+        Keyword Arguments:
+            max_iter {int} -- the maximum number of iterations before the optimiser gives up (default: {10})
+            convergence_threshold {float} -- the fraction of results that do not change before the optimiser gives up (default: {.95})
+        """
+
+        # constants
+        self.max_iter, self.convergence_threshold = 10, .95
+        # state
+        self.prv_result, self.result, self.sums, self.iters = None, None, None, 1
+
+    def optimise(self, frame):
+        """Reorder a frame using the recursive optimisation proceedure described in by NeMa
+        
+        Returns None when no more optimisation is permitted.
+        
+        Arguments:
+            frame {[type]} -- A frame that has been optimised 0 or more times
+        
+        Returns:
+            [type] -- A reordered frame with updated cost columns 'delta'
+        """
+
+        finished = False
+
+        if self.iters > self.max_iter:
+            return None
+        
+        frame.sort()
+
+        stacked = group_by_first(['match_start', 'match_end', 'query_node_id'], frame)
         
         # sum the costs from the previous iteration
         keys, groups = group_by(['match_start', 'match_end'], stacked)
         summed = starmap(lambda key, group: (*key, np.sum(group['delta'])/len(group)), zip(keys, groups))
-        stacked =  np.vstack(summed)
-        sums = np.core.records.fromarrays(stacked.transpose(), names=names, formats=formats)
-        sums = np.sort(sums, order=['match_start', 'delta'])
-        prv_result = result
-        result = group_by_first('match_start', sums)
-
+        stacked = np.vstack(summed)
+        self.sums = np.core.records.fromarrays(
+            stacked.transpose(), 
+            names='match_start, match_end, delta', 
+            formats='i, i, f'
+        )
+        self.sums = np.sort(self.sums, order=['match_start', 'delta'])
         # create a lookup table for the sums
-        sums_lookup = {(r[0], r[1]):r[2] for r in sums}
+        sums_lookup = {(r[0], r[1]):r[2] for r in self.sums}
+        
+        self.prv_result = self.result
+        self.result = group_by_first('match_start', self.sums)
         # record the costs from this iteration
-        apply = np.vectorize(lambda x: sums_lookup.get(tuple(x), iters))
-        ranked['delta'] = ranked['weight'] + apply(ranked[['query_node_id', 'target_node_id']])
+        apply = np.vectorize(lambda x: sums_lookup.get(tuple(x), self.iters))
 
-        if prv_result is not None:
-            diff = result[['match_start', 'match_end']] == prv_result[['match_start', 'match_end']]
-            finished = (sum(diff) / len(result)) > .9
+        frame['delta'] = frame['weight'] + apply(frame[['query_node_id', 'target_node_id']])
+
+        if self.prv_result is not None:
+            diff = self.result[['match_start', 'match_end']] == self.prv_result[['match_start', 'match_end']]
+            finished = (sum(diff) / len(self.result)) > .9
+
         if finished:
-            break
+            return None
 
-    sums['delta'] /= iters + 1
-    result['delta'] /= iters + 1
-    sums_lookup = {(r[0], r[1]):r[2] for r in sums}
-    return sums_lookup, result
+        self.iters += 1
+
+        return frame
+
+
+def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
+
+    prv_frame = Frame(records)
+    optimiser = Optimiser()
+
+    # optimise until optimiser.optimise returns None
+    for frame in iter(lambda: optimiser.optimise(prv_frame), None):
+        prv_frame = frame
+
+    optimiser.sums['delta'] /= optimiser.iters + 1
+    optimiser.result['delta'] /= optimiser.iters + 1
+    sums_lookup = {(r[0], r[1]):r[2] for r in optimiser.sums}
+    return sums_lookup, optimiser.result
 
 
 def greedy_grab(idx, neighbours, path=None):
