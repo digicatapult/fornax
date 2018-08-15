@@ -152,7 +152,8 @@ class Frame:
         self.records[key] = item
 
     def sort(self, order = ['match_start', 'match_end', 'query_node_id', 'delta']):
-        """Sort the Frame inplace in order of columns specified in 'order'"""
+        """Sort the Frame inplace in order of columns specified in 'order'
+        """
         self.records = np.sort(self.records, order=order, axis=0)
     
     def _init_proximity(self):
@@ -259,7 +260,6 @@ class Optimiser:
         self.iters += 1
 
         return frame
-
 
 def greedy_grab(idx, neighbours, path=None):
     if path is None:
