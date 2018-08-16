@@ -44,7 +44,7 @@ class TestOpt(unittest.TestCase):
         ]
         
     def test_optimal_matches(self):
-        _, optimum_match = opt.optimise(self.h, self.alpha, self.records)
+        _, optimum_match = opt.optimise(5, self.h, self.alpha, self.records)
         self.assertSequenceEqual(
             list((a, b) for (a, b, c) in optimum_match),
             list([
@@ -57,7 +57,7 @@ class TestOpt(unittest.TestCase):
         )
 
     def test_score_bounds(self):
-        scores, _ = opt.optimise(self.h, self.alpha, self.records)
+        scores, _ = opt.optimise(5, self.h, self.alpha, self.records)
         self.assertDictEqual(
             {key: 0 <= score < 1.1 for key, score in scores.items()},
             {key: True for key, score in scores.items()}

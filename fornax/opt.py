@@ -96,7 +96,7 @@ class Frame:
 
     columns = 'match_start match_end query_node_id target_node_id \
     query_proximity target_proximity delta totals misses weight'.split()
-    types = 'i i i f f f f i i f'.split()
+    types = 'i i i i f f f i i f'.split()
 
     def __init__(self, records, h=2, alpha=.3, lambda_=.3):
         """Create a new Frame instance
@@ -114,7 +114,8 @@ class Frame:
         self.lambda_, self.h, self.alpha = lambda_, h, alpha
 
         # create a numpy structured array
-        self.records = np.array(records, dtype=list(zip(self.columns, self.types)))
+        cleaned = [tuple(item if item is not None else -1 for item in tup) for tup in records]
+        self.records = np.array(cleaned, dtype=list(zip(self.columns, self.types)))
         # group the different node ids together
         self.sort()
         # initialise query and target proximity columns
@@ -148,19 +149,21 @@ class Frame:
             key {[str]} -- a column names
             item {[np.array]} -- a numpy array with the same dimensions as the existing column
         """
-
         self.records[key] = item
 
+    def __len__(self):
+        return len(self.records)
+
+    def __repr__(self):
+        return repr(self.records)
+
     def sort(self, order = ['match_start', 'match_end', 'query_node_id', 'delta']):
-        """Sort the Frame inplace in order of columns specified in 'order'
-        """
+        """Sort the Frame inplace in order of columns specified in 'order'"""
         self.records = np.sort(self.records, order=order, axis=0)
     
     def _init_proximity(self):
-        """Apply the proximity function to the hopping distances in columns target_proximity and query_proximity
-        """
-
-        nan_idx = np.isnan(self.records['target_node_id'])
+        """Apply the proximity function to the hopping distances in columns target_proximity and query_proximity"""
+        nan_idx = self.records['target_node_id'] < 0
         self.records['target_proximity'][nan_idx] = self.h + 1
         self.records['query_proximity'] = _proximity(self.h, self.alpha, self.records['query_proximity'])
         self.records['target_proximity'] = _proximity(self.h, self.alpha, self.records['target_proximity'])
@@ -194,6 +197,7 @@ class Frame:
 
 
 class Optimiser:
+
     """Optimiser take a Frame and sucessivly reorders it by calling optimise(frame)."""
 
     def __init__(self, max_iter=10, convergence_threshold=.95):
@@ -205,7 +209,7 @@ class Optimiser:
         """
 
         # constants
-        self.max_iter, self.convergence_threshold = 10, .95
+        self.max_iter, self.convergence_threshold = max_iter, convergence_threshold
         # state
         self.prv_result, self.result, self.sums, self.iters = None, None, None, 1
 
@@ -225,13 +229,14 @@ class Optimiser:
 
         if self.iters > self.max_iter:
             return None
-        
-        frame.sort()
 
-        stacked = group_by_first(['match_start', 'match_end', 'query_node_id'], frame)
+        frame.sort()
+        best_target_nodes = group_by_first(
+            ['match_start', 'match_end', 'query_node_id'], frame
+        )[['match_start', 'match_end', 'query_node_id', 'target_node_id', 'delta']]
         
         # sum the costs from the previous iteration
-        keys, groups = group_by(['match_start', 'match_end'], stacked)
+        keys, groups = group_by(['match_start', 'match_end'], best_target_nodes)
         summed = starmap(lambda key, group: (*key, np.sum(group['delta'])/len(group)), zip(keys, groups))
         stacked = np.vstack(summed)
         self.sums = np.core.records.fromarrays(
@@ -261,48 +266,90 @@ class Optimiser:
 
         return frame
 
-def greedy_grab(idx, neighbours, path=None):
-    if path is None:
-        path = set([idx])
-    else:
-        if idx in path:
-            return path
+
+class Refiner:
+    """Take each of the matches and recursivly find all of their neighbours via a greedy algorithm"""
+
+    def __init__(self, frame):
+        """Initialise a refiner using a Frame instance
+        
+        Arguments:
+            frame {[Frame]} -- A frame constructed records returned by the database
+        """
+
+        self.frame = frame
+
+        matches =  {tuple(k): v for k, v in zip(*group_by(['match_start', 'match_end'], frame))}
+
+        neighbours = {
+            k: group_by_first(['match_start', 'match_end', 'query_node_id'], v)[['query_node_id', 'target_node_id']].tolist()
+            for k,v in matches.items()
+        }
+
+        self.neighbours = {
+            k: [item for item in v if self.valid_neighbours(k,item)] 
+            for k,v in neighbours.items()
+        }
+
+
+    def __call__(self, seed, result=None):
+        """Given a match_start, match end pair,
+        greedily find the lowest cost neighbours
+        recursivly covering the whole graph
+        without cyclic paths
+        
+        Arguments:
+            seed {[int, int]} -- match_start, match_end pair
+        
+        Keyword Arguments:
+            result {[int, int]} -- stores the result between recursive calls (default: {None})
+        
+        Returns:
+            [type] -- List of query_node, target_node id pairs constituting a result
+        """
+
+        if result is None:
+            result = [seed]
+        elif seed[0] in [first for first, second in result]:
+            return result
         else:
-            path = path.union(set([idx]))
-    for item in neighbours[idx].items():
-        path = path.union(greedy_grab(item, neighbours, path))
-    return path
+            result.append(seed)
+        
+        for neighbour in self.neighbours[seed]:
+            result = self(neighbour, result)
+        return result
 
-def get_neighbours(ranked, sums):
+    @staticmethod
+    def valid_neighbours(first: tuple, second: tuple):
+        """Function that governs a valid hop between nodes
+        
+        Arguments:
+            first {int, int} -- source query_node, target_node id pair
+            second {tuple} -- target query_node, target_node id pair
+        
+        Returns:
+            Bool -- True is a valid transition
+        """
 
-    # if there's a dead heat then a node will always be ignored
+        if first == second:
+            return False
+        if any(v < 0 for v in second):
+            return False
+        return True
 
-    best = []
-    _, groups = group_by('match_start', sums)
-    for group in groups:
-        first = group['delta'][0]
-        sliced = group[[delta==first for delta in group['delta']]]
-        best.append(sliced)
 
-    result = np.hstack(best)
-    best = set(result[['match_start', 'match_end']].tolist())
-    keys, groups = group_by(['match_start', 'match_end'], ranked)
-
-    neighbours = {}
-    for key, group in zip(keys, groups):
-        key = tuple(key)
-        if key not in best:
-            continue
-        neighbours[key] = {}
-        for value in reversed(group[['query_node_id', 'target_node_id']]):
-            value = tuple(value)
-            if key[0] == value[0]:
-                continue
-            neighbours[key][value[0]] = value[1]
-
-    return neighbours
-
-def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
+def optimise(n: int, h: int, alpha: float, records: List[tuple]) -> dict:
+    """Find the best n matches from a set of records
+    
+    Arguments:
+        n {int} -- number of results
+        h {int} -- max hopping distance
+        alpha {float} -- propergation factor
+        records {List[tuple]} -- records returned from the database
+    
+    Returns:
+        [[int,int], int] -- each result and corresponding score
+    """
 
     prv_frame = Frame(records)
     optimiser = Optimiser()
@@ -313,6 +360,19 @@ def optimise(h: int, alpha: float, records: List[tuple]) -> dict:
 
     optimiser.sums['delta'] /= optimiser.iters + 1
     optimiser.result['delta'] /= optimiser.iters + 1
+
+    graphs = []
+    refine = Refiner(frame)
+    ordered = np.sort(optimiser.sums, order=['delta'])
+    for seed in ordered[['match_start', 'match_end']]:
+        graph = sorted(refine(tuple(seed)))
+        if graph not in graphs:
+            graphs.append(graph)
+
     sums_lookup = {(r[0], r[1]):r[2] for r in optimiser.sums}
-    return sums_lookup, optimiser.result
+    scores = [sum(sums_lookup[item] for item in graph) + (len(optimiser.result) - len(graph)) for graph in graphs]
+    scores = [score/len(optimiser.result) for score in scores]
+    ordered = sorted(zip(graphs, scores), key=lambda item: item[1])
+    sliced = ordered[:min(n, len(graphs))]
+    return sliced
 
