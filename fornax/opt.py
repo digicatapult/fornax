@@ -319,6 +319,7 @@ class Refiner:
         
         for neighbour in self.neighbours[seed]:
             result = self(neighbour, result)
+        
         return result
 
     @staticmethod
