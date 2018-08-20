@@ -340,7 +340,7 @@ class Refiner:
         return True
 
 
-def optimise(n: int, h: int, alpha: float, records: List[tuple]) -> dict:
+def solve(n: int, h: int, alpha: float, records: List[tuple]) -> dict:
     """Find the best n matches from a set of records
     
     Arguments:
