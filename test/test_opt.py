@@ -38,6 +38,20 @@ class TestProximity(unittest.TestCase):
         self.assertRaises(ValueError, opt._proximity, 2, -.1, np.array([0]))
 
 
+class TestDeltaPlus(unittest.TestCase):
+
+    def test_greater(self):
+        self.assertListEqual(
+            opt._delta_plus(np.array([2, 4, 6]), np.array([1, 2, 3])).tolist(),
+            [1, 2, 3]
+        )
+        
+    def test_less(self):
+        self.assertListEqual(
+            opt._delta_plus(np.array([1, 2, 3]), np.array([2, 4, 6])).tolist(),
+            [0, 0, 0]
+        )
+
 class TestOpt(unittest.TestCase):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
