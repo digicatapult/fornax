@@ -185,7 +185,7 @@ class Frame:
         keys, groups = group_by(['match_start', 'match_end'], first)
 
         # how many of those query nodes have no corresponding target nodes?
-        misses = {tuple(key): np.sum(np.isnan(group['target_node_id'])) for key, group in zip(keys, groups)}
+        misses = {tuple(key): np.sum(np.less(group['target_node_id'], 0)) for key, group in zip(keys, groups)}
 
         # how many do have corresponding target nodes?
         totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
