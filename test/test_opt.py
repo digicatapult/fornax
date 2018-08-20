@@ -167,23 +167,18 @@ class TestOpt(unittest.TestCase):
         ]
         
     def test_optimal_matches(self):
-        _, optimum_match = opt.optimise(5, self.h, self.alpha, self.records)
-        self.assertSequenceEqual(
-            list((a, b) for (a, b, c) in optimum_match),
-            list([
-                (1, 8),
-                (2, 9),
-                (3, 6),
-                (4, 10),
-                (5, 11)
-            ])
-        )
+        
+        solutions = opt.solve(5, self.h, self.alpha, self.records)
+        perfect = [graph for graph, score in solutions if score == 0]
 
-    def test_score_bounds(self):
-        scores, _ = opt.optimise(5, self.h, self.alpha, self.records)
-        self.assertDictEqual(
-            {key: 0 <= score < 1.1 for key, score in scores.items()},
-            {key: True for key, score in scores.items()}
+        self.assertSequenceEqual(
+            perfect[0], 
+            [(1, 8), (2, 9), (3, 6), (4, 10), (5, 11)]
+        )        
+
+        self.assertSequenceEqual(
+            perfect[1], 
+            [(1, 8), (2, 9), (3, 12), (4, 10), (5, 11)]
         )
 
 
