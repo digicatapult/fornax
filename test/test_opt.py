@@ -52,6 +52,87 @@ class TestDeltaPlus(unittest.TestCase):
             [0, 0, 0]
         )
 
+
+class Frame(unittest.TestCase):
+
+    def setUp(self):
+        self.records = [
+            (2, 2 ,3, 4, 5, 6, 7, 8, 9, 10),
+            (1, 2 ,3, 4, 5, 6, 7, 8, 9, 10),
+            (1, 2 ,2, 4, 5, 6, 7, 8, 9, 10),
+            (1, 2 ,2, 4, 5, 6, 6, 8, 9, 10)
+        ]
+        self.frame = opt.Frame(self.records)
+
+    def test_assert_columns(self):
+        self.assertRaises(ValueError, self.frame.__getitem__, 'foo')
+
+    def testGetItem(self):
+        self.assertListEqual(
+            self.frame['match_start'].tolist(),
+            sorted([record[0] for record in self.records])
+        )
+    
+    def test_set_item(self):
+        frame = opt.Frame(self.frame.records.tolist())
+        frame['match_end'] = [record[1] + 1 for record in self.records]
+        self.assertListEqual(
+            frame['match_end'].tolist(),
+            [record[1] + 1 for record in self.records]
+        )
+
+    def test_len(self):
+        self.assertEqual(len(self.frame), len(self.records))
+
+    def test_sort(self):
+
+        key_idx = [
+            opt.Frame.columns.index(item) 
+            for item in ['match_start', 'match_end', 'query_node_id', 'delta']
+        ]
+
+        target = sorted(self.records, key = lambda x: tuple(x[i] for i in key_idx))
+
+        self.assertListEqual(
+            self.frame['match_start'].tolist(),
+            [row[0] for row in target]
+        )
+
+        self.assertListEqual(
+            self.frame['match_end'].tolist(),
+            [row[1] for row in target]
+        )
+
+        self.assertListEqual(
+            self.frame['query_node_id'].tolist(),
+            [row[2] for row in target]
+        )
+
+    def test_proximity(self):
+        pass
+
+    def test_totals(self):
+        records = [
+            (2, 2 ,3, 4, 5, 6, 7, 8, 9, 10),
+            (2, 2 ,4, 5, 5, 6, 7, 8, 9, 10),
+            (1, 2 ,1, 4, 5, 6, 7, 8, 9, 10),
+            (1, 2 ,2, -1, 5, 6, 6, 8, 9, 10)
+        ]
+
+        frame = opt.Frame(records)
+        self.assertListEqual(frame['totals'].tolist(), [1, 1, 2, 2])
+
+    def test_misses(self):
+        records = [
+            (2, 2 ,3, 4, 5, 6, 7, 8, 9, 10),
+            (2, 2 ,4, 5, 5, 6, 7, 8, 9, 10),
+            (1, 2 ,2, None, 5, None, 7, 8, 9, 10),
+            (1, 2 ,3, 5, 5, 6, 6, 8, 9, 10)
+        ]
+
+        frame = opt.Frame(records)
+        self.assertListEqual(frame['misses'].tolist(), [1, 1, 0, 0])
+
 class TestOpt(unittest.TestCase):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
