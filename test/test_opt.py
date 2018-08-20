@@ -10,6 +10,34 @@ from sqlalchemy import or_, and_, literal
 import numpy as np
 
 
+class TestProximity(unittest.TestCase):
+
+    def setUp(self):
+        self.h = 2
+        self.alpha = .3
+
+    def test_zero(self):
+        proximities = opt._proximity(self.h, self.alpha, np.array([0]))
+        self.assertListEqual([1.0], proximities.tolist())
+
+    def test_one(self):
+        proximities = opt._proximity(self.h, self.alpha, np.array([1]))
+        self.assertListEqual([self.alpha], proximities.tolist())
+
+    def test_pow(self):
+        proximities = opt._proximity(self.h, self.alpha, np.array([2, 3, 4]))
+        self.assertListEqual([self.alpha**2, 0.0, 0.0], proximities.tolist())
+
+    def test_assert_h(self):
+        self.assertRaises(ValueError, opt._proximity, -1, 0.3, np.array([0]))
+
+    def test_assert_alpha_big(self):
+        self.assertRaises(ValueError, opt._proximity, 2, 1.1, np.array([0]))
+
+    def test_assert_alpha_small(self):
+        self.assertRaises(ValueError, opt._proximity, 2, -.1, np.array([0]))
+
+
 class TestOpt(unittest.TestCase):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
