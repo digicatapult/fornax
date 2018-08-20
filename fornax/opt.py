@@ -91,6 +91,8 @@ class Frame:
 
     """A class to represent a table of values returned from fornex.search
     The class represents a table with names self.columns.
+
+    Effectivly wraps a numpy structured array
     """
 
 
@@ -102,7 +104,7 @@ class Frame:
         """Create a new Frame instance
         
         Arguments:
-            records {[type]} -- A list of tuples with dimensions Nx10.
+            records {[(int, int, int, int, int, int, int, int, int, int)]} -- A list of tuples with dimensions Nx10.
         
         Keyword Arguments:
             h {int} -- max hopping distance (default: {2})
@@ -219,10 +221,10 @@ class Optimiser:
         Returns None when no more optimisation is permitted.
         
         Arguments:
-            frame {[type]} -- A frame that has been optimised 0 or more times
+            frame {[Frame]} -- A frame that has been optimised 0 or more times
         
         Returns:
-            [type] -- A reordered frame with updated cost columns 'delta'
+            [Frame] -- A reordered frame with updated cost columns 'delta'
         """
 
         finished = False
