@@ -383,8 +383,11 @@ def solve(n: int, h: int, alpha: float, records: List[tuple]) -> dict:
     sums_lookup = {(r[0], r[1]):r[2] for r in optimiser.sums}
     scores = [sum(sums_lookup[item] for item in graph) + (len(optimiser.result) - len(graph)) for graph in graphs]
     scores = [score/len(optimiser.result) for score in scores]
+
     # the the n best graphs
     ordered = sorted(zip(graphs, scores), key=lambda item: item[1])
     sliced = ordered[:min(n, len(graphs))]
-    return sliced
+    graphs, scores = list(zip(*sliced))
+
+    return graphs, scores
 

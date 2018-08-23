@@ -168,8 +168,8 @@ class TestOpt(unittest.TestCase):
         
     def test_optimal_matches(self):
         
-        solutions = opt.solve(5, self.h, self.alpha, self.records)
-        perfect = [graph for graph, score in solutions if score == 0]
+        graphs, scores = opt.solve(5, self.h, self.alpha, self.records)
+        perfect = [graph for graph, score in zip(graphs, scores) if score == 0]
 
         self.assertSequenceEqual(
             perfect[0], 
