@@ -328,14 +328,16 @@ class Refiner:
         
         Arguments:
             first {int, int} -- source query_node, target_node id pair
-            second {tuple} -- target query_node, target_node id pair
+            second {int, int} -- target query_node, target_node id pair
         
         Returns:
             Bool -- True is a valid transition
         """
 
+        # transitions to self are not valid
         if first == second:
             return False
+        # transitions to missing target nodes are not valid
         if any(v < 0 for v in second):
             return False
         return True
@@ -361,20 +363,27 @@ def solve(n: int, h: int, alpha: float, records: List[tuple]) -> dict:
     for frame in iter(lambda: optimiser.optimise(prv_frame), None):
         prv_frame = frame
 
+    # normalise the costs by the number of iterations
     optimiser.sums['delta'] /= optimiser.iters + 1
     optimiser.result['delta'] /= optimiser.iters + 1
 
-    graphs = []
     refine = Refiner(frame)
+    # order the matches by cost
     ordered = np.sort(optimiser.sums, order=['delta'])
+
+    # greedily calcualte the set of all matching graphs using each match as a seed
+    # starting with the lowest cost matches
+    graphs = []
     for seed in ordered[['match_start', 'match_end']]:
         graph = sorted(refine(tuple(seed)))
         if graph not in graphs:
             graphs.append(graph)
 
+    # record the scores of each graph
     sums_lookup = {(r[0], r[1]):r[2] for r in optimiser.sums}
     scores = [sum(sums_lookup[item] for item in graph) + (len(optimiser.result) - len(graph)) for graph in graphs]
     scores = [score/len(optimiser.result) for score in scores]
+    # the the n best graphs
     ordered = sorted(zip(graphs, scores), key=lambda item: item[1])
     sliced = ordered[:min(n, len(graphs))]
     return sliced
