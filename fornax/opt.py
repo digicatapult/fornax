@@ -96,8 +96,7 @@ class Frame:
     """
 
 
-    columns = 'match_start match_end query_node_id target_node_id \
-    query_proximity target_proximity delta totals misses weight'.split()
+    columns = 'u v u_ v_ query_proximity target_proximity inference_cost n_neighbours misses static_cost'.split()
     types = 'i i i i f f f i i f'.split()
 
     def __init__(self, records, h=2, alpha=.3, lambda_=.3):
@@ -109,7 +108,7 @@ class Frame:
         Keyword Arguments:
             h {int} -- max hopping distance (default: {2})
             alpha {float} -- proximity factor (default: {.3})
-            lambda_ {float} -- label weight (default: {.3})
+            lambda_ {float} -- static_cost (default: {.3})
         """
 
         # init constants
@@ -122,15 +121,15 @@ class Frame:
         self.sort()
         # initialise query and target proximity columns
         self._init_proximity()
-        # initialise totals and misses columns
+        # initialise n_neighbours and misses columns
         self._totals_and_misses()
 
         # calculate proximity and label costs for each row
-        label_score = self.records['weight']
+        label_score = self.records['static_cost']
         proximity_score = _delta_plus(self.records['query_proximity'], self.records['target_proximity'])
         proximity_score += self.records['misses']
-        proximity_score /= self.records['totals']
-        self.records['weight'] += self.lambda_*label_score + (1.-self.lambda_)*proximity_score
+        proximity_score /= self.records['n_neighbours']
+        self.records['static_cost'] += self.lambda_*label_score + (1.-self.lambda_)*proximity_score
 
     def __getitem__(self, key):
         """Get the column with name key
@@ -159,17 +158,17 @@ class Frame:
     def __repr__(self):
         return repr(self.records)
 
-    def sort(self, order = ['match_start', 'match_end', 'query_node_id', 'delta']):
+    def sort(self, order = ['u', 'v', 'u_', 'inference_cost']):
         """Sort the Frame inplace in order of columns specified in 'order'"""
         self.records = np.sort(self.records, order=order, axis=0)
     
     def _init_proximity(self):
         """Apply the proximity function to the hopping distances in columns target_proximity and query_proximity"""
-        nan_idx = self.records['target_node_id'] < 0
+        nan_idx = self.records['v_'] < 0
         self.records['target_proximity'][nan_idx] = self.h + 1
         self.records['query_proximity'] = _proximity(self.h, self.alpha, self.records['query_proximity'])
         self.records['target_proximity'] = _proximity(self.h, self.alpha, self.records['target_proximity'])
-        self.records['weight'] = 1. - self.records['weight']
+        self.records['static_cost'] = 1. - self.records['static_cost']
 
     def _totals_and_misses(self):
         """Populates columns totals and misses
@@ -178,24 +177,24 @@ class Frame:
         Misses represents totals minus the number of neighbouring target nodes within h hops of each target query matching pair
         """
 
-        # for each (match_start, match_end) pair how many query nodes are there?
-        first = group_by_first(['match_start', 'match_end', 'query_node_id'], self.records)
+        # for each (u, v) pair how many query nodes are there?
+        first = group_by_first(['u', 'v', 'u_'], self.records)
         # each group will have a row per query node for each match pair
-        # if a query node has no target then the target_node_id field will be Nan
-        keys, groups = group_by(['match_start', 'match_end'], first)
+        # if a query node has no target then the v_ field will be Nan
+        keys, groups = group_by(['u', 'v'], first)
 
         # how many of those query nodes have no corresponding target nodes?
-        misses = {tuple(key): np.sum(np.less(group['target_node_id'], 0)) for key, group in zip(keys, groups)}
+        misses = {tuple(key): np.sum(np.less(group['v_'], 0)) for key, group in zip(keys, groups)}
 
         # how many do have corresponding target nodes?
         totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
 
         # apply therse counts to the table
         apply = np.vectorize(lambda x: totals.get(tuple(x)))
-        self.records['totals'] = apply(self.records[['match_start', 'match_end']])
+        self.records['n_neighbours'] = apply(self.records[['u', 'v']])
 
         apply = np.vectorize(lambda x: misses.get(tuple(x)))
-        self.records['misses'] = apply(self.records[['match_start', 'match_end']])
+        self.records['misses'] = apply(self.records[['u', 'v']])
 
 
 class Optimiser:
@@ -224,7 +223,7 @@ class Optimiser:
             frame {[Frame]} -- A frame that has been optimised 0 or more times
         
         Returns:
-            [Frame] -- A reordered frame with updated cost columns 'delta'
+            [Frame] -- A reordered frame with updated inference_cost columns 'inference_cost'
         """
 
         finished = False
@@ -233,32 +232,30 @@ class Optimiser:
             return None
 
         frame.sort()
-        best_target_nodes = group_by_first(
-            ['match_start', 'match_end', 'query_node_id'], frame
-        )[['match_start', 'match_end', 'query_node_id', 'target_node_id', 'delta']]
+        # eq. 13
+        partial_matching_costs = group_by_first(['u', 'v', 'u_'], frame)[['u', 'v', 'u_', 'v_', 'inference_cost']]
         
-        # sum the costs from the previous iteration
-        keys, groups = group_by(['match_start', 'match_end'], best_target_nodes)
-        summed = starmap(lambda key, group: (*key, np.sum(group['delta'])/len(group)), zip(keys, groups))
+        # summation in eq. 14
+        keys, groups = group_by(['u', 'v'], partial_matching_costs)
+        summed = starmap(lambda key, group: (*key, np.sum(group['inference_cost'])/len(group)), zip(keys, groups))
         stacked = np.vstack(summed)
-        self.sums = np.core.records.fromarrays(
-            stacked.transpose(), 
-            names='match_start, match_end, delta', 
-            formats='i, i, f'
-        )
-        self.sums = np.sort(self.sums, order=['match_start', 'delta'])
+
+        self.sums = np.core.records.fromarrays(stacked.transpose(), names='u, v, inference_cost', formats='i, i, f')
+        self.sums = np.sort(self.sums, order=['u', 'inference_cost'])
         # create a lookup table for the sums
         sums_lookup = {(r[0], r[1]):r[2] for r in self.sums}
         
         self.prv_result = self.result
-        self.result = group_by_first('match_start', self.sums)
+        # optimum match eq. 10
+        self.result = group_by_first('u', self.sums)
         # record the costs from this iteration
         apply = np.vectorize(lambda x: sums_lookup.get(tuple(x), self.iters))
 
-        frame['delta'] = frame['weight'] + apply(frame[['query_node_id', 'target_node_id']])
+        # inference cost eq. 14 
+        frame['inference_cost'] = frame['static_cost'] + apply(frame[['u_', 'v_']])
 
         if self.prv_result is not None:
-            diff = self.result[['match_start', 'match_end']] == self.prv_result[['match_start', 'match_end']]
+            diff = self.result[['u', 'v']] == self.prv_result[['u', 'v']]
             finished = (sum(diff) / len(self.result)) > .9
 
         if finished:
@@ -281,10 +278,10 @@ class Refiner:
 
         self.frame = frame
 
-        matches =  {tuple(k): v for k, v in zip(*group_by(['match_start', 'match_end'], frame))}
+        matches =  {tuple(k): v for k, v in zip(*group_by(['u', 'v'], frame))}
 
         neighbours = {
-            k: group_by_first(['match_start', 'match_end', 'query_node_id'], v)[['query_node_id', 'target_node_id']].tolist()
+            k: group_by_first(['u', 'v', 'u_'], v)[['u_', 'v_']].tolist()
             for k,v in matches.items()
         }
 
@@ -295,13 +292,13 @@ class Refiner:
 
 
     def __call__(self, seed, result=None):
-        """Given a match_start, match end pair,
+        """Given a u, match end pair,
         greedily find the lowest cost neighbours
         recursivly covering the whole graph
         without cyclic paths
         
         Arguments:
-            seed {[int, int]} -- match_start, match_end pair
+            seed {[int, int]} -- u, v pair
         
         Keyword Arguments:
             result {[int, int]} -- stores the result between recursive calls (default: {None})
@@ -363,18 +360,18 @@ def solve(n: int, h: int, alpha: float, records: List[tuple]) -> dict:
     for frame in iter(lambda: optimiser.optimise(prv_frame), None):
         prv_frame = frame
 
-    # normalise the costs by the number of iterations
-    optimiser.sums['delta'] /= optimiser.iters + 1
-    optimiser.result['delta'] /= optimiser.iters + 1
+    # normalise the inference_costs by the number of iterations
+    optimiser.sums['inference_cost'] /= optimiser.iters + 1
+    optimiser.result['inference_cost'] /= optimiser.iters + 1
 
     refine = Refiner(frame)
-    # order the matches by cost
-    ordered = np.sort(optimiser.sums, order=['delta'])
+    # order the matches by inference_cost
+    ordered = np.sort(optimiser.sums, order=['inference_cost'])
 
     # greedily calcualte the set of all matching graphs using each match as a seed
-    # starting with the lowest cost matches
+    # starting with the lowest inference_cost matches
     graphs = []
-    for seed in ordered[['match_start', 'match_end']]:
+    for seed in ordered[['u', 'v']]:
         graph = sorted(refine(tuple(seed)))
         if graph not in graphs:
             graphs.append(graph)

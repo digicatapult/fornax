@@ -69,15 +69,15 @@ class Frame(unittest.TestCase):
 
     def testGetItem(self):
         self.assertListEqual(
-            self.frame['match_start'].tolist(),
+            self.frame['u'].tolist(),
             sorted([record[0] for record in self.records])
         )
     
     def test_set_item(self):
         frame = opt.Frame(self.frame.records.tolist())
-        frame['match_end'] = [record[1] + 1 for record in self.records]
+        frame['v'] = [record[1] + 1 for record in self.records]
         self.assertListEqual(
-            frame['match_end'].tolist(),
+            frame['v'].tolist(),
             [record[1] + 1 for record in self.records]
         )
 
@@ -88,23 +88,23 @@ class Frame(unittest.TestCase):
 
         key_idx = [
             opt.Frame.columns.index(item) 
-            for item in ['match_start', 'match_end', 'query_node_id', 'delta']
+            for item in ['u', 'v', 'u_', 'inference_cost']
         ]
 
         target = sorted(self.records, key = lambda x: tuple(x[i] for i in key_idx))
 
         self.assertListEqual(
-            self.frame['match_start'].tolist(),
+            self.frame['u'].tolist(),
             [row[0] for row in target]
         )
 
         self.assertListEqual(
-            self.frame['match_end'].tolist(),
+            self.frame['v'].tolist(),
             [row[1] for row in target]
         )
 
         self.assertListEqual(
-            self.frame['query_node_id'].tolist(),
+            self.frame['u_'].tolist(),
             [row[2] for row in target]
         )
 
@@ -120,7 +120,7 @@ class Frame(unittest.TestCase):
         ]
 
         frame = opt.Frame(records)
-        self.assertListEqual(frame['totals'].tolist(), [1, 1, 2, 2])
+        self.assertListEqual(frame['n_neighbours'].tolist(), [1, 1, 2, 2])
 
     def test_misses(self):
         records = [
