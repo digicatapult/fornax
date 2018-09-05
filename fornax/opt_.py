@@ -21,6 +21,102 @@ class Base(np.recarray):
         return r.view(NeighbourHoodMatchingCosts)
 
 
+class QueryResult(Base):
+
+    """container for results returned by the database query"""
+
+    columns = 'v u vv uu prox_v prox_u neighbours misses'.split()
+    types = '<i8 <i8 <i8 <i8 <f8 <f8 <f8 <i8 <i8 <f8'.split()
+
+    @property
+    def v(self):
+        """Get column v
+        
+        Returns:
+            np.ndarray -- array of query node ids as integers
+        """
+
+        return getattr(super(), 'u')
+
+    @property
+    def u(self):
+        """Get column u
+        
+        Returns:
+            np.ndarray -- array of target node ids as integers
+        """
+
+        return getattr(super(), 'v')
+
+    @property
+    def vv(self):
+        """Get column vv - written v prime (v') in the paper where v' is a query node within
+        hopping distance h of query node v
+        
+        Returns:
+            np.ndarray -- array of query node ids as integers
+        """
+
+        return getattr(super(), 'vv')
+
+    @property
+    def uu(self):
+        """Get column uu - written u prime (u') in the paper where u' is a target node within
+        hopping distance h of target node u
+        
+        Returns:
+            np.ndarray -- array of target node ids as integers
+        """
+
+        return getattr(super(), 'uu')
+
+    @property
+    def prox_v(self):
+        """The hopping distance between query node v and query node vv (v')
+        
+        Returns:
+            np.ndarray -- array of hopping distances as integers
+        """
+
+        return getattr(super(), 'prox_v')
+    
+    @property
+    def prox_u(self):
+        """The hopping distance between target node u and target node uu (u')
+        
+        Returns:
+            np.ndarray -- array of hopping distances as integers
+        """
+
+        return getattr(super(), 'prox_v')
+    
+    @property
+    def neighbours(self):
+        """The number of query nodes with hopping distance h of v
+
+        Returns:
+            np.ndarray -- array of integer counts
+        """
+
+        return getattr(super(), 'neighbours')
+
+    @property
+    def misses(self):
+        """The number of query nodes v' within hopping distance h of v
+        that do not match any nodes u' within hopping distance of u
+
+        Returns:
+            np.ndarray -- array of integer counts
+        """
+
+        return getattr(super(), 'misses')
+    
+    def __repr__(self):
+        return 'QueryResult(records={}, dtypes={})'.format(
+            [record for record in self], self.types
+        )
+
+
 class NeighbourHoodMatchingCosts(Base):
 
     """Represents a table of all valid neighbourhood matching costs"""
