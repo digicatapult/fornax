@@ -1,4 +1,98 @@
 import numpy as np
+from itertools import starmap
+from typing import List
+
+
+HOPPING_DISTANCE = 2
+ALPHA = .3
+LAMBDA = .3
+MAX_ITERS = 10
+
+def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
+    """Calculates the proximity factor P for an array of distances.
+    Implements equation 1 in the paper
+    
+    Arguments:
+        h {float} -- max hopping distance
+        alpha {float} -- propagation factor
+        distances {np.array} -- array of hopping distances
+    
+    Raises:
+        ValueError -- if hopping distance is less than zero
+        ValueError -- if propagation factor is not between zero and one
+    
+    Returns:
+        np.array -- an array of proximiy values
+    """
+
+    if h < 0:
+        raise ValueError('hopping distance h cannot be negative')
+    if not 0 < alpha <= 1:
+        raise ValueError('propagation factor alpha must be between 0 and 1')
+    return np.multiply(
+        np.less_equal(distances, h),
+        np.power(alpha, distances)
+    )
+
+
+def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Comparator function. Equation 3 in the paper.
+    
+    Arguments:
+        x {np.array} -- an array of floats
+        y {np.array} -- an array of floats
+    
+    Returns
+        np.array -- an array of floats
+    """
+
+    return np.multiply(
+        np.greater(x, y),
+        np.subtract(x, y)
+    )
+
+
+def group_by(columns, arr):
+    """Split an array into n slices where 'columns'
+    are all equal within each slice
+    
+    Arguments:
+        columns {List[str]} -- a list of column names
+        arr {np.array} -- a numpy structured array
+    
+    Returns
+        keys: np.array -- the column values uniquly identifying each group
+        groups: List[np.array] -- a list of numpy arrays
+    """
+    
+    if not len(columns):
+        raise ValueError("group_by requires a non empty list of column names")
+    
+    _, counts = np.unique(arr[columns], return_counts=True)
+    indices = np.insert(np.cumsum(counts), 0, 0)
+    split = np.split(arr, indices)
+    filtered = list(filter(lambda x: len(x), split))
+    keys = map(lambda x: x[columns][0].tolist(), filtered)
+    stacked = np.vstack(v for v in keys)
+    return stacked, filtered
+
+
+def group_by_first(columns, arr):
+    """
+    Split an array into n slices where 'columns' all compare equal within each slide
+    Take the first row of each slice
+    Combine each of the rows into a single array through concatination
+    
+    Arguments:
+        columns {[str]} -- a list of column names
+        arr {[type]} -- a numpy structured array
+    
+    Returns:
+        np.array - new concatinated array
+    """
+    _, counts = np.unique(arr[columns], return_counts=True)
+    indices = np.cumsum(np.insert(counts, 0, 0))[:-1]
+    return arr[indices]
 
 
 class Base(np.recarray):
