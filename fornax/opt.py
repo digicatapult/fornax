@@ -671,7 +671,11 @@ def solve(query_result: QueryResult):
         if subgraph_match not in subgraph_matches:
             subgraph_matches.append(subgraph_match)
 
-    scores = [sum(inference_costs_dict[item] for item in subgraph_match) + (len(optimum_match) - len(subgraph_match)) for subgraph_match in subgraph_matches]
+    scores = [
+        sum(inference_costs_dict[item] for item in subgraph_match) 
+        + (len(optimum_match) - len(subgraph_match)) 
+        for subgraph_match in subgraph_matches
+    ]
     scores = [score/len(optimum_match) for score in scores]
 
     # the the n best graphs
