@@ -568,7 +568,7 @@ def get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts:
         ]).transpose()
     )
 
-def get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatchingCosts) -> PartialMatchingCosts:
+def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatchingCosts) -> PartialMatchingCosts:
     """get the lowest cost neighbourhood matching cost for each partial match
     
     Arguments:
@@ -643,7 +643,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
 
         # first optimisation
         neighbourhood_matching_costs = np.sort(neighbourhood_matching_costs, order=['v', 'u', 'vv', 'cost'], axis=0)
-        partial_inference_costs = get_partial_inference_costs(neighbourhood_matching_costs)
+        partial_inference_costs = _get_partial_inference_costs(neighbourhood_matching_costs)
         inference_costs = _get_inference_costs(partial_inference_costs)
         inference_costs.cost += label_costs_func(inference_costs[['v', 'u']])
 
