@@ -421,7 +421,7 @@ class OptimalMatch(Base):
 
         return getattr(super(), 'cost')
 
-
+#TODO: This seems a big ugly as a class and not consistent with the rest of the code
 class Refiner:
     """Take each of the matches and recursivly find all of their neighbours via a greedy algorithm"""
 
