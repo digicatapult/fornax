@@ -603,7 +603,7 @@ def get_inference_costs(partial_matching_costs: PartialMatchingCosts) -> Inferen
     columns = np.vstack(summed)
     return InferenceCost(columns)
 
-def get_optimal_match(inference_costs: InferenceCost) -> OptimalMatch:
+def _get_optimal_match(inference_costs: InferenceCost) -> OptimalMatch:
     """Get the lowest cost match for each query node v
     
     Arguments:
@@ -649,7 +649,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
 
         # second optimisation
         inference_costs = np.sort(inference_costs, order=['v', 'cost'])
-        optimum_match = get_optimal_match(inference_costs)
+        optimum_match = _get_optimal_match(inference_costs)
         inference_costs_dict = {(record.v, record.u): record.cost for record in inference_costs}
         apply = np.vectorize(lambda x: inference_costs_dict.get(tuple(x), iters))
         neighbourhood_matching_costs = neighbourhood_matching_costs_cpy.copy()
