@@ -630,10 +630,12 @@ def solve(records: List[tuple], n=3, max_iters=10):
     # convert NaN records into negative numbers so they can be stored as ints using numpy
     query_result = QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in records])
     # label costs are weights in the databse
+    query_result.weight = 1. - query_result.weight
+    query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
     neighbourhood_matching_costs = get_matching_costs(query_result)
     neighbourhood_matching_costs_cpy = neighbourhood_matching_costs.copy()
 
-    label_costs = {(record.v, record.u): 1. - record.weight for record in query_result}
+    label_costs = {(record.v, record.u): record.weight for record in query_result}
     label_costs_func = np.vectorize(lambda x: label_costs.get(tuple(x)))
 
     while True:
