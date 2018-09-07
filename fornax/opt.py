@@ -6,7 +6,6 @@ from typing import List
 HOPPING_DISTANCE = 2
 ALPHA = .3
 LAMBDA = .3
-MAX_ITERS = 10
 
 def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
@@ -664,7 +663,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
 
         prv_optimum_match = optimum_match
 
-        if iters >= MAX_ITERS:
+        if iters >= max_iters:
             break
             
     neighbourhood_matching_costs = np.sort(neighbourhood_matching_costs, order=['v', 'u', 'vv', 'cost'], axis=0)
@@ -683,8 +682,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
     ]
     scores = [score/len(optimum_match) for score in scores]
 
-    # the the n best graphs
-    n = 3
+    # the the n best subgraph matches
     ordered = sorted(zip(subgraph_matches, scores), key=lambda item: item[1])
     sliced = ordered[:min(n, len(subgraph_matches))]
     subgraph_matches, scores = list(zip(*sliced))
