@@ -661,7 +661,7 @@ def solve(query_result: QueryResult):
 
         if iters >= MAX_ITERS:
             break
-    
+            
     refine = Refiner(neighbourhood_matching_costs)
     inference_costs = np.sort(inference_costs, order=['cost'])
     subgraph_matches = []
