@@ -522,7 +522,7 @@ def missed(query_result: QueryResult):
     totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
     return totals, misses
 
-def get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts:
+def _get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts:
 
     """Create a table of matching costs from a table of query results using equation 2
     Equivalent to the first term of equation 13
@@ -632,7 +632,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
     # label costs are weights in the databse
     query_result.weight = 1. - query_result.weight
     query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
-    neighbourhood_matching_costs = get_matching_costs(query_result)
+    neighbourhood_matching_costs = _get_matching_costs(query_result)
     # keep a copy for successive iterations
     neighbourhood_matching_costs_cpy = neighbourhood_matching_costs.copy()
 
