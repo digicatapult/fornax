@@ -451,7 +451,7 @@ class Refiner:
 
 
     def __call__(self, seed, result=None):
-        """Given a u, match end pair,
+        """Given a pair v, u,
         greedily find the lowest cost neighbours
         recursivly covering the whole graph
         without cyclic paths
