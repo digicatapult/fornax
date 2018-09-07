@@ -96,9 +96,6 @@ def join(h: int) -> Query:
         right_joined.c.neighbour_end,
         left_joined.c.distance,
         right_joined.c.distance,
-        literal(0),
-        literal(0),
-        literal(0),
         left_joined.c.weight
     ]).outerjoin(
         right_joined,
