@@ -494,7 +494,7 @@ class Refiner:
         if first == second:
             return False
         # transitions to missing target nodes are not valid
-        if any(v < 0 for v in second):
+        if any(u < 0 for u in second):
             return False
         return True
 
