@@ -428,6 +428,8 @@ class Refiner:
 
     def __init__(self, neighbourhood_matching_costs: NeighbourHoodMatchingCosts):
         """Initialise a refiner using a Frame instance
+
+        For each pair (v, u) find the lowest cost adjacent pair (vv, uu) 
         
         Arguments:
             frame {[Frame]} -- A frame constructed records returned by the database
