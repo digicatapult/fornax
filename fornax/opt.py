@@ -435,8 +435,6 @@ class Refiner:
             frame {[Frame]} -- A frame constructed records returned by the database
         """
 
-        self.neighbourhood_matching_costs = neighbourhood_matching_costs
-
         matches =  {tuple(k): v for k, v in zip(*group_by(['v', 'u'], neighbourhood_matching_costs))}
 
         neighbours = {
