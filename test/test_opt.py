@@ -95,12 +95,10 @@ class TestOpt(unittest.TestCase):
             (4, 10, 5, 11, 1, 1, 1), (5, 11, 2, 9, 2, 2, 1), (5, 11, 4, 7, 1, 2, 1), 
             (5, 11, 4, 10, 1, 1, 1), (5, 11, 5, 11, 0, 0, 1)
         ])
-        self.query_result = opt.QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in self.records])
-
 
     def test_optimal_matches(self):
 
-        graphs, scores = opt.solve(self.query_result)
+        graphs, scores = opt.solve(self.records)
         perfect = [graph for graph, score in zip(graphs, scores) if score == 0]
 
         self.assertSequenceEqual(
