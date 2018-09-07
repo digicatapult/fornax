@@ -498,7 +498,7 @@ class Refiner:
         return True
 
 
-def missed(query_result: QueryResult):
+def _missed(query_result: QueryResult):
 
     """
     misses - count the number of query nodes v' within HOPPING_DISTANCE for each pair v, u
@@ -531,7 +531,7 @@ def _get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts
         NeighbourHoodMatchingCosts -- table of all valid matching costs
     """
 
-    totals, misses = missed(query_result)
+    totals, misses = _missed(query_result)
 
     # vectorise total and miss lookup
     misses_ = np.vectorize(lambda x: misses.get(tuple(x)))
