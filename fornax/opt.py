@@ -510,7 +510,7 @@ def missed(query_result: QueryResult):
         (dict, dict) -- totals and misses
     """
 
-    # for each (u, v, v') tripple get the first target node u' within hopping distance h of u
+    # for each (v, u, v') tripple get the first target node u' within hopping distance h of u
     first = group_by_first(['v', 'u', 'vv'], query_result)
 
     # if a query node has no target then the first target node u' will have id == -1
@@ -626,12 +626,14 @@ def solve(records: List[tuple], n=3, max_iters=10):
     # initialisation
     finished, iters = False, 0
     prv_optimum_match = None
+
     # convert NaN records into negative numbers so they can be stored as ints using numpy
     query_result = QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in records])
     # label costs are weights in the databse
     query_result.weight = 1. - query_result.weight
     query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
     neighbourhood_matching_costs = get_matching_costs(query_result)
+    # keep a copy for successive iterations
     neighbourhood_matching_costs_cpy = neighbourhood_matching_costs.copy()
 
     label_costs = {(record.v, record.u): record.weight for record in query_result}
