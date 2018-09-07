@@ -435,8 +435,10 @@ class Refiner:
             frame {[Frame]} -- A frame constructed records returned by the database
         """
 
+        # group all of the pairs (v, u)
         matches =  {tuple(k): v for k, v in zip(*group_by(['v', 'u'], neighbourhood_matching_costs))}
 
+        # get the costs cost neighbouring pair (vv, uu)
         neighbours = {
             k: group_by_first(['v', 'u', 'vv'], v)[['vv', 'uu']].tolist()
             for k,v in matches.items()
