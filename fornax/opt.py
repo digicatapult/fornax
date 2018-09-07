@@ -116,7 +116,7 @@ class Base(np.recarray):
 
 class QueryResult(Base):
 
-    """container for results returned by the database query"""
+    """Represents a query from the database as a numpy rec array"""
 
     columns = 'v u vv uu dist_v dist_u weight'.split()
     types = '<i8 <i8 <i8 <i8 <f8 <f8 <f8'.split()
