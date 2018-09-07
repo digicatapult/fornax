@@ -2,7 +2,7 @@ import numpy as np
 from itertools import starmap
 from typing import List
 
-
+#TODO: these constants should be parameters
 HOPPING_DISTANCE = 2
 ALPHA = .3
 LAMBDA = .3
