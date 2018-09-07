@@ -584,7 +584,7 @@ def get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatch
     )
     return partial_matching_costs
 
-def get_inference_costs(partial_matching_costs: PartialMatchingCosts) -> InferenceCost:
+def _get_inference_costs(partial_matching_costs: PartialMatchingCosts) -> InferenceCost:
     """sum partial matching cost for each query node target node pair (v, u)
     
     Arguments:
@@ -644,7 +644,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
         # first optimisation
         neighbourhood_matching_costs = np.sort(neighbourhood_matching_costs, order=['v', 'u', 'vv', 'cost'], axis=0)
         partial_inference_costs = get_partial_inference_costs(neighbourhood_matching_costs)
-        inference_costs = get_inference_costs(partial_inference_costs)
+        inference_costs = _get_inference_costs(partial_inference_costs)
         inference_costs.cost += label_costs_func(inference_costs[['v', 'u']])
 
         # second optimisation
