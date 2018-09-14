@@ -43,7 +43,7 @@ class QueryNode(Base):
     matches = relationship("Match")
 
     def __repr__(self):
-        return "<QueryNode(id={})>".format(self.id)
+        return "<QueryNode(id={}, type={})>".format(self.id, self.type)
 
 
 class QueryEdge(Base):
@@ -72,7 +72,7 @@ class TargetNode(Base):
     matches = relationship("Match")
 
     def __repr__(self):
-        return "<TargetNode(id={})>".format(self.id)
+        return "<TargetNode(id={}, type={})>".format(self.id, self.type)
 
 
 class TargetEdge(Base):
