@@ -34,8 +34,7 @@ class QueryNode(Base):
     """Node in the Query Graph"""
 
     __tablename__ = 'query_node'
-    id = Column(Integer, primary_key=True)
-    label = Column(String)
+    id = Column(Integer, CheckConstraint("id>=0", name="q_min_id_check"), primary_key=True)
     type = Column(Integer)
     
     def neighbours(self):
@@ -64,9 +63,7 @@ class TargetNode(Base):
     """Node in the Target Graph"""
 
     __tablename__ = 'target_node'
-    id = Column(Integer, primary_key=True)
-    label = Column(String)
-    mbid = Column(String)
+    id = Column(Integer, CheckConstraint("id>=0", name="t_min_id_check"), primary_key=True)
     type = Column(Integer)
 
     def neighbours(self):
