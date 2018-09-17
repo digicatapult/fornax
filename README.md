@@ -10,12 +10,6 @@ From the root directory:
 pip install -r requirements.txt .
 ``` 
 
-Initialise a new postgres backend:
-
-```bash
-docker-compose up
-```
-
 ## Test
 
 From the root directory
