@@ -2,7 +2,7 @@ from fornax.model import Base, Match, QueryNode, QueryEdge, TargetNode, TargetEd
 from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
 from sqlalchemy import literal, and_, cast, not_, func, or_, alias
-from typing import List
+from typing import List, Tuple
 
 
 def query_neighbours(h:int) -> Query:
@@ -62,7 +62,7 @@ def _neighbours(Node: Base, seed: Query, h, max_=None) -> Query:
         return neighbours.union(_neighbours(Node, neighbours, h+1, max_=max_))
 
 
-def _join(h: int) -> Query:
+def join(h: int, offsets: Tuple[int, int]=None) -> Query:
 
     left = query_neighbours(h).subquery()
     right = target_neighbours(h).subquery()
@@ -77,6 +77,8 @@ def _join(h: int) -> Query:
     ])
 
     left_joined = left_joined.join(left, Match.start == left.c.match)
+    if offsets is not None:
+        left_joined = left_joined.slice(*offsets)
     left_joined = left_joined.subquery()
 
     right_joined = Query([
@@ -109,11 +111,3 @@ def _join(h: int) -> Query:
     )
 
     return joined
-
-
-def join(h:int, batch_size:int = None):
-
-    if batch_size is None:
-        return _join(h)
-    else:
-        raise NotImplementedError()
