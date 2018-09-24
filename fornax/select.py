@@ -5,7 +5,8 @@ from sqlalchemy import literal, and_, cast, not_, func, or_, alias
 from typing import List
 
 
-def query_neighbours(h) -> Query:
+def query_neighbours(h:int) -> Query:
+
     seed = Query([
             Match.start.label('match'),
             QueryNode.id.label('neighbour'),
@@ -19,7 +20,8 @@ def query_neighbours(h) -> Query:
     ]).group_by(n.c.match, n.c.neighbour)
 
 
-def target_neighbours(h) -> Query:
+def target_neighbours(h:int) -> Query:
+
     seed = Query([
             Match.end.label('match'),
             TargetNode.id.label('neighbour'),
