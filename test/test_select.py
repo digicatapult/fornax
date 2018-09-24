@@ -170,7 +170,9 @@ class TestOpt(TestCaseDB):
         )
 
     def test_join_batch(self):
-
+        """Test batching queries with hopping distance h=1
+            batch size = 1
+        """
         query = select.join(1)
         records = query.with_session(self.session).all()
 
