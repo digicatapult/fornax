@@ -218,5 +218,8 @@ class TestOpt(TestCaseDB):
             sorted(batched_records)
         )
 
+    def test_join_val_error(self):
+        self.assertRaises(ValueError, select.join, 1, offsets=[1])
+
 if __name__ == '__main__':
     unittest.main()

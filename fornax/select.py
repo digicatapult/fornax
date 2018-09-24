@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
 from sqlalchemy import literal, and_, cast, not_, func, or_, alias
 from typing import List, Tuple
+from collections import Iterable
 
 
 def query_neighbours(h:int) -> Query:
@@ -78,7 +79,9 @@ def join(h: int, offsets: Tuple[int, int]=None) -> Query:
 
     left_joined = left_joined.join(left, Match.start == left.c.match)
     if offsets is not None:
-        left_joined = left_joined.slice(*offsets)
+        if not isinstance(offsets, Iterable) or not len(offsets) == 2:
+            raise ValueError('offsets must be of length 2')
+        left_joined = left_joined.slice(int(offsets[0]), int(offsets[1]))
     left_joined = left_joined.subquery()
 
     right_joined = Query([
