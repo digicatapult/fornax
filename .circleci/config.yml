@@ -20,4 +20,6 @@ jobs:
       - run:
           command: |
             . venv/bin/activate
-            python3 -m unittest discover -v -s ./test -p "test_*.py"
+            python run_test.py
+      - store_test_results:
+        path: test-reports/
