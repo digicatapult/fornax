@@ -193,5 +193,30 @@ class TestOpt(TestCaseDB):
             sorted(batched_records)
         )
 
+    def test_join_batch_h2(self):
+        """Test batching queries with hopping distance h=2
+            use larger batch size for performance
+        """
+
+        query = select.join(2)
+        records = query.with_session(self.session).all()
+
+        # keep getting batches until nothing comes back
+        batched_records, i, batch_size, finished = [], 0, 20, False
+        while not finished:
+            query = select.join(2, [i, i+batch_size])
+            next_batch = query.with_session(self.session).all()
+            batched_records += next_batch
+
+            if len(next_batch) == 0:
+                finished = True
+
+            i += batch_size
+
+        self.assertListEqual(
+            sorted(records), 
+            sorted(batched_records)
+        )
+
 if __name__ == '__main__':
     unittest.main()
