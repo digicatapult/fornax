@@ -22,4 +22,4 @@ jobs:
             . venv/bin/activate
             python run_test.py
       - store_test_results:
-        path: test-reports/
+          path: test-reports/
