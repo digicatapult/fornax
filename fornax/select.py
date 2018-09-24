@@ -78,10 +78,14 @@ def join(h: int, offsets: Tuple[int, int]=None) -> Query:
     ])
 
     left_joined = left_joined.join(left, Match.start == left.c.match)
+
+    # batching of data is implemented here
     if offsets is not None:
         if not isinstance(offsets, Iterable) or not len(offsets) == 2:
             raise ValueError('offsets must be of length 2')
+        # limit the query between offset "offsets[0]" and limit "offsets[1]"
         left_joined = left_joined.slice(int(offsets[0]), int(offsets[1]))
+
     left_joined = left_joined.subquery()
 
     right_joined = Query([
