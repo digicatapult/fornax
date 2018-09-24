@@ -3,7 +3,7 @@ import fornax.model as model
 import fornax.select as select
 from test_base import TestCaseDB
 from sqlalchemy.orm import Query
-from sqlalchemy import literal
+from sqlalchemy import literal, func
 
 
 class TestOpt(TestCaseDB):
@@ -167,6 +167,28 @@ class TestOpt(TestCaseDB):
                 (1, 1, 2, None, 1, None, 1.0), # <- Node 2 has no correspondences
                 (1, 1, 3, 3, 1, 1, 1.0),       #    in the target graph
             ])
+        )
+
+    def test_join_batch(self):
+
+        query = select.join(1)
+        records = query.with_session(self.session).all()
+
+        # keep getting batches until nothing comes back
+        batched_records, i, batch_size, finished = [], 0, 1, False
+        while not finished:
+            query = select.join(1, [i, i+batch_size])
+            next_batch = query.with_session(self.session).all()
+            batched_records += next_batch
+
+            if len(next_batch) == 0:
+                finished = True
+
+            i += batch_size
+
+        self.assertListEqual(
+            sorted(records), 
+            sorted(batched_records)
         )
 
 if __name__ == '__main__':
