@@ -110,5 +110,8 @@ def _join(h: int) -> Query:
 
 
 def join(h:int, batch_size:int = None):
+
     if batch_size is None:
         return _join(h)
+    else:
+        raise NotADirectoryError()
