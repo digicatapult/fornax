@@ -60,7 +60,7 @@ def _neighbours(Node: Base, seed: Query, h, max_=None) -> Query:
         return neighbours.union(_neighbours(Node, neighbours, h+1, max_=max_))
 
 
-def join(h: int) -> Query:
+def _join(h: int) -> Query:
 
     left = query_neighbours(h).subquery()
     right = target_neighbours(h).subquery()
@@ -107,3 +107,8 @@ def join(h: int) -> Query:
     )
 
     return joined
+
+
+def join(h:int, batch_size:int = None):
+    if batch_size is None:
+        return _join(h)
