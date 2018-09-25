@@ -15,7 +15,7 @@ pip install -r requirements.txt .
 From the root directory
 
 ```bash
-python3 -m unittest discover -v -s ./test -p "test_*.py"
+python run_test.py
 ```
 
 ## Tutorials
