@@ -111,7 +111,7 @@ class Base(np.recarray):
         r = np.recarray(shape=a.shape[0], dtype=dtype)
         for i, col in enumerate(cls.columns):
             setattr(r, col, a[:,i])
-        return r.view(NeighbourHoodMatchingCosts)
+        return r.view(cls)
 
 
 class QueryResult(Base):
