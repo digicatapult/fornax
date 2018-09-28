@@ -449,7 +449,7 @@ class Refiner:
         }
 
 
-    def __call__(self, seed, result=None):
+    def __call__(self, seed, result):
         """Given a pair v, u,
         greedily find the lowest cost neighbours
         recursivly covering the whole graph
@@ -465,17 +465,15 @@ class Refiner:
             [type] -- List of query_node, target_node id pairs constituting a result
         """
 
-        if result is None:
-            result = [seed]
-        elif seed[0] in [first for first, second in result]:
-            return result
-        else:
-            result.append(seed)
+        # To not add a new result if we've already visited this query node
+        if seed[0] in set(query_node for query_node, target_node in result):
+            return
         
+        # Now do the same for all the neighbours of the new result
+        result += [seed]
         for neighbour in self.neighbours[seed]:
-            result = self(neighbour, result)
-        
-        return result
+            self(neighbour, result)
+        return
 
     @staticmethod
     def valid_neighbours(first: tuple, second: tuple):
@@ -673,7 +671,9 @@ def solve(records: List[tuple], n=3, max_iters=10):
     inference_costs = np.sort(inference_costs, order=['cost'])
     subgraph_matches = []
     for seed in inference_costs[['v', 'u']]:
-        subgraph_match = sorted(refine(tuple(seed)))
+        subgraph_match = []
+        refine(tuple(seed), subgraph_match)
+        subgraph_match = sorted(subgraph_match)
         if subgraph_match not in subgraph_matches:
             subgraph_matches.append(subgraph_match)
 
