@@ -668,6 +668,11 @@ def solve(records: List[tuple], n=3, max_iters=10):
             
     neighbourhood_matching_costs = np.sort(neighbourhood_matching_costs, order=['v', 'u', 'vv', 'cost'], axis=0)
     refine = Refiner(neighbourhood_matching_costs)
+
+    # normalise inference costs by the number of iterations
+    inference_costs.cost /= iters
+    inference_costs_dict = {(record.v, record.u): record.cost for record in inference_costs}
+
     inference_costs = np.sort(inference_costs, order=['cost'])
     subgraph_matches = []
     for seed in inference_costs[['v', 'u']]:
