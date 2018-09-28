@@ -119,8 +119,7 @@ class QueryResult(Base):
     """Represents a query from the database as a numpy rec array"""
 
     columns = 'v u vv uu dist_v dist_u weight'.split()
-    types = '<i8 <i8 <i8 <i8 <f8 <f8 <f8'.split()
-
+    types = [np.int32, np.int32, np.int32, np.int32, np.float32, np.float32, np.float32]
     @property
     def v(self):
         """Get column v
@@ -206,7 +205,7 @@ class NeighbourHoodMatchingCosts(Base):
     """Represents a table of all valid neighbourhood matching costs"""
 
     columns = 'v u vv uu cost'.split()
-    types = '<i8 <i8 <i8 <i8 <f8'.split()
+    types = [np.int64, np.int64, np.int64, np.int64, np.float32]
 
     def __getitem__(self, indx):
         """Get the row representing the neighbourhood matching costs at index "indx"
@@ -285,7 +284,7 @@ class PartialMatchingCosts(Base):
     """ A table representing all valid partial matching costs """
 
     columns = 'v u vv cost'.split()
-    types = '<i8 <i8 <i8 <f8'.split()
+    types = [np.int64, np.int64, np.int64, np.float32]
 
     @property
     def v(self):
@@ -342,7 +341,7 @@ class InferenceCost(Base):
     u and target node v"""
 
     columns = 'v u cost'.split()
-    types = '<i8 <i8 <f8'.split()
+    types = [np.int64, np.int64, np.float32]
 
     @property
     def v(self):
@@ -387,7 +386,7 @@ class OptimalMatch(Base):
     """Table representing the cost of the optimal match for query node v going to u"""
 
     columns = 'v u cost'.split()
-    types = '<i8 <i8 <f8'.split()
+    types = [np.int64, np.int64, np.float32]
 
     @property
     def v(self):
