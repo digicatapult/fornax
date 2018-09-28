@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/CDECatapult/fornax.svg?style=svg&circle-token=2110b6bc1d713698d241fd08ae60cd925e60062f)](https://circleci.com/gh/CDECatapult/fornax)
+
 # Fornax
 
 An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using a postgres backend and python3.
@@ -15,7 +17,7 @@ pip install -r requirements.txt .
 From the root directory
 
 ```bash
-python3 -m unittest discover -v -s ./test -p "test_*.py"
+python run_test.py
 ```
 
 ## Tutorials
