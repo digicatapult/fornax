@@ -63,6 +63,49 @@ def _neighbours(Node: Base, seed: Query, h, max_=None) -> Query:
         return neighbours.union(_neighbours(Node, neighbours, h+1, max_=max_))
 
 
+def __neighbours(Node: Base, seed: Query, h:int, max_=None) -> Query:
+
+    if max_ is None:
+        max_, h = h, 1
+
+    if Node.__tablename__ == QueryNode.__tablename__:
+        Edge = QueryEdge
+    elif Node.__tablename__ == TargetNode.__tablename__:
+        Edge = TargetEdge
+    else:
+        raise ValueError("Unrecognised node type")
+
+    seed = seed.subquery()
+    neighbours_query = Query([
+        Edge.end.label('neighbour'), 
+        literal(h).label('distance'),
+    ])
+
+    neighbours_query = neighbours_query.filter(Edge.start == seed.c.neighbour)
+
+    if h == max_:
+        return neighbours_query
+    else:
+        return neighbours_query.union(__neighbours(Node, neighbours_query, h+1, max_=max_))
+
+
+def neighbours(Node: Base, seed: Query, h:int, max_=None) -> Query:
+    """convienience function to get all nodes within h hops of node with id "node_id"
+    
+    Arguments:
+        node_id {int} -- id of a Target or Query Node
+        h {int} -- Number of hops
+    
+    Returns:
+        Query -- sqlalchemy Query object
+    """
+    n = seed.union(__neighbours(Node, seed, h)).subquery()
+    return Query([
+        n.c.neighbour,
+        func.min(n.c.distance).label('distance')
+    ]).group_by(n.c.neighbour)
+
+
 def join(h: int, offsets: Tuple[int, int]=None) -> Query:
 
     left = query_neighbours(h).subquery()

@@ -78,7 +78,7 @@ class TestOpt(TestCaseDB):
         )
         self.session.commit()
 
-    def test_neighbours_1(self):
+    def test__neighbours_1(self):
 
         nodes = Query([
             model.Match.start.label('match'),
@@ -96,7 +96,7 @@ class TestOpt(TestCaseDB):
             ])
         )
 
-    def test_neighbours_2(self):
+    def test__neighbours_2(self):
 
         nodes = Query([
             model.Match.start.label('match'),
@@ -220,6 +220,33 @@ class TestOpt(TestCaseDB):
 
     def test_join_val_error(self):
         self.assertRaises(ValueError, select.join, 1, offsets=[1])
+
+
+    def test_neighbours_1(self):
+
+        seed = Query([
+            model.TargetNode.id.label('neighbour'),
+            literal(0).label('distance')
+        ]).filter(model.TargetNode.id == 4)
+        query = select.neighbours(model.TargetNode, seed, 1)
+
+        self.assertListEqual(
+            sorted(query.with_session(self.session).all()),
+            [(1, 1), (4, 0), (5, 1), (6, 1)]
+        )
+
+    def test_neighbours_2(self):
+
+        seed = Query([
+            model.TargetNode.id.label('neighbour'),
+            literal(0).label('distance')
+        ]).filter(model.TargetNode.id == 4)
+        query = select.neighbours(model.TargetNode, seed, 2)
+
+        self.assertListEqual(
+            sorted(query.with_session(self.session).all()),
+            [(1, 1), (2, 2), (3, 2), (4, 0), (5, 1), (6, 1), (7, 2), (8, 2)]
+        )
 
 if __name__ == '__main__':
     unittest.main()
