@@ -128,7 +128,7 @@ class QueryResult(Base):
             np.ndarray -- array of query node ids as integers
         """
 
-        return getattr(super(), 'u')
+        return getattr(super(), 'v')
 
     @property
     def u(self):
@@ -138,7 +138,7 @@ class QueryResult(Base):
             np.ndarray -- array of target node ids as integers
         """
 
-        return getattr(super(), 'v')
+        return getattr(super(), 'u')
 
     @property
     def vv(self):
@@ -226,7 +226,7 @@ class NeighbourHoodMatchingCosts(Base):
             np.ndarray -- array of query node ids as integers
         """
 
-        return getattr(super(), 'u')
+        return getattr(super(), 'v')
 
     @property
     def u(self):
@@ -236,7 +236,7 @@ class NeighbourHoodMatchingCosts(Base):
             np.ndarray -- array of target node ids as integers
         """
 
-        return getattr(super(), 'v')
+        return getattr(super(), 'u')
 
     @property
     def vv(self):
