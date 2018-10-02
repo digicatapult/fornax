@@ -84,6 +84,9 @@ class TestOpt(unittest.TestCase):
             (5, 11, 4, 10, 1, 1, 1), (5, 11, 5, 11, 0, 0, 1)
         ])
 
+    def test_neighbourhood_matching_costs(self):
+        self.assertTrue(False)
+
     def test_optimal_matches(self):
 
         graphs, scores = opt.solve(self.records, hopping_distance=1)
