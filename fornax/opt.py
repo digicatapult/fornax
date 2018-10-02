@@ -2,9 +2,6 @@ import numpy as np
 from itertools import starmap
 from typing import List
 
-#TODO: these constants should be parameters
-ALPHA = .3
-LAMBDA = .3
 
 def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
@@ -519,7 +516,7 @@ def _missed(query_result: QueryResult):
     totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
     return totals, misses
 
-def _get_matching_costs(records: List[tuple], hopping_distance) -> NeighbourHoodMatchingCosts:
+def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=.3, ) -> NeighbourHoodMatchingCosts:
 
     """Create a table of matching costs from a table of query results using equation 2
     Equivalent to the first term of equation 13
@@ -542,10 +539,10 @@ def _get_matching_costs(records: List[tuple], hopping_distance) -> NeighbourHood
     dist_u[nan_idx] = hopping_distance + 1
 
     # convert hopping distances into proximities (eq. 1)
-    prox_v = _proximity(hopping_distance, ALPHA, query_result.dist_v)
-    prox_u = _proximity(hopping_distance, ALPHA, dist_u)
-
+    prox_v = _proximity(hopping_distance, alpha, query_result.dist_v)
+    prox_u = _proximity(hopping_distance, alpha, dist_u)
     cost = _delta_plus(prox_v, prox_u)
+    cost *= (1. - lmbda)
 
     # if a node has no matches then this is equivalent to a cost of 1
     cost += misses_(query_result[['v', 'u']])
