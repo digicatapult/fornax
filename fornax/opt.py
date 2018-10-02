@@ -492,37 +492,6 @@ class Refiner:
         return True
 
 
-def _missed(query_result: QueryResult):
-
-    """
-    misses - count the number of query nodes v' within HOPPING_DISTANCE for each pair v, u
-    totals - count the number of query nodes v' within HOPPING_DISTANCE for each pair v, u with no matching target node u'
-    
-    return the result as a pair of dicts
-
-    Returns:
-        (dict, dict) -- totals and misses
-    """
-
-    # for each (v, u, v') tripple get the first target node u' within hopping distance h of u
-    first = group_by_first(['v', 'u', 'vv'], query_result)
-
-    # if a query node has no target then the first target node u' will have id == -1
-    # count the number of missed nodes for each pair (v, u)
-    keys, groups = group_by(['v', 'u'], first)
-    misses = {
-        tuple(key): np.sum(np.less(group['uu'], 0)) 
-        for key, group in zip(keys, groups)
-    }
-
-    #TODO: misses should be multiplies by a factor of P_Q(v, v')
-
-    # the number query neighbours v' for each v, u pair is the size of the group minus the number of misses
-    #TODO: this should be the proximity of all the query node pairs (including a value of 1 for the misses)
-    # totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
-    return misses
-
-def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=.3, ) -> NeighbourHoodMatchingCosts:
 
     """Create a table of matching costs from a table of query results using equation 2
     Equivalent to the first term of equation 13
