@@ -548,6 +548,17 @@ def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=
     cost = _delta_plus(prox_v, prox_u)
     cost *= (1. - lmbda)
 
+    arr = np.unique(
+        np.rec.fromarrays(
+            (query_result.v, query_result.vv, prox_v), 
+            dtype=[('v', int), ('vv', int), ('prox_v', float)]
+        ), 
+        axis=0
+    )
+
+    vs, groups = group_by('v', arr)
+    beta_ = {v[0]:sum(group['prox_v']) for v, group in zip(vs, groups)}
+    beta = np.vectorize(lambda x: beta_[x])
     neighbourhood_matching_costs = NeighbourHoodMatchingCosts(
         np.array([
             query_result.v, 
@@ -557,8 +568,9 @@ def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=
             cost
         ]).transpose()
     )
+    return neighbourhood_matching_costs, query_result, beta
 
-def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatchingCosts) -> PartialMatchingCosts:
+def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatchingCosts, beta) -> PartialMatchingCosts:
     """get the lowest cost neighbourhood matching cost for each partial match
     
     Arguments:
@@ -572,6 +584,7 @@ def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatc
     partial_matching_costs = PartialMatchingCosts(
         np.array([grouped.v, grouped.u, grouped.vv, grouped.cost]).transpose()
     )
+    partial_matching_costs.cost /= beta(partial_matching_costs.v)
     return partial_matching_costs
 
 def _get_inference_costs(partial_matching_costs: PartialMatchingCosts) -> InferenceCost:
@@ -617,7 +630,7 @@ def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
     finished, iters = False, 0
     prv_optimum_match = None
 
-    neighbourhood_matching_costs, query_result = _get_matching_costs(records, hopping_distance)
+    neighbourhood_matching_costs, query_result, beta = _get_matching_costs(records, hopping_distance)
     # keep a copy for successive iterations
     neighbourhood_matching_costs_cpy = neighbourhood_matching_costs.copy()
 
@@ -628,7 +641,7 @@ def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
 
         # first optimisation
         neighbourhood_matching_costs = np.sort(neighbourhood_matching_costs, order=['v', 'u', 'vv', 'cost'], axis=0)
-        partial_inference_costs = _get_partial_inference_costs(neighbourhood_matching_costs)
+        partial_inference_costs = _get_partial_inference_costs(neighbourhood_matching_costs, beta)
         inference_costs = _get_inference_costs(partial_inference_costs)
         inference_costs.cost += label_costs_func(inference_costs[['v', 'u']])
 

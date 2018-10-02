@@ -107,7 +107,7 @@ class TestOpt(unittest.TestCase):
             (4, 10, 4, 7, vals[0]), (4, 10, 4, 10, 0), (4, 10, 5, 11, 0),
             (5, 11, 4, 10, 0), (5, 11, 5, 11, 0)
         ]
-        result, _ = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
+        result, _, _ = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
         self.assertListEqual(result.tolist(), target)
 
     def test_optimal_matches(self):
