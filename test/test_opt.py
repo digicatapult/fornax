@@ -88,6 +88,7 @@ class TestOpt(unittest.TestCase):
         ])
 
     def test_neighbourhood_matching_costs(self):
+
         vals = [
             (1. - self.lmbda) * (1. - self.alpha),
             (1. - self.lmbda) * self.alpha
@@ -110,16 +111,20 @@ class TestOpt(unittest.TestCase):
         result, _, _ = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
         self.assertListEqual(result.tolist(), target)
 
-    def test_optimal_matches(self):
+    def test_beta_1(self):
 
+        target = {1: 2.0, 2: 2.0, 3: 1.5, 4: 2.0, 5: 1.5}
+        _, _, beta = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
+        result = {k:v for k,v in zip(range(1, 6), beta(range(1, 6)))}
+        self.assertDictEqual(result, target)
+
+    def test_optimal_matches(self):
         graphs, scores = opt.solve(self.records, hopping_distance=1)
         perfect = [graph for graph, score in zip(graphs, scores) if score == 0]
-
         self.assertSequenceEqual(
             perfect[0],
             [(1, 8), (2, 9), (3, 6), (4, 10), (5, 11)]
         )
-
         self.assertSequenceEqual(
             perfect[1],
             [(1, 8), (2, 9), (3, 12), (4, 10), (5, 11)]
