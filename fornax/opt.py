@@ -2,10 +2,6 @@ import numpy as np
 from itertools import starmap
 from typing import List
 
-#TODO: these constants should be parameters
-HOPPING_DISTANCE = 2
-ALPHA = .3
-LAMBDA = .3
 
 def _proximity(h: float, alpha: float, distances: np.ndarray) -> np.ndarray:
     """Calculates the proximity factor P for an array of distances.
@@ -128,7 +124,7 @@ class QueryResult(Base):
             np.ndarray -- array of query node ids as integers
         """
 
-        return getattr(super(), 'u')
+        return getattr(super(), 'v')
 
     @property
     def u(self):
@@ -138,7 +134,7 @@ class QueryResult(Base):
             np.ndarray -- array of target node ids as integers
         """
 
-        return getattr(super(), 'v')
+        return getattr(super(), 'u')
 
     @property
     def vv(self):
@@ -226,7 +222,7 @@ class NeighbourHoodMatchingCosts(Base):
             np.ndarray -- array of query node ids as integers
         """
 
-        return getattr(super(), 'u')
+        return getattr(super(), 'v')
 
     @property
     def u(self):
@@ -236,7 +232,7 @@ class NeighbourHoodMatchingCosts(Base):
             np.ndarray -- array of target node ids as integers
         """
 
-        return getattr(super(), 'v')
+        return getattr(super(), 'u')
 
     @property
     def vv(self):
@@ -496,67 +492,44 @@ class Refiner:
         return True
 
 
-def _missed(query_result: QueryResult):
-
-    """
-    misses - count the number of query nodes v' within HOPPING_DISTANCE for each pair v, u
-    totals - count the number of query nodes v' within HOPPING_DISTANCE for each pair v, u with no matching target node u'
-    
-    return the result as a pair of dicts
-
-    Returns:
-        (dict, dict) -- totals and misses
-    """
-
-    # for each (v, u, v') tripple get the first target node u' within hopping distance h of u
-    first = group_by_first(['v', 'u', 'vv'], query_result)
-
-    # if a query node has no target then the first target node u' will have id == -1
-    # count the number of missed nodes for each pair (v, u)
-    keys, groups = group_by(['v', 'u'], first)
-    misses = {tuple(key): np.sum(np.less(group['uu'], 0)) for key, group in zip(keys, groups)}
-
-    # the number query neighbours v' for each v, u pair is the size of the group minus the number of misses
-    totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
-    return totals, misses
-
-def _get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts:
+def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=.3, ):
 
     """Create a table of matching costs from a table of query results using equation 2
     Equivalent to the first term of equation 13
     
     Returns:
         NeighbourHoodMatchingCosts -- table of all valid matching costs
+        QueryResult -- query result as a numpy rec array rather than a list of tuples
     """
 
-    totals, misses = _missed(query_result)
+    # convert NaN records into negative numbers so they can be stored as ints using numpy
+    query_result = QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in records])
+    # label costs are weights in the databse
+    query_result.weight = 1. - query_result.weight
+    query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
 
-    # vectorise total and miss lookup
-    misses_ = np.vectorize(lambda x: misses.get(tuple(x)))
-    totals_ = np.vectorize(lambda x: totals.get(tuple(x)))
-
-    # any query nodes which to not match a target node
-    # can be considered as being further away than the max 
-    # hopping distance
     nan_idx = query_result.dist_u < 0
     dist_u = query_result.dist_u
-    dist_u[nan_idx] = HOPPING_DISTANCE + 1
+    dist_u[nan_idx] = hopping_distance + 1
 
     # convert hopping distances into proximities (eq. 1)
-    prox_v = _proximity(HOPPING_DISTANCE, ALPHA, query_result.dist_v)
-    prox_u = _proximity(HOPPING_DISTANCE, ALPHA, dist_u)
-
+    prox_v = _proximity(hopping_distance, alpha, query_result.dist_v)
+    prox_u = _proximity(hopping_distance, alpha, dist_u)
     cost = _delta_plus(prox_v, prox_u)
+    cost *= (1. - lmbda)
 
-    # if a node has no matches then this is equivalent to a cost of 1
-    cost += misses_(query_result[['v', 'u']])
+    arr = np.unique(
+        np.rec.fromarrays(
+            (query_result.v, query_result.vv, prox_v), 
+            dtype=[('v', int), ('vv', int), ('prox_v', float)]
+        ), 
+        axis=0
+    )
 
-    # TODO: The normalisation appears incorrect
-    cost /= totals_(query_result[['v', 'u']])
-
-    cost *= (1. - LAMBDA)
-
-    return NeighbourHoodMatchingCosts(
+    vs, groups = group_by('v', arr)
+    beta_ = {v[0]:sum(group['prox_v']) for v, group in zip(vs, groups)}
+    beta = np.vectorize(lambda x: beta_[x])
+    neighbourhood_matching_costs = NeighbourHoodMatchingCosts(
         np.array([
             query_result.v, 
             query_result.u,
@@ -565,8 +538,9 @@ def _get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts
             cost
         ]).transpose()
     )
+    return neighbourhood_matching_costs, query_result, beta
 
-def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatchingCosts) -> PartialMatchingCosts:
+def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatchingCosts, beta) -> PartialMatchingCosts:
     """get the lowest cost neighbourhood matching cost for each partial match
     
     Arguments:
@@ -580,6 +554,7 @@ def _get_partial_inference_costs(neighbourhood_matching_costs: NeighbourHoodMatc
     partial_matching_costs = PartialMatchingCosts(
         np.array([grouped.v, grouped.u, grouped.vv, grouped.cost]).transpose()
     )
+    partial_matching_costs.cost /= beta(partial_matching_costs.v)
     return partial_matching_costs
 
 def _get_inference_costs(partial_matching_costs: PartialMatchingCosts) -> InferenceCost:
@@ -613,11 +588,11 @@ def _get_optimal_match(inference_costs: InferenceCost) -> OptimalMatch:
 
     return group_by_first('v', inference_costs)
 
-def solve(records: List[tuple], n=3, max_iters=10):
+def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
     """Generate a set of subgraph matches and costs from a query result
     
     Arguments:
-        query_result {QueryResult}
+        records {List[tuple]}
 
     """
 
@@ -625,12 +600,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
     finished, iters = False, 0
     prv_optimum_match = None
 
-    # convert NaN records into negative numbers so they can be stored as ints using numpy
-    query_result = QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in records])
-    # label costs are weights in the databse
-    query_result.weight = 1. - query_result.weight
-    query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
-    neighbourhood_matching_costs = _get_matching_costs(query_result)
+    neighbourhood_matching_costs, query_result, beta = _get_matching_costs(records, hopping_distance)
     # keep a copy for successive iterations
     neighbourhood_matching_costs_cpy = neighbourhood_matching_costs.copy()
 
@@ -641,7 +611,7 @@ def solve(records: List[tuple], n=3, max_iters=10):
 
         # first optimisation
         neighbourhood_matching_costs = np.sort(neighbourhood_matching_costs, order=['v', 'u', 'vv', 'cost'], axis=0)
-        partial_inference_costs = _get_partial_inference_costs(neighbourhood_matching_costs)
+        partial_inference_costs = _get_partial_inference_costs(neighbourhood_matching_costs, beta)
         inference_costs = _get_inference_costs(partial_inference_costs)
         inference_costs.cost += label_costs_func(inference_costs[['v', 'u']])
 
