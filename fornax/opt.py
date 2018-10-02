@@ -3,7 +3,6 @@ from itertools import starmap
 from typing import List
 
 #TODO: these constants should be parameters
-HOPPING_DISTANCE = 2
 ALPHA = .3
 LAMBDA = .3
 
@@ -520,7 +519,7 @@ def _missed(query_result: QueryResult):
     totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
     return totals, misses
 
-def _get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts:
+def _get_matching_costs(records: List[tuple], hopping_distance) -> NeighbourHoodMatchingCosts:
 
     """Create a table of matching costs from a table of query results using equation 2
     Equivalent to the first term of equation 13
@@ -540,11 +539,11 @@ def _get_matching_costs(query_result: QueryResult) -> NeighbourHoodMatchingCosts
     # hopping distance
     nan_idx = query_result.dist_u < 0
     dist_u = query_result.dist_u
-    dist_u[nan_idx] = HOPPING_DISTANCE + 1
+    dist_u[nan_idx] = hopping_distance + 1
 
     # convert hopping distances into proximities (eq. 1)
-    prox_v = _proximity(HOPPING_DISTANCE, ALPHA, query_result.dist_v)
-    prox_u = _proximity(HOPPING_DISTANCE, ALPHA, dist_u)
+    prox_v = _proximity(hopping_distance, ALPHA, query_result.dist_v)
+    prox_u = _proximity(hopping_distance, ALPHA, dist_u)
 
     cost = _delta_plus(prox_v, prox_u)
 
@@ -613,7 +612,7 @@ def _get_optimal_match(inference_costs: InferenceCost) -> OptimalMatch:
 
     return group_by_first('v', inference_costs)
 
-def solve(records: List[tuple], n=3, max_iters=10):
+def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
     """Generate a set of subgraph matches and costs from a query result
     
     Arguments:
