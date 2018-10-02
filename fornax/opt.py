@@ -617,12 +617,7 @@ def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
     finished, iters = False, 0
     prv_optimum_match = None
 
-    # convert NaN records into negative numbers so they can be stored as ints using numpy
-    query_result = QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in records])
-    # label costs are weights in the databse
-    query_result.weight = 1. - query_result.weight
-    query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
-    neighbourhood_matching_costs = _get_matching_costs(query_result)
+    neighbourhood_matching_costs, query_result = _get_matching_costs(records, hopping_distance)
     # keep a copy for successive iterations
     neighbourhood_matching_costs_cpy = neighbourhood_matching_costs.copy()
 
