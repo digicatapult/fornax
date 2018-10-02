@@ -510,11 +510,17 @@ def _missed(query_result: QueryResult):
     # if a query node has no target then the first target node u' will have id == -1
     # count the number of missed nodes for each pair (v, u)
     keys, groups = group_by(['v', 'u'], first)
-    misses = {tuple(key): np.sum(np.less(group['uu'], 0)) for key, group in zip(keys, groups)}
+    misses = {
+        tuple(key): np.sum(np.less(group['uu'], 0)) 
+        for key, group in zip(keys, groups)
+    }
+
+    #TODO: misses should be multiplies by a factor of P_Q(v, v')
 
     # the number query neighbours v' for each v, u pair is the size of the group minus the number of misses
-    totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
-    return totals, misses
+    #TODO: this should be the proximity of all the query node pairs (including a value of 1 for the misses)
+    # totals = {tuple(key): len(group) - misses[tuple(key)] for key, group in zip(keys, groups)}
+    return misses
 
 def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=.3, ) -> NeighbourHoodMatchingCosts:
 
@@ -523,17 +529,15 @@ def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=
     
     Returns:
         NeighbourHoodMatchingCosts -- table of all valid matching costs
+        QueryResult -- query result as a numpy rec array rather than a list of tuples
     """
 
-    totals, misses = _missed(query_result)
+    # convert NaN records into negative numbers so they can be stored as ints using numpy
+    query_result = QueryResult([tuple(item if item is not None else -1 for item in tup) for tup in records])
+    # label costs are weights in the databse
+    query_result.weight = 1. - query_result.weight
+    query_result = np.sort(query_result, order=['v', 'u', 'vv', 'uu', 'weight'])
 
-    # vectorise total and miss lookup
-    misses_ = np.vectorize(lambda x: misses.get(tuple(x)))
-    totals_ = np.vectorize(lambda x: totals.get(tuple(x)))
-
-    # any query nodes which to not match a target node
-    # can be considered as being further away than the max 
-    # hopping distance
     nan_idx = query_result.dist_u < 0
     dist_u = query_result.dist_u
     dist_u[nan_idx] = hopping_distance + 1
@@ -544,15 +548,7 @@ def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=
     cost = _delta_plus(prox_v, prox_u)
     cost *= (1. - lmbda)
 
-    # if a node has no matches then this is equivalent to a cost of 1
-    cost += misses_(query_result[['v', 'u']])
-
-    # TODO: The normalisation appears incorrect
-    cost /= totals_(query_result[['v', 'u']])
-
-    cost *= (1. - LAMBDA)
-
-    return NeighbourHoodMatchingCosts(
+    neighbourhood_matching_costs = NeighbourHoodMatchingCosts(
         np.array([
             query_result.v, 
             query_result.u,
