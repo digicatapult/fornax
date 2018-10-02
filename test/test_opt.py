@@ -68,7 +68,9 @@ class TestOpt(unittest.TestCase):
 
     def setUp(self):
         self.h = 2
-        self.alpha = .3
+        # use .5 because .5*.5=0.25 can be reproduced exactly in binary
+        self.alpha = .5
+        self.lmbda = .5
         self.records = ([
             (1, 1, 1, 1, 0, 0, 1), (1, 1, 1, 4, 0, 1, 1), (1, 1, 3, 3, 1, 1, 1),  
             (1, 4, 1, 1, 0, 1, 1), (1, 4, 1, 4, 0, 0, 1), (1, 4, 2, 5, 1, 1, 1), 
@@ -85,7 +87,26 @@ class TestOpt(unittest.TestCase):
         ])
 
     def test_neighbourhood_matching_costs(self):
-        self.assertTrue(False)
+        vals = [
+            (1. - self.lmbda) * (1. - self.alpha),
+            (1. - self.lmbda) * self.alpha
+        ]
+        target = [
+            (1, 1, 1, 1, 0), (1, 1, 1, 4, vals[0]), (1, 1, 3, 3, 0),                        
+            (1, 4, 1, 1, vals[0]), (1, 4, 1, 4, 0), (1, 4, 2, 5, 0), 
+            (1, 4, 3, 6, 0), (1, 8, 1, 8, 0), (1, 8, 2, 9, 0), 
+            (1, 8, 3, 6, 0), (1, 8, 3, 12, 0), (2, 5, 1, 4, 0), 
+            (2, 5, 2, 5, 0), (2, 5, 4, 7, 0), (2, 9, 1, 8, 0), 
+            (2, 9, 2, 9, 0), (2, 9, 4, 10, 0), (3, 3, 1, 1, 0),
+            (3, 3, 3, 3, 0), (3, 6, 1, 4, 0), (3, 6, 1, 8, 0),
+            (3, 6, 3, 6, 0), (3, 12, 1, 8, 0), (3, 12, 3, 12, 0), 
+            (3, 13, 1, -1, vals[1]), (3, 13, 3, 13, 0), (4, 7, 2, 5, 0), 
+            (4, 7, 4, 7, 0), (4, 7, 4, 10, vals[0]),  (4, 10, 2, 9, 0), 
+            (4, 10, 4, 7, vals[0]), (4, 10, 4, 10, 0), (4, 10, 5, 11, 0),
+            (5, 11, 4, 10, 0), (5, 11, 5, 11, 0)
+        ]
+        result, _ = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
+        self.assertListEqual(result.tolist(), target)
 
     def test_optimal_matches(self):
 
