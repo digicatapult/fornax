@@ -492,6 +492,7 @@ class Refiner:
         return True
 
 
+def _get_matching_costs(records: List[tuple], hopping_distance, lmbda=.3, alpha=.3, ):
 
     """Create a table of matching costs from a table of query results using equation 2
     Equivalent to the first term of equation 13
@@ -591,7 +592,7 @@ def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
     """Generate a set of subgraph matches and costs from a query result
     
     Arguments:
-        query_result {QueryResult}
+        records {List[tuple]}
 
     """
 
