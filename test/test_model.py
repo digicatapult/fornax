@@ -6,22 +6,13 @@ from test_base import TestCaseDB
 
 class TestNode(TestCaseDB):
 
-    def test_query_node_round_trip(self):
+    def test_node_round_trip(self):
         """ node round trip """
-        new_node = model.QueryNode(id=0, gid=0)
+        new_node = model.Node(id=0, gid=0)
         self.session.add(new_node)
         self.session.commit()
 
-        row = self.session.query(model.QueryNode).first()
-        self.assertIsNotNone(row)
-
-    def test_target_node_round_trip(self):
-        """ node round trip """
-        new_node = model.QueryNode(id=0, gid=0)
-        self.session.add(new_node)
-        self.session.commit()
-
-        row = self.session.query(model.QueryNode).first()
+        row = self.session.query(model.Node).first()
         self.assertIsNotNone(row)
 
 
@@ -30,81 +21,73 @@ class TestEdge(TestCaseDB):
     def setUp(self):
         super().setUp()
 
-        new_nodes = [model.QueryNode(id=id_, gid=0) for id_ in range(2)]
-        new_nodes += [model.TargetNode(id=id_, gid=0) for id_ in range(2)]
+        new_nodes = [model.Node(id=id_, gid=0) for id_ in range(2)]
+        new_nodes += [model.Node(id=id_, gid=1) for id_ in range(2)]
         self.session.add_all(new_nodes)
         self.session.commit()
 
         new_edges = [
-            model.QueryEdge(start=0, end=1, gid=0), 
-            model.TargetEdge(start=0, end=1, gid=0),
+            model.Edge(start=0, end=1, gid=0), 
+            model.Edge(start=1, end=0, gid=1),
         ]
         self.session.add_all(new_edges)
         self.session.commit()
 
     def test_query_edge_round_trip(self):
         """ edge round trip """
-        row = self.session.query(model.QueryEdge).first()
+        row = self.session.query(model.Edge).first()
         self.assertIsNotNone(row)
         self.assertEqual(0, row.start)
 
-    def test_target_edge_round_trip(self):
-        row = self.session.query(model.TargetEdge).first()
-        self.assertIsNotNone(row)
-        self.assertEqual(0, row.start)
-
-    def test_query_edge_join_start(self):
+    def test_edge_join_start(self):
         """ find a node by joining on the start of an edge """
-        query = self.session.query(model.QueryNode)
-        query = query.join(model.QueryEdge, model.QueryNode.id==model.QueryEdge.start)
+        query = self.session.query(model.Node)
+        query = query.join(
+            model.Edge, 
+            sqlalchemy.and_(
+                model.Node.id==model.Edge.start,
+                model.Node.gid==model.Edge.gid
+            )
+        )
         row = query.first()
         self.assertIsNotNone(row)
         self.assertEqual(row.id, 0)
 
-    def test_target_edge_join_start(self):
-        """ find a node by joining on the start of an edge """
-        query = self.session.query(model.TargetNode)
-        query = query.join(model.TargetEdge, model.TargetNode.id==model.TargetEdge.start)
-        row = query.first()
-        self.assertIsNotNone(row)
-        self.assertEqual(row.id, 0)
-
-    def test_query_edge_join_end(self):
+    def test_edge_join_end(self):
         """ find a node by joining on the end of an edge """
-        query = self.session.query(model.QueryNode)
-        query = query.join(model.QueryEdge, model.QueryNode.id==model.QueryEdge.end)
-        row = query.first()
-        self.assertIsNotNone(row)
-        self.assertEqual(row.id, 1)
-
-    def test_target_edge_join_end(self):
-        """ find a node by joining on the end of an edge """
-        query = self.session.query(model.TargetNode)
-        query = query.join(model.TargetEdge, model.TargetNode.id==model.TargetEdge.end)
+        query = self.session.query(model.Node)
+        query = query.join(
+            model.Edge, 
+            sqlalchemy.and_(
+                model.Node.id==model.Edge.end,
+                model.Node.gid==model.Edge.gid
+            )
+        )
         row = query.first()
         self.assertIsNotNone(row)
         self.assertEqual(row.id, 1)
 
 
-class TestNeighboursQuery(TestCaseDB):
+class TestNeighbours(TestCaseDB):
 
     def setUp(self):
         super().setUp()
-        new_nodes = [model.QueryNode(id=id_, gid=0) for id_ in range(4)]
+        new_nodes = [model.Node(id=id_, gid=0) for id_ in range(4)]
         self.session.add_all(new_nodes)
         self.session.commit()
 
         new_edges = [
-            model.QueryEdge(start=0, end=1, gid=0),
-            model.QueryEdge(start=0, end=2, gid=0), 
-            model.QueryEdge(start=2, end=3, gid=0), 
+            model.Edge(start=0, end=1, gid=0),
+            model.Edge(start=0, end=2, gid=0), 
+            model.Edge(start=2, end=3, gid=0), 
         ]
+
         self.session.add_all(new_edges)
         self.session.commit()
 
     def test_neighbours(self):
-        query = self.session.query(model.QueryNode)
-        query = query.filter(model.QueryNode.id == 0)
+        query = self.session.query(model.Node)
+        query = query.filter(model.Node.id == 0)
         node = query.first()
         self.assertListEqual(
             [n.id for n in node.neighbours()],
@@ -112,60 +95,24 @@ class TestNeighboursQuery(TestCaseDB):
         )
 
     def test_next_neighbours(self):
-        query = self.session.query(model.QueryNode)
-        query = query.filter(model.QueryNode.id == 0)
+        query = self.session.query(model.Node)
+        query = query.filter(model.Node.id == 0)
         node = query.first()
         self.assertListEqual(
             [n2.id for n1 in node.neighbours() for n2 in n1.neighbours()],
             [3]
         )
 
-
-class TestNeighboursTarget(TestCaseDB):
-
-    def setUp(self):
-        super().setUp()
-        new_nodes = [model.TargetNode(id=id_, gid=0) for id_ in range(5)]
-        self.session.add_all(new_nodes)
-        self.session.commit()
-
-        new_edges = [
-            model.TargetEdge(start=0, end=1, gid=0),
-            model.TargetEdge(start=0, end=2, gid=0), 
-            model.TargetEdge(start=2, end=3, gid=0),
-            model.TargetEdge(start=3, end=4, gid=0),
-            model.TargetEdge(start=3, end=0, gid=0) 
-        ]
-        self.session.add_all(new_edges)
-        self.session.commit()
-
-    def test_neighbours(self):
-        query = self.session.query(model.TargetNode)
-        query = query.filter(model.TargetNode.id == 0)
-        node = query.first()
-        self.assertListEqual(
-            [n.id for n in node.neighbours()],
-            [1, 2]
-        )
-
-    def test_next_neighbours(self):
-        query = self.session.query(model.TargetNode)
-        query = query.filter(model.TargetNode.id == 0)
-        node = query.first()
-        self.assertListEqual(
-            [n2.id for n1 in node.neighbours() for n2 in n1.neighbours()],
-            [3]
-        )
 
 class TestMatch(TestCaseDB):
 
     def setUp(self):
         super().setUp()
         new_nodes = [
-            model.QueryNode(id=0, gid=0),
-            model.TargetNode(id=0, gid=0),
-            model.QueryNode(id=1, gid=0),
-            model.TargetNode(id=1, gid=0)
+            model.Node(id=0, gid=0),
+            model.Node(id=0, gid=1),
+            model.Node(id=1, gid=0),
+            model.Node(id=1, gid=1)
         ]
         self.session.add_all(new_nodes)
         self.session.commit()
@@ -179,9 +126,9 @@ class TestMatch(TestCaseDB):
         self.session.commit()
 
     def test_select_by_match_left(self):
-        query = self.session.query(model.QueryNode)
+        query = self.session.query(model.Node)
         query = query.filter(
-            model.QueryNode.matches.any(
+            model.Node.matches.any(
                 model.Match.start == 0
             )
         )
