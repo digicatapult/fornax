@@ -8,7 +8,7 @@ class TestNode(TestCaseDB):
 
     def test_query_node_round_trip(self):
         """ node round trip """
-        new_node = model.QueryNode()
+        new_node = model.QueryNode(id=0, gid=0)
         self.session.add(new_node)
         self.session.commit()
 
@@ -17,7 +17,7 @@ class TestNode(TestCaseDB):
 
     def test_target_node_round_trip(self):
         """ node round trip """
-        new_node = model.QueryNode()
+        new_node = model.QueryNode(id=0, gid=0)
         self.session.add(new_node)
         self.session.commit()
 
@@ -30,14 +30,14 @@ class TestEdge(TestCaseDB):
     def setUp(self):
         super().setUp()
 
-        new_nodes = [model.QueryNode(id=id_) for id_ in range(2)]
-        new_nodes += [model.TargetNode(id=id_) for id_ in range(2)]
+        new_nodes = [model.QueryNode(id=id_, gid=0) for id_ in range(2)]
+        new_nodes += [model.TargetNode(id=id_, gid=0) for id_ in range(2)]
         self.session.add_all(new_nodes)
         self.session.commit()
 
         new_edges = [
-            model.QueryEdge(start=0, end=1), 
-            model.TargetEdge(start=0, end=1),
+            model.QueryEdge(start=0, end=1, gid=0), 
+            model.TargetEdge(start=0, end=1, gid=0),
         ]
         self.session.add_all(new_edges)
         self.session.commit()
@@ -90,14 +90,14 @@ class TestNeighboursQuery(TestCaseDB):
 
     def setUp(self):
         super().setUp()
-        new_nodes = [model.QueryNode(id=id_) for id_ in range(4)]
+        new_nodes = [model.QueryNode(id=id_, gid=0) for id_ in range(4)]
         self.session.add_all(new_nodes)
         self.session.commit()
 
         new_edges = [
-            model.QueryEdge(start=0, end=1),
-            model.QueryEdge(start=0, end=2), 
-            model.QueryEdge(start=2, end=3), 
+            model.QueryEdge(start=0, end=1, gid=0),
+            model.QueryEdge(start=0, end=2, gid=0), 
+            model.QueryEdge(start=2, end=3, gid=0), 
         ]
         self.session.add_all(new_edges)
         self.session.commit()
@@ -125,16 +125,16 @@ class TestNeighboursTarget(TestCaseDB):
 
     def setUp(self):
         super().setUp()
-        new_nodes = [model.TargetNode(id=id_) for id_ in range(5)]
+        new_nodes = [model.TargetNode(id=id_, gid=0) for id_ in range(5)]
         self.session.add_all(new_nodes)
         self.session.commit()
 
         new_edges = [
-            model.TargetEdge(start=0, end=1),
-            model.TargetEdge(start=0, end=2), 
-            model.TargetEdge(start=2, end=3),
-            model.TargetEdge(start=3, end=4),
-            model.TargetEdge(start=3, end=0) 
+            model.TargetEdge(start=0, end=1, gid=0),
+            model.TargetEdge(start=0, end=2, gid=0), 
+            model.TargetEdge(start=2, end=3, gid=0),
+            model.TargetEdge(start=3, end=4, gid=0),
+            model.TargetEdge(start=3, end=0, gid=0) 
         ]
         self.session.add_all(new_edges)
         self.session.commit()
@@ -162,18 +162,18 @@ class TestMatch(TestCaseDB):
     def setUp(self):
         super().setUp()
         new_nodes = [
-            model.QueryNode(id=0),
-            model.TargetNode(id=0),
-            model.QueryNode(id=1),
-            model.TargetNode(id=1)
+            model.QueryNode(id=0, gid=0),
+            model.TargetNode(id=0, gid=0),
+            model.QueryNode(id=1, gid=0),
+            model.TargetNode(id=1, gid=0)
         ]
         self.session.add_all(new_nodes)
         self.session.commit()
 
         new_edges = [
-            model.Match(start=0, end=0, weight=1),
-            model.Match(start=1, end=0, weight=1),
-            model.Match(start=1, end=1, weight=1)
+            model.Match(start=0, end=0, weight=1, start_gid=0, end_gid=0),
+            model.Match(start=1, end=0, weight=1, start_gid=0, end_gid=0),
+            model.Match(start=1, end=1, weight=1, start_gid=0, end_gid=0)
         ]
         self.session.add_all(new_edges)
         self.session.commit()
@@ -192,14 +192,14 @@ class TestMatch(TestCaseDB):
         )
 
     def test_test_min_check(self):
-        self.session.add(model.Match(start=0, end=0, weight=1.1))
+        self.session.add(model.Match(start=0, end=0, weight=1.1, start_gid=0, end_gid=0))
         self.assertRaises(
             sqlalchemy.exc.IntegrityError,
             self.session.commit
         )    
 
     def test_test_max_check(self):
-        self.session.add(model.Match(start=0, end=0, weight=0))
+        self.session.add(model.Match(start=0, end=0, weight=0, start_gid=0, end_gid=0))
         self.assertRaises(
             sqlalchemy.exc.IntegrityError,
             self.session.commit
