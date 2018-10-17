@@ -1,4 +1,4 @@
-from fornax.model import Base, Match, QueryNode, QueryEdge, TargetNode, TargetEdge, Integer
+from fornax.model import Base, Match, Node, Edge
 from sqlalchemy.dialects.postgresql import ARRAY, array
 from sqlalchemy.orm import Query, aliased
 from sqlalchemy import literal, and_, cast, not_, func, or_, alias
@@ -6,67 +6,71 @@ from typing import List, Tuple
 from collections import Iterable
 
 
-def query_neighbours(h:int) -> Query:
+def neighbours(h:int, start) -> Query:
 
-    seed = Query([
-            Match.start.label('match'),
-            QueryNode.id.label('neighbour'),
-            literal(0).label('distance')
-    ]).join(QueryNode)
-    n = seed.union(_neighbours(QueryNode, seed, h)).subquery()
-    return Query([
-        n.c.match,
-        n.c.neighbour,
-        func.min(n.c.distance).label('distance')
-    ]).group_by(n.c.match, n.c.neighbour)
-
-
-def target_neighbours(h:int) -> Query:
-
-    seed = Query([
-            Match.end.label('match'),
-            TargetNode.id.label('neighbour'),
-            literal(0).label('distance')
-    ]).join(TargetNode)
-    n = seed.union(_neighbours(TargetNode, seed, h)).subquery()
-    return Query([
-        n.c.match,
-        n.c.neighbour,
-        func.min(n.c.distance).label('distance')
-    ]).group_by(n.c.match, n.c.neighbour)
-
-
-def _neighbours(Node: Base, seed: Query, h, max_=None) -> Query:
-
-    if max_ is None:
-        max_, h = h, 1
-
-    if Node.__tablename__ == QueryNode.__tablename__:
-        Edge = QueryEdge
-    elif Node.__tablename__ == TargetNode.__tablename__:
-        Edge = TargetEdge
+    if start:
+        seed = Query([
+                Match.start.label('match'),
+                Match.start_graph_id.label('graph_id'),
+                Node.node_id.label('neighbour'),
+                literal(0).label('distance')
+        ]).join(
+            Node, 
+            and_(
+                    Node.node_id==Match.start,
+                    Node.graph_id==Match.start_graph_id
+                )
+        )
     else:
-        raise ValueError("Unrecognised node type")
+        seed = Query([
+                Match.end.label('match'),
+                Match.end_graph_id.label('graph_id'),
+                Node.node_id.label('neighbour'),
+                literal(0).label('distance')
+        ]).join(
+            Node, 
+            and_(
+                    Node.node_id==Match.end,
+                    Node.graph_id==Match.end_graph_id
+                )
+        )
+
+    n = seed.union(_neighbours(seed, 1, h)).subquery()
+    return Query([
+        n.c.match,
+        n.c.neighbour,
+        func.min(n.c.distance).label('distance')
+    ]).group_by(n.c.match, n.c.neighbour)
+
+
+def _neighbours(seed: Query, h, max_=None) -> Query:
 
     seed = seed.subquery()
     neighbours = Query([
-        seed.c.match.label('match'), 
+        seed.c.match.label('match'),
+        seed.c.graph_id.label('graph_id'), 
         Edge.end.label('neighbour'), 
         literal(h).label('distance'),
     ])
     neighbours = neighbours.distinct()
-    neighbours = neighbours.join(Edge, Edge.start == seed.c.neighbour)
+    neighbours = neighbours.join(
+        Edge, 
+        and_(
+            Edge.start == seed.c.neighbour,
+            Edge.graph_id == seed.c.graph_id
+        )
+    )
 
     if h == max_:
         return neighbours
     else:
-        return neighbours.union(_neighbours(Node, neighbours, h+1, max_=max_))
+        return neighbours.union(_neighbours(neighbours, h+1, max_=max_))
 
 
 def join(h: int, offsets: Tuple[int, int]=None) -> Query:
 
-    left = query_neighbours(h).subquery()
-    right = target_neighbours(h).subquery()
+    left = neighbours(h, True).subquery()
+    right = neighbours(h, False).subquery()
     NeighbourMatch = alias(Match, "neighbour_match")
 
     left_joined = Query([

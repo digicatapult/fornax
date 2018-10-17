@@ -3,10 +3,10 @@ import fornax.model as model
 import fornax.select as select
 from test_base import TestCaseDB
 from sqlalchemy.orm import Query
-from sqlalchemy import literal, func
+from sqlalchemy import literal, func, and_
 
 
-class TestOpt(TestCaseDB):
+class TestSelect(TestCaseDB):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
     def setUp(self):
@@ -14,18 +14,18 @@ class TestOpt(TestCaseDB):
 
         # Create the query graph from figure 4
         new_nodes = [
-            model.QueryNode(id=id_+1)
+            model.Node(node_id=id_+1, graph_id=0)
             for id_, label in enumerate('abcde')
         ]
 
         start_finish =  [(1,2), (1,3), (2,4), (4,5)]
 
         new_edges = [
-            model.QueryEdge(start=start, end=end) 
+            model.Edge(start=start, end=end, graph_id=0) 
             for start, end in start_finish
         ]
         new_edges += [
-            model.QueryEdge(start=end, end=start) 
+            model.Edge(start=end, end=start, graph_id=0) 
             for start, end in start_finish
         ]
 
@@ -41,16 +41,16 @@ class TestOpt(TestCaseDB):
             (6,8), (8,9), (8, 12), (9,10), (10,7), (10,11), (11,12), (11,13)
         ]
         new_nodes = [
-            model.TargetNode(id=id_+1) 
+            model.Node(node_id=id_+1, graph_id=1) 
             for id_, label in enumerate(labels)
         ]
 
         new_edges = [
-            model.TargetEdge(start=start, end=end) 
+            model.Edge(start=start, end=end, graph_id=1) 
             for start, end in start_finish
         ]
         new_edges += [
-            model.TargetEdge(start=end, end=start) 
+            model.Edge(start=end, end=start, graph_id=1) 
             for start, end in start_finish
         ]
 
@@ -61,65 +61,79 @@ class TestOpt(TestCaseDB):
 
         self.session.add_all(
             [
-                model.Match(start=1, end=1, weight=1),
-                model.Match(start=1, end=4, weight=1),
-                model.Match(start=1, end=8, weight=1),
-                model.Match(start=2, end=2, weight=1),
-                model.Match(start=2, end=5, weight=1),
-                model.Match(start=2, end=9, weight=1),
-                model.Match(start=3, end=3, weight=1),
-                model.Match(start=3, end=6, weight=1),
-                model.Match(start=3, end=12, weight=1),
-                model.Match(start=3, end=13, weight=1),
-                model.Match(start=4, end=7, weight=1),
-                model.Match(start=4, end=10, weight=1),
-                model.Match(start=5, end=11, weight=1),
+                model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=1, end=4, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=1, end=8, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=2, end=2, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=2, end=5, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=2, end=9, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=3, end=3, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=3, end=6, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=3, end=12, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=3, end=13, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=4, end=7, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=4, end=10, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=5, end=11, weight=1, start_graph_id=0, end_graph_id=1),
             ]
         )
         self.session.commit()
 
-    def test_neighbours_1(self):
+    def test__neighbours_1(self):
 
         nodes = Query([
             model.Match.start.label('match'),
-            model.QueryNode.id.label('neighbour'),
+            model.Match.start_graph_id.label('graph_id'),
+            model.Node.node_id.label('neighbour'),
             literal(0).label('distance')
-        ]).join(model.QueryNode)
-        query = select._neighbours(model.QueryNode, nodes, 1)
+        ]).join(
+            model.Node,
+            and_(
+                model.Node.node_id==model.Match.start,
+                model.Node.graph_id==model.Match.start_graph_id                
+            )
+        )
+        query = select._neighbours(nodes, 1, 1)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
             sorted([
-                (1, 2, 1), (1, 3, 1), (2, 1, 1),
-                (2, 4, 1), (3, 1, 1), (4, 2, 1),
-                (4, 5, 1), (5, 4, 1)
+                (1, 0, 2, 1), (1, 0, 3, 1), (2, 0, 1, 1),
+                (2, 0, 4, 1), (3, 0, 1, 1), (4, 0, 2, 1),
+                (4, 0, 5, 1), (5, 0, 4, 1)
             ])
         )
 
-    def test_neighbours_2(self):
+    def test__neighbours_2(self):
 
         nodes = Query([
             model.Match.start.label('match'),
-            model.QueryNode.id.label('neighbour'),
+            model.Match.start_graph_id.label('graph_id'),
+            model.Node.node_id.label('neighbour'),
             literal(0).label('distance')
-        ]).join(model.QueryNode)
-        query = select._neighbours(model.QueryNode, nodes, 2)
+        ]).join(
+            model.Node,
+            and_(
+                model.Node.node_id==model.Match.start,
+                model.Node.graph_id==model.Match.start_graph_id                
+            )
+        )
+        query = select._neighbours(nodes, 1, 2)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
             sorted([
-                (1, 1, 2), (1, 2, 1), (1, 3, 1),
-                (1, 4, 2), (2, 2, 2), (2, 1, 1),
-                (2, 3, 2), (2, 4, 1), (2, 5, 2),
-                (3, 3, 2), (3, 1, 1), (3, 2, 2),
-                (4, 4, 2), (4, 1, 2), (4, 2, 1),
-                (4, 5, 1), (5, 2, 2), (5, 4, 1),
-                (5, 5, 2),
+                (1, 0, 1, 2), (1, 0, 2, 1), (1, 0, 3, 1),
+                (1, 0, 4, 2), (2, 0, 2, 2), (2, 0, 1, 1),
+                (2, 0, 3, 2), (2, 0, 4, 1), (2, 0, 5, 2),
+                (3, 0, 3, 2), (3, 0, 1, 1), (3, 0, 2, 2),
+                (4, 0, 4, 2), (4, 0, 1, 2), (4, 0, 2, 1),
+                (4, 0, 5, 1), (5, 0, 2, 2), (5, 0, 4, 1),
+                (5, 0, 5, 2),
             ])
         )
     
-    def test_query_neighbours_1(self):
-        query = select.query_neighbours(1)
+    def test_neighbours_1(self):
+        query = select.neighbours(1, True)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
@@ -132,8 +146,8 @@ class TestOpt(TestCaseDB):
             ])
         )
 
-    def test_query_neighbours_2(self):
-        query = select.query_neighbours(2)
+    def test_neighbours_2(self):
+        query = select.neighbours(2, True)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
@@ -144,7 +158,7 @@ class TestOpt(TestCaseDB):
                 (3, 3, 0), (3, 1, 1), (3, 2, 2),
                 (4, 4, 0), (4, 1, 2), (4, 2, 1),
                 (4, 5, 1), (5, 2, 2), (5, 4, 1),
-                (5, 5, 0),
+                (5, 5, 0)
             ])
         )
 
