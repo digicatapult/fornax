@@ -119,8 +119,13 @@ class TestOpt(unittest.TestCase):
         self.assertDictEqual(result, target)
 
     def test_optimal_matches(self):
-        graphs, scores = opt.solve(self.records, hopping_distance=1)
-        perfect = [graph for graph, score in zip(graphs, scores) if score == 0]
+        inference_costs, subgraphs, _, sz = opt.solve(self.records, hopping_distance=1)
+        perfect = []
+        for sub_graph in subgraphs:
+            cost = sz - len(sub_graph) + sum(inference_costs[item] for item in sub_graph) / len(sub_graph)
+            if cost == 0:
+                perfect.append(sub_graph)
+
         self.assertSequenceEqual(
             perfect[0],
             [(1, 8), (2, 9), (3, 6), (4, 10), (5, 11)]

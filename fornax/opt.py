@@ -588,7 +588,7 @@ def _get_optimal_match(inference_costs: InferenceCost) -> OptimalMatch:
 
     return group_by_first('v', inference_costs)
 
-def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
+def solve(records: List[tuple], max_iters=10, hopping_distance=2):
     """Generate a set of subgraph matches and costs from a query result
     
     Arguments:
@@ -651,17 +651,5 @@ def solve(records: List[tuple], n=3, max_iters=10, hopping_distance=2):
         subgraph_match = sorted(subgraph_match)
         if subgraph_match not in subgraph_matches:
             subgraph_matches.append(subgraph_match)
-
-    scores = [
-        sum(inference_costs_dict[item] for item in subgraph_match) 
-        + (len(optimum_match) - len(subgraph_match)) 
-        for subgraph_match in subgraph_matches
-    ]
-    scores = [score/len(optimum_match) for score in scores]
-
-    # the the n best subgraph matches
-    ordered = sorted(zip(subgraph_matches, scores), key=lambda item: item[1])
-    sliced = ordered[:min(n, len(subgraph_matches))]
-    subgraph_matches, scores = list(zip(*sliced))
     
-    return subgraph_matches, scores
+    return inference_costs_dict, subgraph_matches, iters, len(optimum_match)
