@@ -16,6 +16,7 @@ class Match(Base):
     end = Column(Integer, ForeignKey("node.node_id"))
     start_graph_id = Column(Integer, ForeignKey("node.graph_id"))
     end_graph_id = Column(Integer, ForeignKey("node.graph_id"))
+    query_id = Column(Integer)
 
     weight = Column(Float, 
         CheckConstraint("weight>0", name="min_check"),
@@ -36,7 +37,7 @@ class Match(Base):
     )
 
     __table_args__ = (
-        PrimaryKeyConstraint('start', 'end', 'start_graph_id', 'start_graph_id'),
+        PrimaryKeyConstraint('start', 'end', 'start_graph_id', 'end_graph_id', 'query_id'),
         ForeignKeyConstraint(
             ['start', 'end', 'start_graph_id', 'end_graph_id'],
             ['node.node_id', 'node.node_id', 'node.graph_id', 'node.graph_id']
@@ -44,8 +45,8 @@ class Match(Base):
     )
 
     def __repr__(self):
-        return "<Match(start={}, end={}, weight={}, start_graph={}, end_graph={})>".format(
-            self.start, self.end, self.weight, self.start_gid, self.end_gid
+        return "<Match(start={}, end={}, weight={}, start_graph={}, end_graph={}, query={})>".format(
+            self.start, self.end, self.weight, self.start_gid, self.end_gid, self.query_id
         )
 
 
