@@ -61,7 +61,7 @@ class Node(Base):
         return [x.end_node for x in self.start_edges]
 
     def __repr__(self):
-        return "<Node(id={}, graph={}, type={})>".format(self.id, self.gid, self.type)
+        return "<Node(id={}, graph={}, type={})>".format(self.id, self.gid)
 
 
 class Edge(Base):
