@@ -118,9 +118,9 @@ class TestMatch(TestCaseDB):
         self.session.commit()
 
         new_edges = [
-            model.Match(start=0, end=0, weight=1, start_graph_id=0, end_graph_id=0),
-            model.Match(start=1, end=0, weight=1, start_graph_id=0, end_graph_id=0),
-            model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=0)
+            model.Match(start=0, end=0, weight=1, start_graph_id=0, end_graph_id=0, query_id=0),
+            model.Match(start=1, end=0, weight=1, start_graph_id=0, end_graph_id=0, query_id=0),
+            model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=0, query_id=0)
         ]
         self.session.add_all(new_edges)
         self.session.commit()

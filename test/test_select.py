@@ -61,19 +61,19 @@ class TestSelect(TestCaseDB):
 
         self.session.add_all(
             [
-                model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=1, end=4, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=1, end=8, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=2, end=2, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=2, end=5, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=2, end=9, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=3, end=3, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=3, end=6, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=3, end=12, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=3, end=13, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=4, end=7, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=4, end=10, weight=1, start_graph_id=0, end_graph_id=1),
-                model.Match(start=5, end=11, weight=1, start_graph_id=0, end_graph_id=1),
+                model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=1, end=4, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=1, end=8, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=2, end=2, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=2, end=5, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=2, end=9, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=3, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=6, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=12, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=13, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=4, end=7, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=4, end=10, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=5, end=11, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
             ]
         )
         self.session.commit()
