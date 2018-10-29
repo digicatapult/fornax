@@ -58,6 +58,10 @@ class TestSelect(TestCaseDB):
         self.session.add_all(new_edges)
         self.session.commit()
 
+        new_query = model.Query(query_id=0, start_graph_id=0, end_graph_id=1)
+        self.session.add(new_query)
+        self.session.commit()
+
         self.session.add_all(
             [
                 model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),

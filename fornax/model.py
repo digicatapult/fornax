@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Float, CheckConstraint, String, ForeignKeyConstraint, PrimaryKeyConstraint
+from sqlalchemy import Column, ForeignKey, Integer, Float, CheckConstraint, String, ForeignKeyConstraint, PrimaryKeyConstraint, Index, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -8,14 +8,32 @@ Base = declarative_base()
 JOIN_DEPTH = 2
 
 
+class Query(Base):
+
+    __tablename__ = 'query'
+    __table_args__ = (
+        UniqueConstraint('query_id', 'start_graph_id', 'end_graph_id'),
+    )
+
+    query_id = Column(Integer, primary_key=True)
+    start_graph_id = Column(Integer, nullable=False, index=True)
+    end_graph_id = Column(Integer, nullable=False, index=True)
+    Index('query_idx', 'query_id', 'start_graph_id', 'end_graph_id', unique=True)
+
+
 class Match(Base):
     """Joins Query Nodes to Candidate Target Nodes"""
 
     __tablename__ = 'match'
     __table_args__ = (
-        PrimaryKeyConstraint('start', 'end', 'start_graph_id', 'end_graph_id', 'query_id'),
-        ForeignKeyConstraint(['start', 'start_graph_id'], ['node.node_id', 'node.graph_id'], name="fk_match_start"),
-        ForeignKeyConstraint(['end', 'end_graph_id'], ['node.node_id', 'node.graph_id'], name="fk_match_end")
+        PrimaryKeyConstraint('query_id', 'start_graph_id', 'end_graph_id', 'start', 'end'),
+        ForeignKeyConstraint(['start_graph_id', 'start'], ['node.graph_id', 'node.node_id'], name="fk_match_start"),
+        ForeignKeyConstraint(['end_graph_id', 'end'], ['node.graph_id', 'node.node_id'], name="fk_match_end"),
+        ForeignKeyConstraint(
+            ['query_id', 'start_graph_id', 'end_graph_id'], 
+            ['query.query_id', 'query.start_graph_id', 'query.end_graph_id'], 
+            name="fk_query"
+        )
     )
 
     start = Column(Integer)
@@ -53,7 +71,7 @@ class Node(Base):
 
     __tablename__ = 'node'
     __table_args__ = (
-        PrimaryKeyConstraint('node_id', 'graph_id'),
+        PrimaryKeyConstraint('graph_id', 'node_id'),
     )
     node_id = Column(Integer, CheckConstraint("node_id>=0", name="q_min_id_check"))
     graph_id = Column(Integer)
@@ -70,9 +88,9 @@ class Edge(Base):
 
     __tablename__ = 'edge'
     __table_args__ = (
-        PrimaryKeyConstraint('start', 'end', 'graph_id'),
-        ForeignKeyConstraint(['start', 'graph_id'], ['node.node_id', 'node.graph_id']),
-        ForeignKeyConstraint(['end', 'graph_id'], ['node.node_id', 'node.graph_id'])
+        PrimaryKeyConstraint('graph_id', 'start', 'end'),
+        ForeignKeyConstraint(['graph_id', 'start'], ['node.graph_id', 'node.node_id']),
+        ForeignKeyConstraint(['graph_id', 'end'], ['node.graph_id', 'node.node_id'])
     )
 
     start = Column(Integer)

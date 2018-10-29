@@ -108,6 +108,11 @@ class TestMatch(TestCaseDB):
 
     def setUp(self):
         super().setUp()
+
+        new_query = model.Query(query_id=0, start_graph_id=0, end_graph_id=1)
+        self.session.add(new_query)
+        self.session.commit()
+
         new_nodes = [
             model.Node(node_id=0, graph_id=0),
             model.Node(node_id=0, graph_id=1),
@@ -118,9 +123,9 @@ class TestMatch(TestCaseDB):
         self.session.commit()
 
         new_edges = [
-            model.Match(start=0, end=0, weight=1, start_graph_id=0, end_graph_id=0, query_id=0),
-            model.Match(start=1, end=0, weight=1, start_graph_id=0, end_graph_id=0, query_id=0),
-            model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=0, query_id=0)
+            model.Match(start=0, end=0, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+            model.Match(start=1, end=0, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+            model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1, query_id=0)
         ]
         self.session.add_all(new_edges)
         self.session.commit()
