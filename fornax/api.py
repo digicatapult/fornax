@@ -179,15 +179,16 @@ class Query:
         with session_scope() as session:
             query = session.query(sqlalchemy.func.max(Match.query_id)).first()
             query_id = query[0]
-            new_query = model.Query(
-                query_id=query_id, start_graph_id=start_graph.graph_id, end_graph_id=end_graph.graph_id
-            )
-            session.add(new_query)
             
             if query_id is None:
                 query_id = 0
             else:
                 query_id += 1 
+
+            new_query = model.Query(
+                query_id=query_id, start_graph_id=start_graph.graph_id, end_graph_id=end_graph.graph_id
+            )
+            session.add(new_query)
 
             session.add_all(
                 [
