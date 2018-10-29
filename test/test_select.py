@@ -30,7 +30,6 @@ class TestSelect(TestCaseDB):
         ]
 
         self.session.add_all(new_nodes)
-        self.session.commit()
         self.session.add_all(new_edges)
         self.session.commit()
 
@@ -171,7 +170,7 @@ class TestSelect(TestCaseDB):
         match.delete()
         self.session.commit()
 
-        query = select.join(1)
+        query = select.join(0, 1)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(filter(lambda x: x[0] == x[1] == 1, records)), 
@@ -187,13 +186,13 @@ class TestSelect(TestCaseDB):
         """Test batching queries with hopping distance h=1
             batch size = 1
         """
-        query = select.join(1)
+        query = select.join(0, 1)
         records = query.with_session(self.session).all()
 
         # keep getting batches until nothing comes back
         batched_records, i, batch_size, finished = [], 0, 1, False
         while not finished:
-            query = select.join(1, [i, i+batch_size])
+            query = select.join(0, 1, [i, i+batch_size])
             next_batch = query.with_session(self.session).all()
             batched_records += next_batch
 
@@ -212,13 +211,13 @@ class TestSelect(TestCaseDB):
             use larger batch size for performance
         """
 
-        query = select.join(2)
+        query = select.join(0, 2)
         records = query.with_session(self.session).all()
 
         # keep getting batches until nothing comes back
         batched_records, i, batch_size, finished = [], 0, 20, False
         while not finished:
-            query = select.join(2, [i, i+batch_size])
+            query = select.join(0, 2, [i, i+batch_size])
             next_batch = query.with_session(self.session).all()
             batched_records += next_batch
 
@@ -233,7 +232,7 @@ class TestSelect(TestCaseDB):
         )
 
     def test_join_val_error(self):
-        self.assertRaises(ValueError, select.join, 1, offsets=[1])
+        self.assertRaises(ValueError, select.join, 0, 1, offsets=[1])
 
 if __name__ == '__main__':
     unittest.main()

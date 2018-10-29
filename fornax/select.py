@@ -67,7 +67,7 @@ def _neighbours(seed: Query, h, max_=None) -> Query:
         return neighbours.union(_neighbours(neighbours, h+1, max_=max_))
 
 
-def join(h: int, offsets: Tuple[int, int]=None) -> Query:
+def join(query_id:int, h: int, offsets: Tuple[int, int]=None) -> Query:
 
     left = neighbours(h, True).subquery()
     right = neighbours(h, False).subquery()
@@ -79,7 +79,7 @@ def join(h: int, offsets: Tuple[int, int]=None) -> Query:
         left.c.neighbour.label("neighbour_start"),
         left.c.distance,
         Match.weight,
-    ])
+    ]).filter(Match.query_id == query_id)
 
     left_joined = left_joined.join(left, Match.start == left.c.match)
 
