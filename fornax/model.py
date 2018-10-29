@@ -12,10 +12,16 @@ class Match(Base):
     """Joins Query Nodes to Candidate Target Nodes"""
 
     __tablename__ = 'match'
-    start = Column(Integer, ForeignKey("node.node_id"))
-    end = Column(Integer, ForeignKey("node.node_id"))
-    start_graph_id = Column(Integer, ForeignKey("node.graph_id"))
-    end_graph_id = Column(Integer, ForeignKey("node.graph_id"))
+    __table_args__ = (
+        PrimaryKeyConstraint('start', 'end', 'start_graph_id', 'end_graph_id', 'query_id'),
+        ForeignKeyConstraint(['start', 'start_graph_id'], ['node.node_id', 'node.graph_id'], name="fk_match_start"),
+        ForeignKeyConstraint(['end', 'end_graph_id'], ['node.node_id', 'node.graph_id'], name="fk_match_end")
+    )
+
+    start = Column(Integer)
+    end = Column(Integer)
+    start_graph_id = Column(Integer)
+    end_graph_id = Column(Integer)
     query_id = Column(Integer)
 
     weight = Column(Float, 
@@ -36,17 +42,9 @@ class Match(Base):
         backref="end_matches"
     )
 
-    __table_args__ = (
-        PrimaryKeyConstraint('start', 'end', 'start_graph_id', 'end_graph_id', 'query_id'),
-        ForeignKeyConstraint(
-            ['start', 'end', 'start_graph_id', 'end_graph_id'],
-            ['node.node_id', 'node.node_id', 'node.graph_id', 'node.graph_id']
-        )
-    )
-
     def __repr__(self):
-        return "<Match(start={}, end={}, weight={}, start_graph={}, end_graph={}, query={})>".format(
-            self.start, self.end, self.weight, self.start_gid, self.end_gid, self.query_id
+        return "<Match(start={}, end={}, weight={}, start_graph_id={}, end_graph_id={}, query={})>".format(
+            self.start, self.end, self.weight, self.start_graph_id, self.end_graph_id, self.query_id
         )
 
 
@@ -54,23 +52,32 @@ class Node(Base):
     """Node in the Query Graph"""
 
     __tablename__ = 'node'
-    node_id = Column(Integer, CheckConstraint("node_id>=0", name="q_min_id_check"), primary_key=True)
-    graph_id = Column(Integer, primary_key=True)
+    __table_args__ = (
+        PrimaryKeyConstraint('node_id', 'graph_id'),
+    )
+    node_id = Column(Integer, CheckConstraint("node_id>=0", name="q_min_id_check"))
+    graph_id = Column(Integer)
     
     def neighbours(self):
         return [x.end_node for x in self.start_edges]
 
     def __repr__(self):
-        return "<Node(id={}, graph={}, type={})>".format(self.id, self.gid)
+        return "<Node(node_id={}, graph_id={})>".format(self.node_id, self.graph_id)
 
 
 class Edge(Base):
     """Joins Nodes it the Query Graph"""
 
     __tablename__ = 'edge'
-    start = Column(Integer, ForeignKey("node.node_id"))
-    end = Column(Integer, ForeignKey("node.node_id"))
-    graph_id = Column(Integer, ForeignKey("node.graph_id"))
+    __table_args__ = (
+        PrimaryKeyConstraint('start', 'end', 'graph_id'),
+        ForeignKeyConstraint(['start', 'graph_id'], ['node.node_id', 'node.graph_id']),
+        ForeignKeyConstraint(['end', 'graph_id'], ['node.node_id', 'node.graph_id'])
+    )
+
+    start = Column(Integer)
+    end = Column(Integer)
+    graph_id = Column(Integer)
 
     start_node = relationship(
         'Node', 
@@ -83,14 +90,6 @@ class Edge(Base):
         primaryjoin='and_(Node.node_id == Edge.end, Node.graph_id == Edge.graph_id)',
         backref='end_edges'
     )
-
-    __table_args__ = (
-        PrimaryKeyConstraint('start', 'end', 'graph_id'),
-        ForeignKeyConstraint(
-            ['start', 'end', 'graph_id'],
-            ['node.node_id', 'node.node_id', 'node.graph_id']
-        )
-    )
     
     def __repr__(self):
-        return "<Edge(start={}, end={}, graph={})>".format(self.start, self.end, self.graph)
+        return "<Edge(start={}, end={}, graph_id={})>".format(self.start, self.end, self.graph_id)
