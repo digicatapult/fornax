@@ -1,9 +1,17 @@
 import unittest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
 import fornax.model as model
 
+
 Base = model.Base
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 class TestCaseDB(unittest.TestCase):
@@ -16,6 +24,7 @@ class TestCaseDB(unittest.TestCase):
             'sqlite://', 
             echo=False
         )
+        
         connection = engine.connect()
         cls._engine = engine
         cls._connection = connection
