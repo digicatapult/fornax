@@ -1,1 +1,1 @@
-import fornax.api
+from fornax.api import *
