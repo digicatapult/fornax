@@ -119,7 +119,7 @@ class TestOpt(unittest.TestCase):
         self.assertDictEqual(result, target)
 
     def test_optimal_matches(self):
-        inference_costs, subgraphs, _, sz = opt.solve(self.records, hopping_distance=1)
+        inference_costs, subgraphs, _, sz, target_edges = opt.solve(self.records, hopping_distance=1)
         perfect = []
         for sub_graph in subgraphs:
             cost = sz - len(sub_graph) + sum(inference_costs[item] for item in sub_graph) / len(sub_graph)

@@ -651,5 +651,10 @@ def solve(records: List[tuple], max_iters=10, hopping_distance=2):
         subgraph_match = sorted(subgraph_match)
         if subgraph_match not in subgraph_matches:
             subgraph_matches.append(subgraph_match)
-    
-    return inference_costs_dict, subgraph_matches, iters, len(optimum_match)
+    target_edges = group_by_first(['u', 'uu', 'dist_u'], query_result)[['u', 'uu', 'dist_u']]
+    mask = target_edges['dist_u'] > 0 
+    mask *= target_edges['dist_u'] <= 1 
+    mask *= target_edges['u'] < target_edges['uu']
+    mask > 0
+    target_edges = np.sort(target_edges[mask])
+    return inference_costs_dict, subgraph_matches, iters, len(optimum_match), target_edges
