@@ -4,12 +4,11 @@ import sqlalchemy
 import contextlib
 import itertools
 import os
-from typing import Iterable
-from fornax.model import Node, Edge, Match
-import fornax.model as model
 
+from typing import Iterable
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+import fornax.model as model
 
 
 DB_URL = os.environ.get('FORNAX_DB_URL')
@@ -92,7 +91,7 @@ class Graph:
     
     def __len__(self):
         with session_scope() as session:
-            count = session.query(Node).filter(Node.graph_id==self._graph_id).count()
+            count = session.query(model.Node).filter(model.Node.graph_id==self._graph_id).count()
         return count
 
     def __repr__(self):
@@ -101,7 +100,7 @@ class Graph:
     def nodes(self):
         self.check_exists()
         with session_scope() as session:
-            query = session.query(Node.node_id).filter(Node.graph_id==self._graph_id)
+            query = session.query(model.Node.node_id).filter(model.Node.graph_id==self._graph_id)
             chained = itertools.chain.from_iterable(query)
             for node_id in chained:
                 yield node_id
@@ -109,9 +108,8 @@ class Graph:
     def edges(self):
         with session_scope() as session:
             self.check_exists()
-            query = session.query(Edge).filter(Edge.graph_id==self._graph_id)
-            # only yield each edge once
-            query = query.filter(Edge.start < Edge.end)
+            query = session.query(model.Edge).filter(model.Edge.graph_id==self._graph_id)
+            query = query.filter(model.Edge.start < model.Edge.end)
             for edge in query:
                 yield (edge.start, edge.end)
 
@@ -124,7 +122,7 @@ class Graph:
         
         with session_scope() as session:
         
-            query = session.query(sqlalchemy.func.max(Node.graph_id)).first()
+            query = session.query(sqlalchemy.func.max(model.Node.graph_id)).first()
             graph_id = query[0]
             
             if graph_id is None:
@@ -132,13 +130,13 @@ class Graph:
             else:
                 graph_id += 1
             
-            session.add_all(Node(node_id=node_id, graph_id=graph_id) for node_id in check_nodes(nodes))
+            session.add_all(model.Node(node_id=node_id, graph_id=graph_id) for node_id in check_nodes(nodes))
             session.commit()
             session.add_all(
                 itertools.chain.from_iterable(
                     (
-                        Edge(start=start, end=end, graph_id=graph_id), 
-                        Edge(start=end, end=start, graph_id=graph_id)
+                        model.Edge(start=start, end=end, graph_id=graph_id), 
+                        model.Edge(start=end, end=start, graph_id=graph_id)
                     )
                     for start, end in check_edges(edges)
                 )
@@ -154,12 +152,12 @@ class Graph:
     def delete(self):
         self.check_exists()
         with session_scope() as session:
-            session.query(Edge).filter(Edge.graph_id==self._graph_id).delete()
-            session.query(Node).filter(Node.graph_id==self._graph_id).delete()
+            session.query(model.Edge).filter(model.Edge.graph_id==self._graph_id).delete()
+            session.query(model.Node).filter(model.Node.graph_id==self._graph_id).delete()
 
     def check_exists(self):
         with session_scope() as session:
-            exists = session.query(sqlalchemy.exists().where(Node.graph_id==self._graph_id)).scalar()
+            exists = session.query(sqlalchemy.exists().where(model.Node.graph_id==self._graph_id)).scalar()
         if not exists:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
 
@@ -189,10 +187,11 @@ class Query:
                 query_id=query_id, start_graph_id=start_graph.graph_id, end_graph_id=end_graph.graph_id
             )
             session.add(new_query)
+            session.commit()
 
             session.add_all(
                 [
-                    Match(
+                    model.Match(
                         start=start, 
                         end=end, 
                         weight=weight, 
@@ -214,24 +213,32 @@ class Query:
     def delete(self):
         self.check_exists()
         with session_scope() as session:
-            session.query(Match).filter(Match.query_id==self._query_id).delete()
+            session.query(model.Match).filter(model.Match.query_id==self._query_id).delete()
 
     def check_exists(self):
         with session_scope() as session:
-            exists = session.query(sqlalchemy.exists().where(Match.query_id==self._query_id)).scalar()
+            exists = session.query(sqlalchemy.exists().where(model.Match.query_id==self._query_id)).scalar()
         if not exists:
             raise ValueError('cannot read query with graph id: {}'.format(self._query_id))
 
     def execute(self, hopping_distance=2, max_iters=10, n=5, edges=False):
-
+        self.check_exists()
         #TODO: support offsets
         offsets = None
         query = fornax.select.join(self._query_id, h=hopping_distance, offsets=offsets)
 
         with session_scope() as session:
             records = query.with_session(session).all()
+            query = session.query(model.Node).join(model.Query, model.Node.graph_id == model.Query.start_graph_id)
+            query = query.filter(model.Query.query_id==self._query_id)
+            query_nodes = [node.node_id for node in query.all()]
+            query_edges = None
+            if edges:
+                query = session.query(model.Edge).join(model.Query, model.Edge.graph_id == model.Query.start_graph_id)
+                query = query.filter(model.Query.query_id==self._query_id).filter(model.Edge.start < model.Edge.end)
+                query_edges = [(edge.start, edge.end) for edge in query.all()]
 
-        inference_costs, subgraphs, iters, sz = fornax.opt.solve(
+        inference_costs, subgraphs, iters, sz, target_edges = fornax.opt.solve(
             records, 
             hopping_distance=hopping_distance, 
             max_iters=max_iters
@@ -244,28 +251,28 @@ class Query:
             scores.append(score)
         
         idx = sorted(enumerate(scores), key=lambda x: x[1])
-        payload = []
+        payload = {
+            'iterations': iters, 
+            'subgraph_matches': [],
+            'query_nodes': query_nodes,
+            'query_edges': query_edges,
+        }
+
         for i, score in idx[:min(n, len(idx))]:
 
-            subgraph = subgraphs[i]
-            query_edges = []
-            target_edges = []
-
-            if edges:
-                #TODO: populate edges here, awating schema update
-                pass
-            
-            payload.append(
+            subgraph = [(int(a), int(b)) for a, b in subgraphs[i]]
+            payload['subgraph_matches'].append(
                 {
-                    'graph': subgraph, 
-                    'score': score,
-                    'matches': {k:inference_costs[k] for k in subgraph},
-                    'query_nodes': [k[0] for k in subgraph],
-                    'query_edges': query_edges,
-                    'target_nodes': [k[1] for k in subgraph],
-                    'target_edges': target_edges
+                    'subgraph_match': subgraph, 
+                    'total_score': score,
+                    'individual_scores': [float(inference_costs[match]) for match in subgraph]
                 } 
             )
-        
+
+        target_edges = [(int(start), int(end)) for start, end in target_edges[['u', 'uu']]]
+        target_nodes = set([match[1] for result in payload['subgraph_matches'] for match in result['subgraph_match']])
+        between_target_nodes = lambda x: x[0] in target_nodes and x[1] in target_nodes
+        payload['target_edges'] = list(filter(between_target_nodes, target_edges))
+        payload['target_nodes'] = list(target_nodes)
 
         return payload
