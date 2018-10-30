@@ -130,6 +130,7 @@ class TestOpt(unittest.TestCase):
             perfect[0],
             [(1, 8), (2, 9), (3, 6), (4, 10), (5, 11)]
         )
+        
         self.assertSequenceEqual(
             perfect[1],
             [(1, 8), (2, 9), (3, 12), (4, 10), (5, 11)]
