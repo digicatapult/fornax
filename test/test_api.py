@@ -142,4 +142,52 @@ class TestQuery(TestCaseDB):
             [(1, 1, 'b'), (1, 2, 1), (2, 2, 1)]
         )
 
+    def test_execute(self):
+
+        src = fornax.api.Graph.create(
+            range(1, 6),
+            [
+                (1, 3),
+                (1, 2),
+                (2, 4),
+                (4, 5)
+            ]
+        )
+
+        target = fornax.api.Graph.create(
+            range(1, 14),
+            [
+                (1, 2), (1, 3), (1, 4),
+                (3, 7), (4, 5), (4, 6),
+                (5, 7), (6, 8), (7, 10),
+                (8, 9), (8, 12), (9, 10),
+                (10, 11), (11, 12), (11, 13),
+            ]
+        )
+
+        matches = [
+            (1, 1, 1), (1, 4, 1), (1, 8, 1),
+            (2, 2, 1), (2, 5, 1), (2, 9, 1),
+            (3, 3, 1), (3, 6, 1), (3, 12, 1), (3, 13, 1),
+            (4, 7, 1), (4, 10, 1),
+            (5, 11, 1)
+        ]
+
+        query = fornax.api.Query.create(src, target, matches)
+        results = query.execute(n=2)
+        subgraphs = {tuple(result['graph']) for result in results}
+        self.assertTrue(len(subgraphs) == 2)
+        self.assertTrue(all(result['score'] == 0 for result in results))
+        self.assertTrue(((1, 8), (2, 9), (3, 6), (4, 10), (5, 11)) in subgraphs)
+        self.assertTrue(((1, 8), (2, 9), (3, 12), (4, 10), (5, 11)) in subgraphs)
+        self.assertTrue(all(result['query_nodes'] == [1, 2, 3, 4, 5] for result in results))
+        self.assertTrue(
+            all(
+                set(result['target_nodes']) == set((8, 9, 10, 11, 12))
+                or
+                set(result['target_nodes']) == set((8, 9, 6, 10, 11))
+                for result in results
+            )
+        )
+
 
