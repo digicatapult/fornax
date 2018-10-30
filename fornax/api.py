@@ -177,7 +177,7 @@ class Query:
     def create(cls, start_graph: Graph, end_graph: Graph, matches):
 
         with session_scope() as session:
-            query = session.query(sqlalchemy.func.max(Match.query_id)).first()
+            query = session.query(sqlalchemy.func.max(model.Query.query_id)).first()
             query_id = query[0]
             
             if query_id is None:
