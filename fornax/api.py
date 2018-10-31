@@ -248,6 +248,7 @@ class Query:
         for subgraph in subgraphs:
             score = sum(inference_costs[k] for k in subgraph)
             score += sz - len(subgraph)
+            score /= len(query_nodes)
             scores.append(score)
         
         idx = sorted(enumerate(scores), key=lambda x: x[1])
