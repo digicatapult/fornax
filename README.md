@@ -24,21 +24,27 @@ python run_test.py
 
 ```python
 # create a query graph
-query_graph = fornax.GraphHandle.create(
+query_graph_handle = fornax.GraphHandle.create(
     [0, 1, 2], 
     [(0, 1), (1, 2)], 
     metadata=[{'label': 'Hulk'}, {'label': 'Lady'}, {'label': 'Storm'}]
 )
 
 # create a target graph
-query_graph = fornax.GraphHandle.create(
+target_graph_handle = fornax.GraphHandle.create(
     comic_book_nodes, 
     comic_book_edges, 
     metadata=node_metadata
 )
 
+matches = [
+    (query_node_id, target_node_id, weight) 
+    for query_node_id, target_node_id, weight 
+    in string_similarities
+]
+
 # stage a query
-query = fornax.QueryHandle.create(query_graph, target_graph, matches)
+query = fornax.QueryHandle.create(query_graph_handle, target_graph_handle, matches)
 
 # go!
 results = query.execute(n=10, edges=True)
