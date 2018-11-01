@@ -11,7 +11,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import fornax.model as model
 
-
+# Set this environment variable to point towards another database
 DB_URL = os.environ.get('FORNAX_DB_URL')
 if DB_URL is None:
     DB_URL = 'sqlite://'
@@ -23,6 +23,7 @@ Session = sqlalchemy.orm.sessionmaker(bind=ENGINE)
 fornax.model.Base.metadata.create_all(CONNECTION)
 
 
+# enforce foreign key constrains in SQLite
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
@@ -69,6 +70,7 @@ def check_edges(edges):
 
 
 def check_matches(matches):
+    """ guard for inserted matches """
     for start, end, weight in matches:
         try:
             start = int(start) 
@@ -88,13 +90,25 @@ def check_matches(matches):
 
 
 class GraphHandle:
+    """ Represents a connection to a graph in the database backend """
 
+    def __init__(self, graph_id: int):
+        """Get a handle to the graph with id `graph_id` in the database backend
+        
+        Arguments:
+            graph_id {int} -- unique id for an existing graph
+        """
 
-    def __init__(self, graph_id):
         self._graph_id = graph_id
         self.check_exists()
     
     def __len__(self):
+        """Return the number of nodes in the graph
+        
+        Returns:
+            int -- node count
+        """
+
         with session_scope() as session:
             count = session.query(model.Node).filter(model.Node.graph_id==self._graph_id).count()
         return count
@@ -103,6 +117,8 @@ class GraphHandle:
         return '<GraphHandle(graph_id={})>'.format(self._graph_id)
         
     def nodes(self):
+        """ Yield each node id in the graph"""
+
         self.check_exists()
         with session_scope() as session:
             query = session.query(model.Node.node_id).filter(model.Node.graph_id==self._graph_id)
@@ -111,6 +127,7 @@ class GraphHandle:
                 yield node_id
     
     def edges(self):
+        """ Yield each edge in the graph as a tuple (start, end) """
         with session_scope() as session:
             self.check_exists()
             query = session.query(model.Edge).filter(model.Edge.graph_id==self._graph_id)
@@ -124,7 +141,19 @@ class GraphHandle:
 
     @classmethod
     def create(cls, nodes:Iterable, edges:Iterable, metadata=None): 
+        """Create a new graph and return a handle to it.
         
+        Arguments:
+            nodes {Iterable} -- Iterable of unique integer node identifiers
+            edges {Iterable} -- Pairs of unique integer node identifiers being joined by an undirected edge
+        
+        Keyword Arguments:
+            metadata {dict} -- A dictionary of metadata about each node (must be serialisable to json) (default: {None})
+        
+        Returns:
+            GraphHandle -- Handle to a new graph
+        """
+
         with session_scope() as session:
         
             query = session.query(sqlalchemy.func.max(model.Node.graph_id)).first()
@@ -161,24 +190,39 @@ class GraphHandle:
         return GraphHandle(graph_id)
 
     @classmethod
-    def read(cls, graph_id):
+    def read(cls, graph_id: int):
+        """ return a handle to the graph with id graph_id"""
         return GraphHandle(graph_id)
 
     def delete(self):
+        """ delete this graph from the database back end """
         self.check_exists()
         with session_scope() as session:
             session.query(model.Edge).filter(model.Edge.graph_id==self._graph_id).delete()
             session.query(model.Node).filter(model.Node.graph_id==self._graph_id).delete()
 
     def check_exists(self):
+        """ raise an exception if the graph handle is pointing to a graph that no longer exists """
         with session_scope() as session:
             exists = session.query(sqlalchemy.exists().where(model.Node.graph_id==self._graph_id)).scalar()
         if not exists:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
 
 class QueryHandle:
+    """ Represents a handle to a query in the database back end.
+    A query is a tuple of 3 objects:
+        - a query graph
+        - a target graph
+        - a set of directed edges going from the query graph to the target graph
+    """
 
-    def __init__(self, query_id):
+
+    def __init__(self, query_id: int):
+        """Create a handle to a query with uniuque integer id `query_id`
+        
+        Arguments:
+            query_id {int} -- a uniuque integer id number for a query
+        """
         self._query_id = query_id
         self.check_exists()
 
@@ -187,7 +231,17 @@ class QueryHandle:
         return self._query_id
 
     @classmethod
-    def create(cls, start_graph: GraphHandle, end_graph: GraphHandle, matches):
+    def create(cls, start_graph: GraphHandle, end_graph: GraphHandle, matches: (int, int)):
+        """Create a new query
+        
+        Arguments:
+            start_graph {GraphHandle} -- A query graph
+            end_graph {GraphHandle} -- A target graph
+            matches {(int, int)} -- a set of directed edges going from the query graph to the target graph
+        
+        Returns:
+            QueryHandle -- a new query handle
+        """
 
         with session_scope() as session:
             query = session.query(sqlalchemy.func.max(model.Query.query_id)).first()
@@ -223,14 +277,17 @@ class QueryHandle:
 
     @classmethod
     def read(cls, query_id):
+        """ create a new handle to the query with query_id `query_id`"""
         return GraphHandle(query_id)
 
     def delete(self):
+        """ delete this query"""
         self.check_exists()
         with session_scope() as session:
             session.query(model.Match).filter(model.Match.query_id==self._query_id).delete()
 
     def check_exists(self):
+        """ raise an exception if this query no longer exists """
         with session_scope() as session:
             exists = session.query(sqlalchemy.exists().where(model.Match.query_id==self._query_id)).scalar()
         if not exists:
@@ -240,6 +297,18 @@ class QueryHandle:
         return '<QueryHandle(query_id={})>'.format(self._query_id)
 
     def execute(self, hopping_distance=2, max_iters=10, n=5, edges=False):
+        """Find the `n` best subgraphs in the target graph that match the query graph
+        
+        Keyword Arguments:
+            hopping_distance {int} -- Hyperparameter representing a number of hops on a graph (default: {2})
+            max_iters {int} -- maximum number of iterations before the optimiser quits (default: {10})
+            n {int} -- number of matches to return (default: {5})
+            edges {bool} -- include diagnostic information about edges (default: {False})
+        
+        Returns:
+            dict -- a query result which can be serialised as JSON
+        """
+
         self.check_exists()
         #TODO: support offsets
         offsets = None
