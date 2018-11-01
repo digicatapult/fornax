@@ -41,7 +41,7 @@ query_graph = fornax.GraphHandle.create(
 query = fornax.QueryHandle.create(query_graph, target_graph, matches)
 
 # go!
-results = query.execute(n=10, edges=False)
+results = query.execute(n=10, edges=True)
 ```
 
 ## Tutorials
