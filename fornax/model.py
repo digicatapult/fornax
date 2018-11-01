@@ -75,6 +75,7 @@ class Node(Base):
     )
     node_id = Column(Integer, CheckConstraint("node_id>=0", name="q_min_id_check"))
     graph_id = Column(Integer)
+    meta = Column(String, nullable=True)
     
     def neighbours(self):
         return [x.end_node for x in self.start_edges]
