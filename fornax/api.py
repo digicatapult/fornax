@@ -45,17 +45,19 @@ def session_scope():
 
 
 def check_nodes(nodes):
-
+    """ guard for inserting nodes """
     for node in nodes:
         try:
             node = int(node)
         except ValueError:
             raise ValueError('<Node(node_id={})>, node_id must be an integer'.format(node))
+        if node > 2147483647 and DB_URL == 'sqlite://':
+            raise ValueError('node id {} is too large'.format(node))
         yield node
 
 
 def check_edges(edges):
-
+    """ guard for inserting nodes edges """
     for start, end in edges:
         try:
             start, end = int(start), int(end)
