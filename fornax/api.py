@@ -3,6 +3,7 @@ import fornax.opt
 import sqlalchemy
 import contextlib
 import itertools
+import json
 import os
 
 from typing import Iterable
@@ -21,11 +22,13 @@ CONNECTION = ENGINE.connect()
 Session = sqlalchemy.orm.sessionmaker(bind=ENGINE)
 fornax.model.Base.metadata.create_all(CONNECTION)
 
+
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
+
 
 @contextlib.contextmanager
 def session_scope():
@@ -82,7 +85,7 @@ def check_matches(matches):
         yield start, end, weight
 
 
-class Graph:
+class GraphHandle:
 
 
     def __init__(self, graph_id):
@@ -118,7 +121,7 @@ class Graph:
         return self._graph_id
 
     @classmethod
-    def create(cls, nodes:Iterable, edges:Iterable): 
+    def create(cls, nodes:Iterable, edges:Iterable, metadata=None): 
         
         with session_scope() as session:
         
@@ -130,8 +133,18 @@ class Graph:
             else:
                 graph_id += 1
             
-            session.add_all(model.Node(node_id=node_id, graph_id=graph_id) for node_id in check_nodes(nodes))
+            if metadata is not None:
+                session.add_all(
+                    model.Node(node_id=node_id, graph_id=graph_id, meta=json.dumps(meta)) 
+                    for node_id, meta in zip(check_nodes(nodes), metadata)
+                )
+            else:
+                session.add_all(
+                    model.Node(node_id=node_id, graph_id=graph_id) 
+                    for node_id in check_nodes(nodes)
+                )
             session.commit()
+
             session.add_all(
                 itertools.chain.from_iterable(
                     (
@@ -143,11 +156,11 @@ class Graph:
             )
             session.commit()
         
-        return Graph(graph_id)
+        return GraphHandle(graph_id)
 
     @classmethod
     def read(cls, graph_id):
-        return Graph(graph_id)
+        return GraphHandle(graph_id)
 
     def delete(self):
         self.check_exists()
@@ -161,7 +174,7 @@ class Graph:
         if not exists:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
 
-class Query:
+class QueryHandle:
 
     def __init__(self, query_id):
         self._query_id = query_id
@@ -172,7 +185,7 @@ class Query:
         return self._query_id
 
     @classmethod
-    def create(cls, start_graph: Graph, end_graph: Graph, matches):
+    def create(cls, start_graph: GraphHandle, end_graph: GraphHandle, matches):
 
         with session_scope() as session:
             query = session.query(sqlalchemy.func.max(model.Query.query_id)).first()
@@ -204,11 +217,11 @@ class Query:
             )
             session.commit()
         
-        return Query(query_id)
+        return QueryHandle(query_id)
 
     @classmethod
     def read(cls, query_id):
-        return Graph(query_id)
+        return GraphHandle(query_id)
 
     def delete(self):
         self.check_exists()
@@ -221,29 +234,48 @@ class Query:
         if not exists:
             raise ValueError('cannot read query with graph id: {}'.format(self._query_id))
 
+    def __repr__(self):
+        return '<QueryHandle(query_id={})>'.format(self._query_id)
+
     def execute(self, hopping_distance=2, max_iters=10, n=5, edges=False):
         self.check_exists()
         #TODO: support offsets
         offsets = None
-        query = fornax.select.join(self._query_id, h=hopping_distance, offsets=offsets)
 
+        # optimisation
         with session_scope() as session:
-            records = query.with_session(session).all()
-            query = session.query(model.Node).join(model.Query, model.Node.graph_id == model.Query.start_graph_id)
-            query = query.filter(model.Query.query_id==self._query_id)
-            query_nodes = [node.node_id for node in query.all()]
-            query_edges = None
-            if edges:
-                query = session.query(model.Edge).join(model.Query, model.Edge.graph_id == model.Query.start_graph_id)
-                query = query.filter(model.Query.query_id==self._query_id).filter(model.Edge.start < model.Edge.end)
-                query_edges = [(edge.start, edge.end) for edge in query.all()]
+            sql_query = fornax.select.join(self._query_id, h=hopping_distance, offsets=offsets)
+            records = sql_query.with_session(session).all()
 
-        inference_costs, subgraphs, iters, sz, target_edges = fornax.opt.solve(
+        inference_costs, subgraphs, iters, sz, target_edges_arr = fornax.opt.solve(
             records, 
             hopping_distance=hopping_distance, 
             max_iters=max_iters
         )
 
+        # query node meta data
+        with session_scope() as session:
+            sql_query = session.query(model.Node)
+            sql_query = sql_query.join(model.Query, model.Node.graph_id == model.Query.start_graph_id)
+            sql_query = sql_query.filter(model.Query.query_id==self._query_id)
+            query_nodes = [
+                {'id': node.node_id, 'meta':json.loads(node.meta)} 
+                if node.meta is not None
+                else {'id': node.node_id}
+                for node in sql_query.all()
+            ]
+
+        # query edge meta data
+        with session_scope() as session:
+            query_edges = None
+            if edges:
+                sql_query = session.query(model.Edge)
+                sql_query = sql_query.join(model.Query, model.Edge.graph_id == model.Query.start_graph_id)
+                sql_query = sql_query.filter(model.Query.query_id==self._query_id)
+                sql_query = sql_query.filter(model.Edge.start < model.Edge.end)
+                query_edges = [(edge.start, edge.end, 1) for edge in sql_query.all()]
+
+        # generate json for top k-matches
         scores = []
         for subgraph in subgraphs:
             score = sum(inference_costs[k] for k in subgraph)
@@ -256,24 +288,79 @@ class Query:
             'iterations': iters, 
             'subgraph_matches': [],
             'query_nodes': query_nodes,
-            'query_edges': query_edges,
         }
 
         for i, score in idx[:min(n, len(idx))]:
 
-            subgraph = [(int(a), int(b)) for a, b in subgraphs[i]]
+            subgraph = [
+                {
+                    'query_node_offset': int(a), 
+                    'target_node_offset': int(b)
+                } 
+                for a, b in subgraphs[i]
+            ]
             payload['subgraph_matches'].append(
                 {
                     'subgraph_match': subgraph, 
                     'total_score': score,
-                    'individual_scores': [float(inference_costs[match]) for match in subgraph]
+                    'individual_scores': [
+                        float(inference_costs[match['query_node_offset'], match['target_node_offset']])
+                        for match in subgraph
+                    ]
                 } 
             )
 
-        target_edges = [(int(start), int(end)) for start, end in target_edges[['u', 'uu']]]
-        target_nodes = set([match[1] for result in payload['subgraph_matches'] for match in result['subgraph_match']])
+        
+        # only include data about target nodes that appear in one of the matches
+        target_nodes = {match['target_node_offset'] for result in payload['subgraph_matches'] for match in result['subgraph_match']}
+        
+        # only include target edges that are between the target nodes above
         between_target_nodes = lambda x: x[0] in target_nodes and x[1] in target_nodes
-        payload['target_edges'] = list(filter(between_target_nodes, target_edges))
-        payload['target_nodes'] = list(target_nodes)
+        target_edges = [(int(start), int(end), int(d)) for start, end, d in target_edges_arr[['u', 'uu', 'dist_u']]]
+        target_edges = list(filter(between_target_nodes, target_edges))
+        target_nodes = list(target_nodes)
+
+        # get the mata data for target nodes
+        with session_scope() as session:
+            sql_query = session.query(model.Node.meta)
+            sql_query = sql_query.filter(model.Node.node_id.in_(target_nodes))
+            sql_query = sql_query.order_by(model.Node.node_id.desc())
+            meta_data = sql_query.all()
+        target_nodes = sorted(target_nodes, reverse=True)
+        payload['target_nodes'] = [{'id': item} for item in target_nodes]
+        for target_node, meta in zip(payload['target_nodes'], meta_data):
+            if meta[0] is not None:
+                target_node['meta'] = json.loads(meta[0])
+
+        # convert edge node ids into offsets
+        query_node_lookup = {obj['id']:i for i, obj in enumerate(list(query_nodes))}
+        target_node_lookup = {obj:i for i, obj in enumerate(list(target_nodes))}
+
+        for result in payload['subgraph_matches']:
+            result['subgraph_match'] = [
+                {
+                    'query_node_offset': query_node_lookup[item['query_node_offset']], 
+                    'target_node_offset': target_node_lookup[item['target_node_offset']]
+                } 
+                for item in result['subgraph_match']
+            ]
+
+        if edges:
+
+            payload['target_edges'] = [
+                {
+                    'start_offset': target_node_lookup[start],
+                    'end_offset': target_node_lookup[end],
+                }
+                for start, end, d in target_edges
+            ]
+
+            payload['query_edges'] = [
+                {
+                    'start_offset': query_node_lookup[start],
+                    'end_offset': query_node_lookup[end],
+                }
+                for start, end, d in query_edges
+            ]
 
         return payload
