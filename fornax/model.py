@@ -5,9 +5,6 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-"""Eagerly load Nodes within a hopping distance of JOIN_DEPTH"""
-JOIN_DEPTH = 2
-
 
 class Query(Base):
 
