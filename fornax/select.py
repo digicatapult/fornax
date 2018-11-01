@@ -1,8 +1,7 @@
 from fornax.model import Base, Match, Node, Edge
-from sqlalchemy.dialects.postgresql import ARRAY, array
-from sqlalchemy.orm import Query, aliased
-from sqlalchemy import literal, and_, cast, not_, func, or_, alias
-from typing import List, Tuple
+from sqlalchemy.orm import Query
+from sqlalchemy import literal, and_, func, alias
+from typing import Tuple
 from collections import Iterable
 
 
@@ -46,14 +45,14 @@ def neighbours(h:int, start) -> Query:
 def _neighbours(seed: Query, h, max_=None) -> Query:
 
     seed = seed.subquery()
-    neighbours = Query([
+    neighbours_query = Query([
         seed.c.match.label('match'),
         seed.c.graph_id.label('graph_id'), 
         Edge.end.label('neighbour'), 
         literal(h).label('distance'),
     ])
-    neighbours = neighbours.distinct()
-    neighbours = neighbours.join(
+    neighbours_query = neighbours_query.distinct()
+    neighbours_query = neighbours_query.join(
         Edge, 
         and_(
             Edge.start == seed.c.neighbour,
@@ -62,9 +61,9 @@ def _neighbours(seed: Query, h, max_=None) -> Query:
     )
 
     if h == max_:
-        return neighbours
+        return neighbours_query
     else:
-        return neighbours.union(_neighbours(neighbours, h+1, max_=max_))
+        return neighbours_query.union(_neighbours(neighbours_query, h+1, max_=max_))
 
 
 def join(query_id:int, h: int, offsets: Tuple[int, int]=None) -> Query:
