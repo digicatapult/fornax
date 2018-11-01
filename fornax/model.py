@@ -1,4 +1,5 @@
-from sqlalchemy import Column, ForeignKey, Integer, Float, CheckConstraint, String, ForeignKeyConstraint, PrimaryKeyConstraint, Index, UniqueConstraint
+from sqlalchemy import Column, Integer, Float, CheckConstraint, String
+from sqlalchemy import ForeignKeyConstraint, PrimaryKeyConstraint, Index, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
