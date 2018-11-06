@@ -11,6 +11,8 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import fornax.model as model
 
+#TODO: sqlalchemy database integrity exceptions are not caught by the API
+
 # Set this environment variable to point towards another database
 DB_URL = os.environ.get('FORNAX_DB_URL')
 if DB_URL is None:
@@ -365,6 +367,7 @@ class QueryHandle:
 
             subgraph = [
                 {
+                    #TODO: these should be represented by a list of match offsets into a seperate list of matches
                     'query_node_offset': int(a), 
                     'target_node_offset': int(b)
                 } 
