@@ -77,10 +77,9 @@ class Node(Base):
     __tablename__ = 'node'
     __table_args__ = (
         PrimaryKeyConstraint('graph_id', 'node_id'),
-        ForeignKeyConstraint(['graph_id'], ['graph.graph_id']),
     )
     node_id = Column(Integer, CheckConstraint("node_id>=0", name="q_min_id_check"))
-    graph_id = Column(Integer)
+    graph_id = Column(Integer, ForeignKey("graph.graph_id"))
     meta = Column(String, nullable=True)
     
     def neighbours(self):
