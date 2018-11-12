@@ -185,17 +185,17 @@ class GraphHandle:
             raise ValueError('add_nodes requires at least one keyword argument')
         if 'id' in keys:
             raise(ValueError('id is a reserved node attribute which cannot be assigned'))
-        with session_scope() as session:
-            zipped = enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
-            nodes = (
-                model.Node(
-                    node_id=node_id, 
-                    graph_id=self.graph_id, 
-                    meta=json.dumps({key: val for key, val in zip(keys, values)})
-                )
-                for node_id, values in zipped
+        zipped = enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
+        nodes = (
+            model.Node(
+                node_id=node_id, 
+                graph_id=self.graph_id, 
+                meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
-            nodes = check_nodes(nodes)
+            for node_id, values in zipped
+        )
+        nodes = check_nodes(nodes)
+        with session_scope() as session:
             session.add_all(nodes)
             session.commit()
 
@@ -215,15 +215,15 @@ class GraphHandle:
 
         keys = kwargs.keys()
         zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
-            edges = (
-                model.Edge(
-                    start=start,
-                    end=end,
-                    graph_id=self._graph_id,
-                    meta=json.dumps({key: val for key, val in zip(keys, values)})
-                )
-                for start, end, *values in zipped
+        edges = (
+            model.Edge(
+                start=start,
+                end=end,
+                graph_id=self._graph_id,
+                meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
+            for start, end, *values in zipped
+        )
         edges = check_edges(edges)
         with session_scope() as session:
             session.add_all(edges)
