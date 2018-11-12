@@ -166,7 +166,11 @@ class GraphHandle:
             else:
                 graph_id += 1
             
+            session.add(model.Graph(graph_id=graph_id))
+            session.commit()
+            
             if metadata is not None:
+
                 session.add_all(
                     model.Node(node_id=node_id, graph_id=graph_id, meta=json.dumps(meta)) 
                     for node_id, meta in zip(check_nodes(nodes), metadata)
@@ -176,6 +180,7 @@ class GraphHandle:
                     model.Node(node_id=node_id, graph_id=graph_id) 
                     for node_id in check_nodes(nodes)
                 )
+
             session.commit()
 
             session.add_all(
