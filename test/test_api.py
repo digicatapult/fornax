@@ -68,6 +68,12 @@ class TestGraph(TestCaseDB):
         ids = range(3)
         self.assertRaises(ValueError, graph.add_nodes, id=ids)
 
+    def test_no_metadata(self):
+        """Nodes must have some metadata associated with them
+        """
+        graph = fornax.GraphHandle.create()
+        self.assertRaises(ValueError, graph.add_nodes)
+
     def test_add_edges(self):
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
