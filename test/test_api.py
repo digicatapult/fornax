@@ -44,6 +44,7 @@ class TestGraph(TestCaseDB):
         names = ['adam', 'ben', 'chris']
         graph.add_nodes(name=names)
         nodes = self.session.query(fornax.model.Node).filter(fornax.model.Node.graph_id==0).all()
+        nodes = sorted(nodes, key=lambda node: node.node_id)
         self.assertListEqual(names, [json.loads(node.meta)['name'] for node in nodes])
 
     def test_add_nodes_more_meta(self):
@@ -52,6 +53,7 @@ class TestGraph(TestCaseDB):
         ages = [9, 10 ,11]
         graph.add_nodes(name=names, age=ages)
         nodes = self.session.query(fornax.model.Node).filter(fornax.model.Node.graph_id==0).all()
+        nodes = sorted(nodes, key=lambda node: node.node_id)
         self.assertListEqual(names, [json.loads(node.meta)['name'] for node in nodes])
         self.assertListEqual(ages, [json.loads(node.meta)['age'] for node in nodes])
         
