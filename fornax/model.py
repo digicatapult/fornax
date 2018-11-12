@@ -1,9 +1,16 @@
 from sqlalchemy import Column, Integer, Float, CheckConstraint, String
-from sqlalchemy import ForeignKeyConstraint, PrimaryKeyConstraint, Index, UniqueConstraint
+from sqlalchemy import PrimaryKeyConstraint, Index, UniqueConstraint
+from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
+
+
+class Graph(Base):
+    """ A graph containing nodes and edges """
+    __tablename__ = 'graph'
+    graph_id = Column(Integer, primary_key=True)
 
 
 class Query(Base):
@@ -14,8 +21,8 @@ class Query(Base):
     )
 
     query_id = Column(Integer, primary_key=True)
-    start_graph_id = Column(Integer, nullable=False, index=True)
-    end_graph_id = Column(Integer, nullable=False, index=True)
+    start_graph_id = Column(Integer, ForeignKey("graph.graph_id"), nullable=False, index=True)
+    end_graph_id = Column(Integer, ForeignKey("graph.graph_id"), nullable=False, index=True)
     Index('query_idx', 'query_id', 'start_graph_id', 'end_graph_id', unique=True)
 
 
@@ -65,11 +72,12 @@ class Match(Base):
 
 
 class Node(Base):
-    """Node in the Query Graph"""
+    """Node in a Graph"""
 
     __tablename__ = 'node'
     __table_args__ = (
         PrimaryKeyConstraint('graph_id', 'node_id'),
+        ForeignKeyConstraint(['graph_id'], ['graph.graph_id']),
     )
     node_id = Column(Integer, CheckConstraint("node_id>=0", name="q_min_id_check"))
     graph_id = Column(Integer)
@@ -83,7 +91,7 @@ class Node(Base):
 
 
 class Edge(Base):
-    """Joins Nodes it the Query Graph"""
+    """Joins Nodes in a Graph"""
 
     __tablename__ = 'edge'
     __table_args__ = (
