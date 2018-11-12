@@ -102,6 +102,7 @@ class Edge(Base):
     start = Column(Integer)
     end = Column(Integer)
     graph_id = Column(Integer)
+    meta = Column(String, nullable=True)
 
     start_node = relationship(
         'Node', 
