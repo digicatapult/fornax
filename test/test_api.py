@@ -92,7 +92,6 @@ class TestGraph(TestCaseDB):
         self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
         self.assertListEqual(types, [json.loads(edge.meta)['type'] for edge in edges])
 
-
     def test_simple_graph(self):
         """Test for a simple graph.
         A simple graph is a graph with no loops.
