@@ -61,14 +61,14 @@ def check_nodes(nodes):
 
 def check_edges(edges):
     """ guard for inserting nodes edges """
-    for start, end in edges:
+    for edge in edges:
         try:
-            start, end = int(start), int(end)
+            start, end = int(edge.start), int(edge.end)
         except ValueError:
-            raise ValueError('<Edge(start={}, end={})>, edge start and end must be integers'.format(start, end))
+            raise ValueError('<Edge(start={}, end={})>, edge start and end must be integers'.format(edge.start, edge.end))
         if start == end:
             raise ValueError('<Edge(start={}, end={})>, edges must start and end on different nodes'.format(start, end))
-        yield start, end
+        yield edge
 
 
 def check_matches(matches):
@@ -183,3 +183,21 @@ class GraphHandle:
             nodes = check_nodes(nodes)
             session.add_all(nodes)
             session.commit()
+
+    def add_edges(self, sources, targets, **kwargs):
+        keys = kwargs.keys()
+        zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
+        with session_scope() as session:
+            edges = (
+                model.Edge(
+                    start=start,
+                    end=end,
+                    graph_id=self._graph_id,
+                    meta=json.dumps({key: val for key, val in zip(keys, values)})
+                )
+                for start, end, *values in zipped
+            )
+            edges = check_edges(edges)
+            session.add_all(edges)
+            session.commit()
+        
