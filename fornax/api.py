@@ -117,25 +117,6 @@ class GraphHandle:
 
     def __repr__(self):
         return '<GraphHandle(graph_id={})>'.format(self._graph_id)
-        
-    def nodes(self):
-        """ Yield each node id in the graph"""
-
-        self.check_exists()
-        with session_scope() as session:
-            query = session.query(model.Node.node_id).filter(model.Node.graph_id==self._graph_id)
-            chained = itertools.chain.from_iterable(query)
-            for node_id in chained:
-                yield node_id
-    
-    def edges(self):
-        """ Yield each edge in the graph as a tuple (start, end) """
-        with session_scope() as session:
-            self.check_exists()
-            query = session.query(model.Edge).filter(model.Edge.graph_id==self._graph_id)
-            query = query.filter(model.Edge.start < model.Edge.end)
-            for edge in query:
-                yield (edge.start, edge.end)
 
     @property
     def graph_id(self):

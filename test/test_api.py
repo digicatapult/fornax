@@ -52,19 +52,6 @@ class TestGraph(TestCaseDB):
         graph = fornax.api.GraphHandle.create(range(N), [])
         self.assertEqual(len(graph), N)
 
-    def test_yield_nodes(self):
-        self.assertListEqual(
-            list(fornax.api.GraphHandle.create([1, 2, 3], [(1, 2), (2, 3)]).nodes()),
-            [1, 2, 3]
-        )
-
-    def test_yield_edges(self):
-        edges = [(1, 2), (2, 3)]
-        self.assertListEqual(
-            sorted(fornax.api.GraphHandle.create([1, 2, 3], edges).edges()),
-            edges
-        )
-
     def test_delete(self):
         graph = fornax.api.GraphHandle.create(range(5), zip(range(2), range(2, 5)))
         graph.delete()
