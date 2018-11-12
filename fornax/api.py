@@ -169,6 +169,8 @@ class GraphHandle:
 
     def add_nodes(self, **kwargs):
         keys = kwargs.keys()
+        if not len(keys):
+            raise ValueError('add_nodes requires at least one keyword argument')
         if 'id' in keys:
             raise(ValueError('id is a reserved node attribute which cannot be assigned'))
         with session_scope() as session:
