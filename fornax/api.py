@@ -51,10 +51,10 @@ def check_nodes(nodes):
     """ guard for inserting nodes """
     for node in nodes:
         try:
-            node = int(node)
+            node_id = int(node.node_id)
         except ValueError:
             raise ValueError('<Node(node_id={})>, node_id must be an integer'.format(node))
-        if node > 2147483647 and DB_URL == 'sqlite://':
+        if node_id > 2147483647 and DB_URL == 'sqlite://':
             raise ValueError('node id {} is too large'.format(node))
         yield node
 
@@ -89,6 +89,14 @@ def check_matches(matches):
         if not 0 < weight <= 1:
             raise ValueError('<Match(start={}, end={}, weight={})>, bounds error: 0 < weight <= 1')
         yield start, end, weight
+
+
+class NullValue:
+    """A dummy class to represent a missing value
+    """
+
+    def __init__(self):
+        pass
 
 
 class GraphHandle:
@@ -157,3 +165,21 @@ class GraphHandle:
             exists = session.query(sqlalchemy.exists().where(model.Graph.graph_id==self._graph_id)).scalar()
         if not exists:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
+
+    def add_nodes(self, **kwargs):
+        keys = kwargs.keys()
+        if 'id' in keys:
+            raise(ValueError('id is a reserved node attribute which cannot be assigned'))
+        with session_scope() as session:
+            nodes = (
+                model.Node(
+                    node_id=node_id, 
+                    graph_id=self.graph_id, 
+                    meta=json.dumps({key: val for key, val in zip(keys, values)})
+                )
+                for node_id, values
+                in enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
+            )
+            nodes = check_nodes(nodes)
+            session.add_all(nodes)
+            session.commit()

@@ -1,1 +1,1 @@
-from fornax.api import QueryHandle, GraphHandle
+from fornax.api import  GraphHandle
