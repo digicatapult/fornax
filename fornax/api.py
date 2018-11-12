@@ -171,6 +171,7 @@ class GraphHandle:
         if 'id' in keys:
             raise(ValueError('id is a reserved node attribute which cannot be assigned'))
         with session_scope() as session:
+            zipped = enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
             nodes = (
                 model.Node(
                     node_id=node_id, 
