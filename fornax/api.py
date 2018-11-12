@@ -92,7 +92,8 @@ def check_matches(matches):
 
 
 class NullValue:
-    """A dummy class to represent a missing value
+    """A dummy class to represent a missing value.
+    This class intentionally cannot be json serialised
     """
 
     def __init__(self):
