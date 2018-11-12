@@ -10,7 +10,8 @@ class TestGraph(TestCaseDB):
 
     @classmethod
     def setUp(self):
-        # trick fornax into using the test database setup
+        """trick fornax into using the test database setup
+        """
         super().setUp(self)
         fornax.api.Session = lambda: Session(self._connection)
 
@@ -20,26 +21,36 @@ class TestGraph(TestCaseDB):
         self.assertRaises(ValueError, fornax.GraphHandle.read, 0)
 
     def test_create(self):
+        """first graph has id zero
+        """
         graph = fornax.GraphHandle.create()
         self.assertEqual(graph.graph_id, 0)
 
     def test_create_two(self):
+        """auto increment graph id
+        """
         _ = fornax.api.GraphHandle.create()
         second = fornax.GraphHandle.create()
         self.assertEqual(second.graph_id, 1)
 
     def test_read(self):
+        """get a graph handle using graph id
+        """
         graph = fornax.api.GraphHandle.create()
         graph_id = graph.graph_id
         same_graph = fornax.GraphHandle.read(graph_id)
         self.assertEqual(same_graph.graph_id, graph_id)
 
     def test_delete(self):
+        """getting a deleted graph should raise a value error
+        """
         graph = fornax.GraphHandle.create()
         graph.delete()
         self.assertRaises(ValueError, fornax.api.GraphHandle.read, 0)
 
     def test_add_nodes(self):
+        """meta data is stored on a node
+        """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
         graph.add_nodes(name=names)
@@ -48,6 +59,8 @@ class TestGraph(TestCaseDB):
         self.assertListEqual(names, [json.loads(node.meta)['name'] for node in nodes])
 
     def test_add_nodes_more_meta(self):
+        """multiple metadata is stored on a node
+        """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
         ages = [9, 10 ,11]
@@ -58,12 +71,16 @@ class TestGraph(TestCaseDB):
         self.assertListEqual(ages, [json.loads(node.meta)['age'] for node in nodes])
         
     def test_missing_attribute(self):
+        """Null values for metadata must be explicit
+        """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
         ages = [9, 10]
         self.assertRaises(TypeError, graph.add_nodes, name=names, age=ages)
 
     def test_assign_id(self):
+        """assigning node id is forbidden
+        """
         graph = fornax.GraphHandle.create()
         ids = range(3)
         self.assertRaises(ValueError, graph.add_nodes, id=ids)
@@ -75,6 +92,8 @@ class TestGraph(TestCaseDB):
         self.assertRaises(ValueError, graph.add_nodes)
 
     def test_add_edges(self):
+        """store metadata on edges
+        """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
         ages = [9, 10 ,11]
@@ -86,6 +105,8 @@ class TestGraph(TestCaseDB):
         self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
 
     def test_add_edges_more_meta(self):
+        """store multiple metadata on edges
+        """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
         ages = [9, 10 ,11]

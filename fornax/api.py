@@ -133,6 +133,11 @@ class GraphHandle:
 
     @classmethod
     def create(cls): 
+        """Create a new graph
+        
+        Returns:
+            GraphHandle -- a new graph handle with no nodes or edges
+        """
 
         with session_scope() as session:
         
@@ -168,6 +173,13 @@ class GraphHandle:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
 
     def add_nodes(self, **kwargs):
+        """append nodes onto the graph
+        
+        Arguments:
+            kwargs {Iterable} -- properties of the node are provided by iterables named using keyword args
+            All iterables must be the same length.
+            At least one keyword arg must be provided.
+        """
         keys = kwargs.keys()
         if not len(keys):
             raise ValueError('add_nodes requires at least one keyword argument')
@@ -188,6 +200,19 @@ class GraphHandle:
             session.commit()
 
     def add_edges(self, sources, targets, **kwargs):
+        """Add edges to the graph. 
+        Edges are specified by using integer offsets into the graph nodes in insertion order.
+        Use keyword args to attach json serialisable metadata to the edges.
+        Edges may not start and end on the same node.
+        Edges must be unique.
+        Edges are undirected.
+        
+        Arguments:
+            sources {Iterable} -- Iterable of integers
+            targets {Iterable} -- Iterable of integers
+            kwargs {Iterable} -- Iterable of json serialisable items
+        """
+
         keys = kwargs.keys()
         zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
         with session_scope() as session:
