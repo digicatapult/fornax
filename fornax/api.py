@@ -224,8 +224,8 @@ class GraphHandle:
                 )
                 for start, end, *values in zipped
             )
+        edges = check_edges(edges)
         with session_scope() as session:
-            edges = check_edges(edges)
             session.add_all(edges)
             session.commit()
         
