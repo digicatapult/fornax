@@ -215,7 +215,6 @@ class GraphHandle:
 
         keys = kwargs.keys()
         zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
-        with session_scope() as session:
             edges = (
                 model.Edge(
                     start=start,
@@ -225,6 +224,7 @@ class GraphHandle:
                 )
                 for start, end, *values in zipped
             )
+        with session_scope() as session:
             edges = check_edges(edges)
             session.add_all(edges)
             session.commit()
