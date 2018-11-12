@@ -12,6 +12,13 @@ class TestSelect(TestCaseDB):
     def setUp(self):
         super().setUp()  
 
+        new_graphs = [
+            model.Graph(graph_id=0),
+            model.Graph(graph_id=1)
+        ]
+        self.session.add_all(new_graphs)
+        self.session.commit()
+
         # Create the query graph from figure 4
         new_nodes = [
             model.Node(node_id=id_+1, graph_id=0)
