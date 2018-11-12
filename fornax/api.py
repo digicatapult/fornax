@@ -178,8 +178,7 @@ class GraphHandle:
                     graph_id=self.graph_id, 
                     meta=json.dumps({key: val for key, val in zip(keys, values)})
                 )
-                for node_id, values
-                in enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
+                for node_id, values in zipped
             )
             nodes = check_nodes(nodes)
             session.add_all(nodes)
