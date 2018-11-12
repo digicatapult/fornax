@@ -8,6 +8,9 @@ class TestNode(TestCaseDB):
 
     def test_node_round_trip(self):
         """ node round trip """
+        new_graph = model.Graph(graph_id=0)
+        self.session.add(new_graph)
+        self.session.commit()
         new_node = model.Node(node_id=0, graph_id=0)
         self.session.add(new_node)
         self.session.commit()
@@ -20,7 +23,9 @@ class TestEdge(TestCaseDB):
 
     def setUp(self):
         super().setUp()
-
+        new_graphs = [model.Graph(graph_id=0), model.Graph(graph_id=1)]
+        self.session.add_all(new_graphs)
+        self.session.commit()
         new_nodes = [model.Node(node_id=id_, graph_id=0) for id_ in range(2)]
         new_nodes += [model.Node(node_id=id_, graph_id=1) for id_ in range(2)]
         self.session.add_all(new_nodes)
@@ -72,6 +77,9 @@ class TestNeighbours(TestCaseDB):
 
     def setUp(self):
         super().setUp()
+        new_graph = model.Graph(graph_id=0)
+        self.session.add(new_graph)
+        self.session.commit()
         new_nodes = [model.Node(node_id=id_, graph_id=0) for id_ in range(4)]
         self.session.add_all(new_nodes)
         self.session.commit()
@@ -108,7 +116,9 @@ class TestMatch(TestCaseDB):
 
     def setUp(self):
         super().setUp()
-
+        new_graphs = [model.Graph(graph_id=0), model.Graph(graph_id=1)]
+        self.session.add_all(new_graphs)
+        self.session.commit()
         new_query = model.Query(query_id=0, start_graph_id=0, end_graph_id=1)
         self.session.add(new_query)
         self.session.commit()
