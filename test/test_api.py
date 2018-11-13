@@ -207,6 +207,20 @@ class TestQuery(TestCaseDB):
             query_nodes
         )
 
+    def test_query_edges(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        q_uids = [0, 1, 2]
+        t_uids = [3, 4, 5]
+        query_graph.add_nodes(uid=q_uids)
+        query_graph.add_edges([0, 0], [1, 2], my_id=['a', 'b'])
+        target_graph.add_nodes(uid=t_uids)
+        query_edges = query._query_edges()
+        self.assertListEqual(
+            [fornax.QueryHandle.Edge(0, 1, {'my_id':'a'}), fornax.QueryHandle.Edge(0, 2, {'my_id':'b'})], 
+            query_edges    
+        )
+
     def test_target_nodes(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
