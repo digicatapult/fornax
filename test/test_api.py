@@ -203,7 +203,7 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         query_nodes = query._query_nodes()
         self.assertListEqual(
-            [fornax.QueryHandle.Node(i, json.dumps({'uid':uid})) for i, uid in enumerate(q_uids)], 
+            [fornax.QueryHandle.Node(i, {'uid':uid}) for i, uid in enumerate(q_uids)], 
             query_nodes
         )
 
@@ -216,7 +216,7 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         target_nodes = query._target_nodes()
         self.assertListEqual(
-            [fornax.QueryHandle.Node(i, json.dumps({'uid':uid})) for i, uid in enumerate(t_uids)], 
+            [fornax.QueryHandle.Node(i, {'uid':uid}) for i, uid in enumerate(t_uids)], 
             target_nodes
         )
 
