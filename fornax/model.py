@@ -46,6 +46,7 @@ class Match(Base):
     start_graph_id = Column(Integer)
     end_graph_id = Column(Integer)
     query_id = Column(Integer)
+    meta = Column(String, nullable=True)
 
     weight = Column(Float, 
         CheckConstraint("weight>0", name="min_check"),
