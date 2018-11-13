@@ -321,18 +321,27 @@ class QueryHandle:
             session.add_all(matches)
             session.commit()
 
-    def _query_node_ids(self):
+    def _query_nodes(self):
         with session_scope() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id==model.Query.start_graph_id
             ).filter(model.Query.query_id==self.query_id).all()
-            node_ids = [n.node_id for n in nodes]
-        return node_ids
+            nodes = [self.Node(n.node_id, n.meta) for n in nodes]
+        return nodes
         
-    def _target_nodes_ids(self):
+    def _target_nodes(self):
         with session_scope() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id==model.Query.end_graph_id
             ).filter(model.Query.query_id==self.query_id).all()
-            node_ids = [n.node_id for n in nodes]
-        return node_ids
+            nodes = [self.Node(n.node_id, n.meta) for n in nodes]
+        return nodes
+
+    def execute(self, hopping_distance=2, max_iters=10, offsets=None):
+        self._check_exists()
+        if not len(self):
+            raise ValueError('Cannot execute query with no matches')
+
+        with session_scope() as session:
+            sql_query = fornax.select.join(self.query_id, h=hopping_distance, offsets=offsets)
+            records = sql_query.with_session(session).all()

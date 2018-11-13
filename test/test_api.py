@@ -197,20 +197,28 @@ class TestQuery(TestCaseDB):
     def test_query_nodes(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
-        uids = [0, 1, 2]
-        query_graph.add_nodes(uid=range(3))
-        target_graph.add_nodes(uid=range(3))
-        query_node_ids = query._query_node_ids()
-        self.assertListEqual(query_node_ids, uids)
+        q_uids = [0, 1, 2]
+        t_uids = [3, 4, 5]
+        query_graph.add_nodes(uid=q_uids)
+        target_graph.add_nodes(uid=t_uids)
+        query_nodes = query._query_nodes()
+        self.assertListEqual(
+            [fornax.QueryHandle.Node(i, json.dumps({'uid':uid})) for i, uid in enumerate(q_uids)], 
+            query_nodes
+        )
 
     def test_target_nodes(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
-        uids = [0, 1, 2]
-        query_graph.add_nodes(uid=range(3))
-        target_graph.add_nodes(uid=range(3))
-        target_node_ids = query._target_nodes_ids()
-        self.assertListEqual(target_node_ids, uids)
+        q_uids = [0, 1, 2]
+        t_uids = [3, 4, 5]
+        query_graph.add_nodes(uid=q_uids)
+        target_graph.add_nodes(uid=t_uids)
+        target_nodes = query._target_nodes()
+        self.assertListEqual(
+            [fornax.QueryHandle.Node(i, json.dumps({'uid':uid})) for i, uid in enumerate(t_uids)], 
+            target_nodes
+        )
 
     def test_add_matches(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
@@ -229,5 +237,11 @@ class TestQuery(TestCaseDB):
         self.assertEqual(targets, [m.end for m in matches])
         self.assertEqual(weights, [m.weight for m in matches])
         self.assertEqual(uids, [json.loads(m.meta)['my_id'] for m in matches])
+
+    def test_execute_raises(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        self.assertRaises(ValueError, query.execute)
+
 
 
