@@ -184,4 +184,32 @@ class TestQuery(TestCaseDB):
         self.assertFalse(query_exists)
         self.assertFalse(matches_exists)
     
+    def test_get_query_graph(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        self.assertEqual(query.query_graph(), query_graph)
+
+    def test_get_target_graph(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        self.assertEqual(query.target_graph(), target_graph)
+
+    def test_add_matches(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        uids = [0, 1]
+        query_graph.add_nodes(uid=range(3))
+        target_graph.add_nodes(uid=range(3))
+        sources = [0, 0]
+        targets = [1, 2]
+        weights = [1, 1]
+        query.add_matches(sources, targets, weights, my_id=uids)
+        matches = self.session.query(fornax.model.Match).filter(
+            fornax.model.Match.query_id==query.query_id
+        ).order_by(fornax.model.Match.end.asc())
+        self.assertEqual(sources, [m.start for m in matches])
+        self.assertEqual(targets, [m.end for m in matches])
+        self.assertEqual(weights, [m.weight for m in matches])
+        self.assertEqual(uids, [json.loads(m.meta)['my_id'] for m in matches])
+
 

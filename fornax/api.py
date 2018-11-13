@@ -73,22 +73,22 @@ def check_edges(edges):
 
 def check_matches(matches):
     """ guard for inserted matches """
-    for start, end, weight in matches:
+    for match in matches:
         try:
-            start = int(start) 
+            start = int(match.start) 
         except ValueError:
             raise ValueError('<Match(start={}, end={}, weight={})>, match start must be an integer')
         try:
-            end = int(end) 
+            end = int(match.end) 
         except ValueError:
             raise ValueError('<Match(start={}, end={}, weight={})>, match end must be an integer')
         try:
-            weight = float(weight)
+            weight = float(match.weight)
         except ValueError:
             raise ValueError('<Match(start={}, end={}, weight={})>, match weight must be a number')
         if not 0 < weight <= 1:
             raise ValueError('<Match(start={}, end={}, weight={})>, bounds error: 0 < weight <= 1')
-        yield start, end, weight
+        yield match
 
 
 class NullValue:
@@ -236,6 +236,9 @@ class QueryHandle:
         self.query_id = query_id
         self._check_exists()
     
+    def __eq__(self, other):
+        return self.query_id == other.query_id
+    
     def _check_exists(self):
         with session_scope() as session:
             exists = session.query(model.Query).filter(model.Query.query_id==self.query_id).scalar()
@@ -263,4 +266,49 @@ class QueryHandle:
         with session_scope() as session:
             session.query(model.Query).filter(model.Query.query_id==self.query_id).delete()
             session.query(model.Match).filter(model.Match.query_id==self.query_id).delete()
+        
+    def query_graph(self) -> GraphHandle:
+        self._check_exists()
+        with session_scope() as session:
+            start_graph = session.query(
+                model.Graph
+            ).join(
+                model.Query, model.Graph.graph_id==model.Query.start_graph_id
+            ).filter(model.Query.query_id==self.query_id).first()
+            graph_id = start_graph.graph_id
+        return GraphHandle(graph_id)
+    
+    def target_graph(self) -> GraphHandle:
+        self._check_exists()
+        with session_scope() as session:
+            end_graph = session.query(
+                model.Graph
+            ).join(
+                model.Query, model.Graph.graph_id==model.Query.end_graph_id
+            ).filter(model.Query.query_id==self.query_id).first()
+            graph_id = end_graph.graph_id
+        return GraphHandle(graph_id)
+
+    def add_matches(self, sources, targets, weights, **kwargs):
+        self._check_exists()
+        keys = kwargs.keys()
+        zipped = itertools.zip_longest(sources, targets, weights, *kwargs.values(), fillvalue=NullValue())
+        query_graph = self.query_graph()
+        target_graph = self.target_graph()
+        matches = (
+            model.Match(
+                start=start,
+                end=end,
+                start_graph_id=query_graph.graph_id,
+                end_graph_id=target_graph.graph_id,
+                query_id=self.query_id,
+                weight=weight,
+                meta=json.dumps({key: val for key, val in zip(keys, values)})
+            )
+            for start, end, weight, *values in zipped
+        )
+        matches = check_matches(matches)
+        with session_scope() as session:
+            session.add_all(matches)
+            session.commit()
         
