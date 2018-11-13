@@ -228,4 +228,39 @@ class GraphHandle:
         with session_scope() as session:
             session.add_all(edges)
             session.commit()
+
+
+class QueryHandle:
+
+    def __init__(self, query_id: int):
+        self.query_id = query_id
+        self._check_exists()
+    
+    def _check_exists(self):
+        with session_scope() as session:
+            exists = session.query(model.Query).filter(model.Query.query_id==self.query_id).scalar()
+        if not exists:
+            raise ValueError('cannot read query with query id {}'.format(self.query_id))
+    
+    @classmethod
+    def create(cls, query_graph:model.Query, target_graph:model.Query):
+        with session_scope() as session:
+            query_id = session.query(sqlalchemy.func.max(model.Query.query_id)).first()[0]
+            if query_id is None:
+                query_id = 0
+            else:
+                query_id += 1
+            new_query = model.Query(query_id=query_id, start_graph_id=query_graph.graph_id, end_graph_id=target_graph.graph_id)
+            session.add(new_query)
+        return QueryHandle(query_id)
+
+    @classmethod
+    def read(cls, query_id:int):
+        return QueryHandle(query_id)
+    
+    def delete(self):
+        self._check_exists()
+        with session_scope() as session:
+            session.query(model.Query).filter(model.Query.query_id==self.query_id).delete()
+            session.query(model.Match).filter(model.Match.query_id==self.query_id).delete()
         

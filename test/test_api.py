@@ -138,3 +138,50 @@ class TestGraph(TestCaseDB):
         ages = [9, 10 ,11]
         graph.add_nodes(name=names, age=ages)
         self.assertRaises(ValueError, graph.add_edges, ['adam', 'adam'], ['ben', 'chris'], relationship=['is_friend', 'is_foe'])
+
+
+class TestQuery(TestCaseDB):
+
+    @classmethod
+    def setUp(self):
+        """trick fornax into using the test database setup
+        """
+        super().setUp(self)
+        fornax.api.Session = lambda: Session(self._connection)
+    
+    def test_init_query_raises(self):
+        self.assertRaises(ValueError, fornax.QueryHandle, 0)
+
+    def test_init_read_raises(self):
+        self.assertRaises(ValueError, fornax.QueryHandle.read, 0)
+
+    def test_create(self):
+        query_graphs = [fornax.GraphHandle.create() for _ in range(3)]
+        target_graphs = [fornax.GraphHandle.create() for _ in range(3)]
+        queries = [fornax.QueryHandle.create(q, t) for q, t in zip(query_graphs, target_graphs)]
+        self.assertEqual([q.query_id for q in queries], [0, 1, 2])
+    
+    def test_create_query_target(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        query_db = self.session.query(fornax.model.Query).filter(fornax.model.Query.query_id==query.query_id).first()
+        self.assertEqual(query_db.start_graph_id, query_graph.graph_id)
+        self.assertEqual(query_db.end_graph_id, target_graph.graph_id)
+    
+    def test_read(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        q1 = fornax.QueryHandle.create(query_graph, target_graph)
+        q2 = fornax.QueryHandle.read(q1.query_id)
+        self.assertEqual(q1.query_id, q2.query_id)
+
+    def test_delete(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        query_id = query.query_id
+        query.delete()
+        query_exists = self.session.query(fornax.model.Query).filter(fornax.model.Query.query_id==query_id).scalar()
+        matches_exists = self.session.query(fornax.model.Match).filter(fornax.model.Match.query_id==query_id).scalar()
+        self.assertFalse(query_exists)
+        self.assertFalse(matches_exists)
+    
+
