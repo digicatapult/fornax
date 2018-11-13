@@ -314,4 +314,25 @@ class QueryHandle:
         with session_scope() as session:
             session.add_all(matches)
             session.commit()
+            for start, end, weight, *values in zipped
+        )
+        matches = check_matches(matches)
+        with session_scope() as session:
+            session.add_all(matches)
+            session.commit()
+
+    def _query_node_ids(self):
+        with session_scope() as session:
+            nodes = session.query(model.Node).join(
+                model.Query, model.Node.graph_id==model.Query.start_graph_id
+            ).filter(model.Query.query_id==self.query_id).all()
+            node_ids = [n.node_id for n in nodes]
+        return node_ids
         
+    def _target_nodes_ids(self):
+        with session_scope() as session:
+            nodes = session.query(model.Node).join(
+                model.Query, model.Node.graph_id==model.Query.end_graph_id
+            ).filter(model.Query.query_id==self.query_id).all()
+            node_ids = [n.node_id for n in nodes]
+        return node_ids

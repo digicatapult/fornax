@@ -194,6 +194,24 @@ class TestQuery(TestCaseDB):
         query = fornax.QueryHandle.create(query_graph, target_graph)
         self.assertEqual(query.target_graph(), target_graph)
 
+    def test_query_nodes(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        uids = [0, 1, 2]
+        query_graph.add_nodes(uid=range(3))
+        target_graph.add_nodes(uid=range(3))
+        query_node_ids = query._query_node_ids()
+        self.assertListEqual(query_node_ids, uids)
+
+    def test_target_nodes(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        uids = [0, 1, 2]
+        query_graph.add_nodes(uid=range(3))
+        target_graph.add_nodes(uid=range(3))
+        target_node_ids = query._target_nodes_ids()
+        self.assertListEqual(target_node_ids, uids)
+
     def test_add_matches(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
