@@ -126,6 +126,9 @@ class GraphHandle:
 
     def __repr__(self):
         return '<GraphHandle(graph_id={})>'.format(self._graph_id)
+    
+    def __eq__(self, other):
+        return self.graph_id == other.graph_id
 
     @property
     def graph_id(self):
@@ -266,7 +269,7 @@ class QueryHandle:
         with session_scope() as session:
             session.query(model.Query).filter(model.Query.query_id==self.query_id).delete()
             session.query(model.Match).filter(model.Match.query_id==self.query_id).delete()
-        
+    
     def query_graph(self) -> GraphHandle:
         self._check_exists()
         with session_scope() as session:
