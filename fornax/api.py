@@ -407,8 +407,12 @@ class QueryHandle:
         with session_scope() as session:
             edges = session.query(model.Edge).join(
                 model.Query, model.Edge.graph_id == model.Query.start_graph_id
-            ).filter(model.Query.query_id == self.query_id)
-            edges = [self.Edge(e.start, e.end, json.loads(e.meta)) for e in edges]
+            ).filter(
+                model.Query.query_id == self.query_id
+            ).filter(
+                model.Edge.start < model.Edge.end
+            )
+            edges = [self.Edge(e.start, e.end, 'query', json.loads(e.meta)) for e in edges]
         return edges
         
     def _target_nodes(self):
