@@ -3,6 +3,7 @@ import fornax.opt
 import sqlalchemy
 import contextlib
 import itertools
+import collections
 import json
 import os
 
@@ -217,6 +218,14 @@ class GraphHandle:
         """
 
         keys = kwargs.keys()
+        if 'start' in keys:
+            raise(ValueError('start is a reserved node attribute which cannot be assigned using kwargs'))
+        if 'end' in keys:
+            raise(ValueError('end is a reserved node attribute which cannot be assigned using kwargs'))
+        if 'type' in keys:
+            raise(ValueError('type is a reserved node attribute which cannot be assigned using kwargs'))
+        if 'weight' in keys:
+            raise(ValueError('weight is a reserved node attribute which cannot be assigned using kwargs'))
         zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
         edges = itertools.chain.from_iterable(
             (
