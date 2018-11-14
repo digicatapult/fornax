@@ -267,7 +267,7 @@ class QueryHandle:
             return (self.type, self.id) < (other.type, other.id)
 
         def to_dict(self):
-             return {**{'id': self.id, 'type': self.type}, **self.meta}
+             return {**{'id': hash((self.id, self.type)), 'type': self.type}, **self.meta}
 
 
     class Edge:
@@ -295,8 +295,12 @@ class QueryHandle:
             )
         
         def to_dict(self):
+            if self.type == 'query' or self.type == 'target':
+                start, end = hash((self.start, self.type)), hash((self.end, self.type))
+            elif self.type == 'match':
+                start, end = hash((self.start, 'query')), hash((self.end, 'target'))
             return {
-                **{'start': self.start, 'end': self.end, 'type': self.type, 'weight': self.weight},
+                **{'start': start, 'end': end, 'type': self.type, 'weight': self.weight},
                 **self.meta
             }
 
@@ -497,12 +501,12 @@ class QueryHandle:
         target_edges_payload = [edge.to_dict() for edge in target_edges]
 
         for i, score in idxs[:min(n, len(idxs))]:
-            match_starts, match_ends = zip(*subgraphs[i])
+            _, match_ends = zip(*subgraphs[i])
             matches =[
                 self.Edge(s, e, 'match', {}, 1. - inference_costs[s,e]).to_dict() 
                 for s, e in sorted(subgraphs[i])
             ]
-            match_starts, match_ends = set(match_starts), set(match_ends)
+            match_ends = set(hash((i, 'target')) for i in match_ends)
             nxt_graph = {
                 'cost': score,
                 'nodes': list(query_nodes_payload), # make a copy

@@ -316,7 +316,7 @@ class TestNode(TestCase):
 
     def test_to_dict(self):
         self.assertDictEqual(
-            self.node.to_dict(), {'id': 0, 'type': 'query', 'a': 1}
+            self.node.to_dict(), {'id': hash((0, 'query')), 'type': 'query', 'a': 1}
         )
 
     def test_node_raises(self):
@@ -345,6 +345,8 @@ class TestEdge(TestCase):
 
     def test_edge_raises(self):
         self.assertRaises(ValueError, fornax.QueryHandle.Edge, 0, 1, 'a', {})
+
+
 
 class TestExample(TestCaseDB):
 
@@ -409,81 +411,98 @@ class TestExample(TestCaseDB):
 
     def test_first_graph_nodes(self):
         graph = self.payload['graphs'][0]
+        nodes = [
+            {"id": 0, "type": "query", "my_id": 1}, 
+            {"id": 1, "type": "query", "my_id": 2}, 
+            {"id": 2, "type": "query", "my_id": 3}, 
+            {"id": 3, "type": "query", "my_id": 4}, 
+            {"id": 4, "type": "query", "my_id": 5}, 
+            {"id": 7, "type": "target", "my_id": 8}, 
+            {"id": 8, "type": "target", "my_id": 9}, 
+            {"id": 9, "type": "target", "my_id": 10}, 
+            {"id": 10, "type": "target", "my_id": 11},
+            {"id": 11, "type": "target", "my_id": 12}
+        ]
+        for node in nodes:
+            node['id'] = hash((node['id'], node['type']))
         self.assertListEqual(
             graph['nodes'],
-            [
-                {"id": 0, "type": "query", "my_id": 1}, 
-                {"id": 1, "type": "query", "my_id": 2}, 
-                {"id": 2, "type": "query", "my_id": 3}, 
-                {"id": 3, "type": "query", "my_id": 4}, 
-                {"id": 4, "type": "query", "my_id": 5}, 
-                {"id": 7, "type": "target", "my_id": 8}, 
-                {"id": 8, "type": "target", "my_id": 9}, 
-                {"id": 9, "type": "target", "my_id": 10}, 
-                {"id": 10, "type": "target", "my_id": 11},
-                {"id": 11, "type": "target", "my_id": 12}
-            ]
+            nodes
         )
 
     def test_first_graph_links(self):
         graph = self.payload['graphs'][0]
-        self.assertListEqual(
-            graph['links'],
-            [
-                {"start": 0, "end": 7, "type": "match", "weight": 1.0},
-                {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
-                {"start": 2, "end": 11, "type": "match", "weight": 1.0}, 
-                {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
-                {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
-                {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
-                {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
-                {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
-                {"start": 3, "end": 4, "type": "query", "weight": 1.0},
-                {"start": 7, "end": 8, "type": "target", "weight": 1.0},
-                {"start": 7, "end": 11, "type": "target", "weight": 1.0},
-                {"start": 8, "end": 9, "type": "target", "weight": 1.0},
-                {"start": 9, "end": 10, "type": "target", "weight": 1.0},
-            ]
-        )
+        matches = [
+            {"start": 0, "end": 7, "type": "match", "weight": 1.0},
+            {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
+            {"start": 2, "end": 11, "type": "match", "weight": 1.0}, 
+            {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
+            {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
+            {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
+            {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
+            {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
+            {"start": 3, "end": 4, "type": "query", "weight": 1.0},
+            {"start": 7, "end": 8, "type": "target", "weight": 1.0},
+            {"start": 7, "end": 11, "type": "target", "weight": 1.0},
+            {"start": 8, "end": 9, "type": "target", "weight": 1.0},
+            {"start": 9, "end": 10, "type": "target", "weight": 1.0},
+        ]
+        for match in matches:
+            if match['type'] == 'query' or match['type'] == 'target':
+                match['start'] = hash((match['start'], match['type']))
+                match['end'] = hash((match['end'], match['type']))
+            else:
+                match['start'] = hash((match['start'], 'query'))
+                match['end'] = hash((match['end'], 'target'))
+        self.assertListEqual(graph['links'], matches)
+
     def test_second_graph_cost(self):
         graph = self.payload['graphs'][1]
         self.assertEqual(graph['cost'], 0)
 
     def test_second_graph_nodes(self):
         graph = self.payload['graphs'][1]
+        nodes = [
+            {"id": 0, "type": "query", "my_id": 1}, 
+            {"id": 1, "type": "query", "my_id": 2}, 
+            {"id": 2, "type": "query", "my_id": 3}, 
+            {"id": 3, "type": "query", "my_id": 4}, 
+            {"id": 4, "type": "query", "my_id": 5},
+            {"id": 5, "type": "target", "my_id": 6},
+            {"id": 7, "type": "target", "my_id": 8}, 
+            {"id": 8, "type": "target", "my_id": 9}, 
+            {"id": 9, "type": "target", "my_id": 10}, 
+            {"id": 10, "type": "target", "my_id": 11},
+        ]
+        for node in nodes:
+            node['id'] = hash((node['id'], node['type']))
         self.assertListEqual(
             graph['nodes'],
-            [
-                {"id": 0, "type": "query", "my_id": 1}, 
-                {"id": 1, "type": "query", "my_id": 2}, 
-                {"id": 2, "type": "query", "my_id": 3}, 
-                {"id": 3, "type": "query", "my_id": 4}, 
-                {"id": 4, "type": "query", "my_id": 5},
-                {"id": 5, "type": "target", "my_id": 6},
-                {"id": 7, "type": "target", "my_id": 8}, 
-                {"id": 8, "type": "target", "my_id": 9}, 
-                {"id": 9, "type": "target", "my_id": 10}, 
-                {"id": 10, "type": "target", "my_id": 11},
-            ]
+            nodes
         )
 
     def test_second_graph_links(self):
         graph = self.payload['graphs'][1]
-        self.assertListEqual(
-            graph['links'],
-            [
-                {"start": 0, "end": 7, "type": "match", "weight": 1.0},
-                {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
-                {"start": 2, "end": 5, "type": "match", "weight": 1.0}, 
-                {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
-                {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
-                {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
-                {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
-                {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
-                {"start": 3, "end": 4, "type": "query", "weight": 1.0},
-                {"start": 5, "end": 7, "type": "target", "weight": 1.0},
-                {"start": 7, "end": 8, "type": "target", "weight": 1.0},
-                {"start": 8, "end": 9, "type": "target", "weight": 1.0},
-                {"start": 9, "end": 10, "type": "target", "weight": 1.0},
-            ]
-        )
+        matches = [
+            {"start": 0, "end": 7, "type": "match", "weight": 1.0},
+            {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
+            {"start": 2, "end": 5, "type": "match", "weight": 1.0}, 
+            {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
+            {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
+            {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
+            {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
+            {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
+            {"start": 3, "end": 4, "type": "query", "weight": 1.0},
+            {"start": 5, "end": 7, "type": "target", "weight": 1.0},
+            {"start": 7, "end": 8, "type": "target", "weight": 1.0},
+            {"start": 8, "end": 9, "type": "target", "weight": 1.0},
+            {"start": 9, "end": 10, "type": "target", "weight": 1.0},
+        ]
+        for match in matches:
+            if match['type'] == 'query' or match['type'] == 'target':
+                match['start'] = hash((match['start'], match['type']))
+                match['end'] = hash((match['end'], match['type']))
+            elif match['type'] == 'match':
+                match['start'] = hash((match['start'], 'query'))
+                match['end'] = hash((match['end'], 'target'))
+        self.assertListEqual(graph['links'], matches)
