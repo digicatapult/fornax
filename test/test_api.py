@@ -100,7 +100,13 @@ class TestGraph(TestCaseDB):
         graph.add_nodes(name=names, age=ages)
         relationships = ['is_friend', 'is_foe']
         graph.add_edges([0, 0], [1, 2], relationship=relationships)
-        edges = self.session.query(fornax.model.Edge).filter(fornax.model.Edge.graph_id==graph.graph_id).all()
+        edges = self.session.query(
+            fornax.model.Edge
+        ).filter(
+            fornax.model.Edge.graph_id==graph.graph_id
+        ).filter(
+            fornax.model.Edge.start < fornax.model.Edge.end
+        ).all()
         edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
         self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
 
@@ -113,8 +119,14 @@ class TestGraph(TestCaseDB):
         graph.add_nodes(name=names, age=ages)
         relationships = ['is_friend', 'is_foe']
         types = [0 , 1]
-        graph.add_edges([0, 0], [1, 2], relationship=relationships, type=types)
-        edges = self.session.query(fornax.model.Edge).filter(fornax.model.Edge.graph_id==graph.graph_id).all()
+        graph.add_edges([0, 0], [1, 2], relationship=relationships, type_=types)
+        edges = self.session.query(
+            fornax.model.Edge
+        ).filter(
+            fornax.model.Edge.graph_id==graph.graph_id
+        ).filter(
+            fornax.model.Edge.start < fornax.model.Edge.end
+        ).all()
         edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
         self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
         self.assertListEqual(types, [json.loads(edge.meta)['type'] for edge in edges])

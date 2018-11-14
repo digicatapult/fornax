@@ -218,11 +218,12 @@ class GraphHandle:
 
         keys = kwargs.keys()
         zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
-        edges = (
-            model.Edge(
-                start=start,
-                end=end,
-                graph_id=self._graph_id,
+        edges = itertools.chain.from_iterable(
+            (
+                model.Edge(start=start, end=end, graph_id=self._graph_id,
+                    meta=json.dumps({key: val for key, val in zip(keys, values)})
+                ),
+                model.Edge(start=end, end=start, graph_id=self._graph_id,
                 meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
             for start, end, *values in zipped
