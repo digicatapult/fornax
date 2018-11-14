@@ -192,7 +192,7 @@ class GraphHandle:
         zipped = enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
         nodes = (
             model.Node(
-                node_id=node_id, 
+                node_id=node_id,
                 graph_id=self.graph_id, 
                 meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
@@ -233,8 +233,8 @@ class GraphHandle:
                     meta=json.dumps({key: val for key, val in zip(keys, values)})
                 ),
                 model.Edge(start=end, end=start, graph_id=self._graph_id,
-                meta=json.dumps({key: val for key, val in zip(keys, values)})
-            )
+                    meta=json.dumps({key: val for key, val in zip(keys, values)})
+                )
             )
             for start, end, *values in zipped
         )
@@ -388,12 +388,6 @@ class QueryHandle:
         with session_scope() as session:
             session.add_all(matches)
             session.commit()
-            for start, end, weight, *values in zipped
-        )
-        matches = check_matches(matches)
-        with session_scope() as session:
-            session.add_all(matches)
-            session.commit()
 
     def _query_nodes(self):
         with session_scope() as session:
@@ -402,7 +396,7 @@ class QueryHandle:
             ).filter(model.Query.query_id==self.query_id).all()
             nodes = [self.Node(n.node_id, 'query', json.loads(n.meta)) for n in nodes]
         return nodes
-        
+
     def _query_edges(self):
         with session_scope() as session:
             edges = session.query(model.Edge).join(
@@ -422,12 +416,103 @@ class QueryHandle:
             ).filter(model.Query.query_id==self.query_id).all()
             nodes = [self.Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes]
         return nodes
+    
+    def _target_edges(self, target_nodes, target_edges_arr):
+        # only include target edges that are between the target nodes above
+        target_ids = [n.id for n in target_nodes]
+        is_between = lambda edge: edge.start in target_ids and edge.end in target_ids
+        edges = (self.Edge(int(start), int(end), 'target', None) for start, end, d in target_edges_arr[['u', 'uu', 'dist_u']] if d < 2)
+        edges = filter(is_between, edges)
+        starts, ends = [], []
+        for edge in edges:
+            start, end = sorted((edge.start, edge.end))
+            starts.append(start)
+            ends.append(end)
+        # starts, ends = zip(*((edge.start, edge.end) for edge in edges))
+        with session_scope() as session:
+            edges = session.query(model.Edge).join(
+                model.Query, model.Query.end_graph_id == model.Edge.graph_id
+            ).filter(
+                model.Query.query_id == self.query_id
+            ).filter(
+                model.Edge.start.in_(starts)
+            ).filter(
+                model.Edge.end.in_(ends)
+            ).filter(
+                model.Edge.start < model.Edge.end
+            ).distinct().all()
+            edges = [self.Edge(e.start, e.end, 'target', json.loads(e.meta)) for e in edges]
+        return edges
 
-    def execute(self, hopping_distance=2, max_iters=10, offsets=None):
+    def _optimise(self, hopping_distance, max_iters, offsets):
+        with session_scope() as session:
+            sql_query = fornax.select.join(self.query_id, h=hopping_distance, offsets=offsets)
+            records = sql_query.with_session(session).all()
+
+        inference_costs, subgraphs, iters, sz, target_edges_arr = fornax.opt.solve(
+            records,
+            hopping_distance=hopping_distance,
+            max_iters=max_iters
+        )  
+        return inference_costs, subgraphs, iters, sz, target_edges_arr
+
+    @classmethod
+    def _get_scores(cls, inference_costs, query_nodes, subgraphs, sz):
+        scores = []
+        for subgraph in subgraphs:
+            score = sum(inference_costs[k] for k in subgraph)
+            score += sz - len(subgraph)
+            score /= len(query_nodes)
+            scores.append(score)
+        return scores
+
+    def execute(self, n=5, hopping_distance=2, max_iters=10, offsets=None):
         self._check_exists()
         if not len(self):
             raise ValueError('Cannot execute query with no matches')
 
-        with session_scope() as session:
-            sql_query = fornax.select.join(self.query_id, h=hopping_distance, offsets=offsets)
-            records = sql_query.with_session(session).all()
+        graphs = []
+        query_nodes = sorted(self._query_nodes())
+        target_nodes = sorted(self._target_nodes())
+        # we will with get target edges from the optimiser since the optimiser knows this anyway
+        target_edges = None
+        query_edges = sorted(self._query_edges())
+      
+        inference_costs, subgraphs, iters, sz, target_edges_arr = self._optimise(hopping_distance, max_iters, offsets)
+        target_edges = self._target_edges(target_nodes, target_edges_arr)
+        target_edges = sorted(target_edges)
+
+        scores = self._get_scores(inference_costs, query_nodes, subgraphs, sz)
+        # sort graphs by score then deturministicly by hashing
+        idxs = sorted(enumerate(scores), key=lambda x: (x[1], hash(tuple(subgraphs[x[0]]))))
+
+        query_nodes_payload = [node.to_dict() for node in query_nodes]
+        query_edges_payload = [edge.to_dict() for edge in query_edges]
+        target_nodes_payload = [node.to_dict() for node in target_nodes]
+        target_edges_payload = [edge.to_dict() for edge in target_edges]
+
+        for i, score in idxs[:min(n, len(idxs))]:
+            match_starts, match_ends = zip(*subgraphs[i])
+            match_starts, match_ends = set(match_starts), set(match_ends)
+            nxt_graph = {
+                'cost': score,
+                'nodes': list(query_nodes_payload), # make a copy
+                'links': list(query_edges_payload)  # make a copy
+            }
+            nxt_graph['nodes'].extend([n for n in target_nodes_payload if n['id'] in match_ends])
+            nxt_graph['links'].extend(
+                [
+                    e for e in target_edges_payload 
+                    if e['start'] in match_ends and e['end'] in match_ends
+                ]
+            )
+            graphs.append(nxt_graph)
+
+        return {
+            'graphs': graphs, 
+            'iters': iters, 
+            'hopping_distance':hopping_distance, 
+            'max_iters': max_iters
+        }
+        
+

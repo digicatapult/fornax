@@ -4,6 +4,7 @@ import fornax.api
 import fornax.model
 from test_base import TestCaseDB
 from sqlalchemy.orm.session import Session
+from unittest import TestCase
 
 
 class TestGraph(TestCaseDB):
@@ -129,7 +130,7 @@ class TestGraph(TestCaseDB):
         ).all()
         edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
         self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
-        self.assertListEqual(types, [json.loads(edge.meta)['type'] for edge in edges])
+        self.assertListEqual(types, [json.loads(edge.meta)['type_'] for edge in edges])
 
     def test_simple_graph(self):
         """Test for a simple graph.
@@ -215,7 +216,7 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         query_nodes = query._query_nodes()
         self.assertListEqual(
-            [fornax.QueryHandle.Node(i, {'uid':uid}) for i, uid in enumerate(q_uids)], 
+            [fornax.QueryHandle.Node(i, 'query' ,{'uid':uid}) for i, uid in enumerate(q_uids)], 
             query_nodes
         )
 
@@ -229,7 +230,7 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         query_edges = query._query_edges()
         self.assertListEqual(
-            [fornax.QueryHandle.Edge(0, 1, {'my_id':'a'}), fornax.QueryHandle.Edge(0, 2, {'my_id':'b'})], 
+            [fornax.QueryHandle.Edge(0, 1, 'query', {'my_id':'a'}), fornax.QueryHandle.Edge(0, 2, 'query', {'my_id':'b'})], 
             query_edges    
         )
 
@@ -242,7 +243,7 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         target_nodes = query._target_nodes()
         self.assertListEqual(
-            [fornax.QueryHandle.Node(i, {'uid':uid}) for i, uid in enumerate(t_uids)], 
+            [fornax.QueryHandle.Node(i, 'target', {'uid':uid}) for i, uid in enumerate(t_uids)], 
             target_nodes
         )
 
@@ -269,7 +270,7 @@ class TestQuery(TestCaseDB):
         query.add_matches(sources, targets, weights, my_id=uids)
         _, _, _, _, target_edges_arr = query._optimise(2, 10, None)
         target_edges = query._target_edges(query._target_nodes(), target_edges_arr)
-        self.assertListEqual([fornax.QueryHandle.Edge(1, 2, dict())], target_edges)
+        self.assertListEqual([fornax.QueryHandle.Edge(1, 2, 'target', dict())], target_edges)
 
     def test_add_matches(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
@@ -288,11 +289,187 @@ class TestQuery(TestCaseDB):
         self.assertEqual(targets, [m.end for m in matches])
         self.assertEqual(weights, [m.weight for m in matches])
         self.assertEqual(uids, [json.loads(m.meta)['my_id'] for m in matches])
-
+    
     def test_execute_raises(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         self.assertRaises(ValueError, query.execute)
 
 
+class TestNode(TestCase):
 
+    def setUp(self):
+        self.node = fornax.api.QueryHandle.Node(0, 'query', {'a': 1})
+    
+    def test_id(self):
+        self.assertEqual(self.node.id, 0)
+    
+    def test_meta(self):
+        self.assertEqual(self.node.meta, {'a': 1})
+
+    def test_eq(self):
+        self.assertEqual(self.node, fornax.api.QueryHandle.Node(0, 'query', {'a': 1}))
+        self.assertNotEqual(self.node, fornax.api.QueryHandle.Node(1, 'query', {'a': 1}))
+        self.assertNotEqual(self.node, fornax.api.QueryHandle.Node(0, 'query', {'a': 0}))
+        self.assertNotEqual(self.node, fornax.api.QueryHandle.Node(1, 'query', {'a': 0}))
+        self.assertNotEqual(self.node, fornax.api.QueryHandle.Node(0, 'target', {'a': 1}))
+
+    def test_to_dict(self):
+        self.assertDictEqual(
+            self.node.to_dict(), {'id': 0, 'type': 'query', 'a': 1}
+        )
+
+class TestEdge(TestCase):
+
+    def setUp(self):
+        self.edge = fornax.api.QueryHandle.Edge(0, 1, 'query', {'a': 1})
+
+    def test_start(self):
+        self.assertEqual(self.edge.start, 0)
+
+    def test_end(self):
+        self.assertEqual(self.edge.end, 1)
+
+    def test_meta(self):
+        self.assertEqual(self.edge.meta, {'a': 1})
+    
+    def test_eq(self):
+        self.assertEqual(self.edge, fornax.api.QueryHandle.Edge(0, 1, 'query', {'a': 1}))
+        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(1, 1, 'query', {'a': 1}))
+        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(0, 0, 'query', {'a': 1}))
+        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(0, 1, 'query', {'a': 2}))
+        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(0, 1, 'target', {'a': 1}))
+
+
+
+class TestExample(TestCaseDB):
+
+    @classmethod
+    def setUp(self):
+        """trick fornax into using the test database setup
+        """
+        super().setUp(self)
+        fornax.api.Session = lambda: Session(self._connection)
+        
+        query_graph = fornax.GraphHandle.create()
+        query_graph.add_nodes(my_id=range(1,6))
+        starts, ends = zip(*[(1, 3), (1, 2), (2, 4), (4, 5)])
+        query_graph.add_edges(
+            [i - 1 for i in  starts],
+            [i - 1 for i in  ends]
+        )
+
+        target_graph = fornax.GraphHandle.create()
+        target_graph.add_nodes(my_id=range(1,14))
+        starts, ends = zip(*[
+                (1, 2), (1, 3), (1, 4),
+                (3, 7), (4, 5), (4, 6),
+                (5, 7), (6, 8), (7, 10),
+                (8, 9), (8, 12), (9, 10),
+                (10, 11), (11, 12), (11, 13),
+        ])
+        target_graph.add_edges(
+            [s - 1 for s in starts],
+            [e - 1 for e in ends]           
+        )
+
+        query = fornax.QueryHandle.create(
+            query_graph, 
+            target_graph
+        )
+        starts, ends, weights = zip(*[
+            (1, 1, 1), (1, 4, 1), (1, 8, 1),
+            (2, 2, 1), (2, 5, 1), (2, 9, 1),
+            (3, 3, 1), (3, 6, 1), (3, 12, 1), (3, 13, 1),
+            (4, 7, 1), (4, 10, 1),
+            (5, 11, 1)
+        ])
+
+        query.add_matches(
+            [s - 1 for s in starts],
+            [e - 1 for e in ends],
+            weights
+        )
+
+        self.payload = query.execute(n=2)
+
+    def test_iters(self):
+        self.assertEqual(self.payload['max_iters'], 10)
+    
+    def test_hopping_distance(self):
+        self.assertEqual(self.payload['hopping_distance'], 2)
+    
+    def test_first_graph_cost(self):
+        graph = self.payload['graphs'][0]
+        self.assertEqual(graph['cost'], 0)
+
+    def test_first_graph_nodes(self):
+        graph = self.payload['graphs'][0]
+        self.assertListEqual(
+            graph['nodes'],
+            [
+                {"id": 0, "type": "query", "my_id": 1}, 
+                {"id": 1, "type": "query", "my_id": 2}, 
+                {"id": 2, "type": "query", "my_id": 3}, 
+                {"id": 3, "type": "query", "my_id": 4}, 
+                {"id": 4, "type": "query", "my_id": 5}, 
+                {"id": 7, "type": "target", "my_id": 8}, 
+                {"id": 8, "type": "target", "my_id": 9}, 
+                {"id": 9, "type": "target", "my_id": 10}, 
+                {"id": 10, "type": "target", "my_id": 11},
+                {"id": 11, "type": "target", "my_id": 12}
+            ]
+        )
+
+    def test_first_graph_links(self):
+        graph = self.payload['graphs'][0]
+        self.assertListEqual(
+            graph['links'],
+            [
+                {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
+                {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
+                {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
+                {"start": 3, "end": 4, "type": "query", "weight": 1.0},
+                {"start": 7, "end": 8, "type": "target", "weight": 1.0},
+                {"start": 7, "end": 11, "type": "target", "weight": 1.0},
+                {"start": 8, "end": 9, "type": "target", "weight": 1.0},
+                {"start": 9, "end": 10, "type": "target", "weight": 1.0},
+            ]
+        )
+    def test_second_graph_cost(self):
+        graph = self.payload['graphs'][1]
+        self.assertEqual(graph['cost'], 0)
+
+    def test_second_graph_nodes(self):
+        graph = self.payload['graphs'][1]
+        self.assertListEqual(
+            graph['nodes'],
+            [
+                {"id": 0, "type": "query", "my_id": 1}, 
+                {"id": 1, "type": "query", "my_id": 2}, 
+                {"id": 2, "type": "query", "my_id": 3}, 
+                {"id": 3, "type": "query", "my_id": 4}, 
+                {"id": 4, "type": "query", "my_id": 5},
+                {"id": 5, "type": "target", "my_id": 6},
+                {"id": 7, "type": "target", "my_id": 8}, 
+                {"id": 8, "type": "target", "my_id": 9}, 
+                {"id": 9, "type": "target", "my_id": 10}, 
+                {"id": 10, "type": "target", "my_id": 11},
+            ]
+        )
+
+    def test_second_graph_links(self):
+        graph = self.payload['graphs'][1]
+        self.assertListEqual(
+            graph['links'],
+            [
+                {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
+                {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
+                {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
+                {"start": 3, "end": 4, "type": "query", "weight": 1.0},
+                {"start": 5, "end": 7, "type": "target", "weight": 1.0},
+                {"start": 7, "end": 8, "type": "target", "weight": 1.0},
+                {"start": 8, "end": 9, "type": "target", "weight": 1.0},
+                {"start": 9, "end": 10, "type": "target", "weight": 1.0},
+            ]
+        )
