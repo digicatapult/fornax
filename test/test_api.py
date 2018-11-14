@@ -246,6 +246,31 @@ class TestQuery(TestCaseDB):
             target_nodes
         )
 
+    def test_undirected_edges(self):
+        """Each edge needs to be stored in both directions
+        """
+        graph = fornax.GraphHandle.create()
+        graph.add_nodes(myid=[1,2,3])
+        graph.add_edges([0], [1])
+        src = [(e.start, e.end) for e in self.session.query(fornax.model.Edge).all()]
+        self.assertListEqual(sorted(src), [(0, 1), (1, 0)])
+
+
+    def test_target_edges(self):
+        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query = fornax.QueryHandle.create(query_graph, target_graph)
+        uids = [0, 1]
+        query_graph.add_nodes(uid=range(3))
+        target_graph.add_nodes(uid=range(3))
+        target_graph.add_edges([0, 1], [1, 2])
+        sources = [0, 0]
+        targets = [1, 2]
+        weights = [1, 1]
+        query.add_matches(sources, targets, weights, my_id=uids)
+        _, _, _, _, target_edges_arr = query._optimise(2, 10, None)
+        target_edges = query._target_edges(query._target_nodes(), target_edges_arr)
+        self.assertListEqual([fornax.QueryHandle.Edge(1, 2, dict())], target_edges)
+
     def test_add_matches(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
