@@ -245,6 +245,7 @@ class GraphHandle:
 
 class QueryHandle:
 
+    class Node:
     def __init__(self, query_id: int):
         self.query_id = query_id
         self._check_exists()
