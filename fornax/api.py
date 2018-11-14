@@ -270,13 +270,14 @@ class QueryHandle:
 
     class Edge:
 
-        __slots__ = ['start', 'end', 'type', 'meta']
+        __slots__ = ['start', 'end', 'type', 'meta', 'weight']
 
-        def __init__(self, start:int, end:int, edge_type:str, meta:dict):
+        def __init__(self, start:int, end:int, edge_type:str, meta:dict, weight=1.):
             self.start = start
             self.end = end
             self.type = edge_type
             self.meta = meta
+            self.weight = weight
 
         def __eq__(self, other):
             return (self.type, self.start, self.end, self.meta) == (other.type, other.start, other.end, other.meta)
@@ -291,7 +292,7 @@ class QueryHandle:
         
         def to_dict(self):
             return {
-                **{'start': self.start, 'end': self.end, 'type': self.type, 'weight': 1.},
+                **{'start': self.start, 'end': self.end, 'type': self.type, 'weight': self.weight},
                 **self.meta
             }
 
@@ -493,11 +494,15 @@ class QueryHandle:
 
         for i, score in idxs[:min(n, len(idxs))]:
             match_starts, match_ends = zip(*subgraphs[i])
+            matches =[
+                self.Edge(s, e, 'match', {}, 1. - inference_costs[s,e]).to_dict() 
+                for s, e in sorted(subgraphs[i])
+            ]
             match_starts, match_ends = set(match_starts), set(match_ends)
             nxt_graph = {
                 'cost': score,
                 'nodes': list(query_nodes_payload), # make a copy
-                'links': list(query_edges_payload)  # make a copy
+                'links': matches + list(query_edges_payload)  # make a copy
             }
             nxt_graph['nodes'].extend([n for n in target_nodes_payload if n['id'] in match_ends])
             nxt_graph['links'].extend(

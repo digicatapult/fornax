@@ -426,6 +426,11 @@ class TestExample(TestCaseDB):
         self.assertListEqual(
             graph['links'],
             [
+                {"start": 0, "end": 7, "type": "match", "weight": 1.0},
+                {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
+                {"start": 2, "end": 11, "type": "match", "weight": 1.0}, 
+                {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
+                {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
                 {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
                 {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
                 {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
@@ -463,6 +468,11 @@ class TestExample(TestCaseDB):
         self.assertListEqual(
             graph['links'],
             [
+                {"start": 0, "end": 7, "type": "match", "weight": 1.0},
+                {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
+                {"start": 2, "end": 5, "type": "match", "weight": 1.0}, 
+                {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
+                {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
                 {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
                 {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
                 {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
