@@ -361,6 +361,14 @@ class QueryHandle:
     def add_matches(self, sources, targets, weights, **kwargs):
         self._check_exists()
         keys = kwargs.keys()
+        if 'start' in keys:
+            raise(ValueError('start is a reserved node attribute which cannot be assigned using kwargs'))
+        if 'end' in keys:
+            raise(ValueError('end is a reserved node attribute which cannot be assigned using kwargs'))
+        if 'type' in keys:
+            raise(ValueError('type is a reserved node attribute which cannot be assigned using kwargs'))
+        if 'weight' in keys:
+            raise(ValueError('weight is a reserved node attribute which cannot be assigned using kwargs'))
         zipped = itertools.zip_longest(sources, targets, weights, *kwargs.values(), fillvalue=NullValue())
         query_graph = self.query_graph()
         target_graph = self.target_graph()
