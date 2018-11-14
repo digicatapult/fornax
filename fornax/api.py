@@ -235,6 +235,7 @@ class GraphHandle:
                 model.Edge(start=end, end=start, graph_id=self._graph_id,
                 meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
+            )
             for start, end, *values in zipped
         )
         edges = check_edges(edges)
