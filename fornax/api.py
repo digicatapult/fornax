@@ -251,6 +251,8 @@ class QueryHandle:
         __slots__ = ['id', 'type', 'meta']
         
         def __init__(self, node_id: int, node_type:str,  meta: dict):
+            if node_type not in ('query', 'target', 'match'):
+                raise ValueError('Nodes must be of type "query", "target", "match"')
             self.id = node_id
             self.type = node_type
             self.meta = meta
@@ -273,6 +275,8 @@ class QueryHandle:
         __slots__ = ['start', 'end', 'type', 'meta', 'weight']
 
         def __init__(self, start:int, end:int, edge_type:str, meta:dict, weight=1.):
+            if edge_type not in ('query', 'target', 'match'):
+                raise ValueError('Edges must be of type "query", "target", "match"')
             self.start = start
             self.end = end
             self.type = edge_type

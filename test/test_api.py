@@ -319,6 +319,9 @@ class TestNode(TestCase):
             self.node.to_dict(), {'id': 0, 'type': 'query', 'a': 1}
         )
 
+    def test_node_raises(self):
+        self.assertRaises(ValueError, fornax.QueryHandle.Node, 0, 'a', {})
+
 class TestEdge(TestCase):
 
     def setUp(self):
@@ -334,13 +337,14 @@ class TestEdge(TestCase):
         self.assertEqual(self.edge.meta, {'a': 1})
     
     def test_eq(self):
-        self.assertEqual(self.edge, fornax.api.QueryHandle.Edge(0, 1, 'query', {'a': 1}))
-        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(1, 1, 'query', {'a': 1}))
-        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(0, 0, 'query', {'a': 1}))
-        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(0, 1, 'query', {'a': 2}))
-        self.assertNotEqual(self.edge, fornax.api.QueryHandle.Edge(0, 1, 'target', {'a': 1}))
+        self.assertEqual(self.edge, fornax.QueryHandle.Edge(0, 1, 'query', {'a': 1}))
+        self.assertNotEqual(self.edge, fornax.QueryHandle.Edge(1, 1, 'query', {'a': 1}))
+        self.assertNotEqual(self.edge, fornax.QueryHandle.Edge(0, 0, 'query', {'a': 1}))
+        self.assertNotEqual(self.edge, fornax.QueryHandle.Edge(0, 1, 'query', {'a': 2}))
+        self.assertNotEqual(self.edge, fornax.QueryHandle.Edge(0, 1, 'target', {'a': 1}))
 
-
+    def test_edge_raises(self):
+        self.assertRaises(ValueError, fornax.QueryHandle.Edge, 0, 1, 'a', {})
 
 class TestExample(TestCaseDB):
 
