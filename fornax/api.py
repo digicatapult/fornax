@@ -246,12 +246,66 @@ class GraphHandle:
 class QueryHandle:
 
     class Node:
+
+        __slots__ = ['id', 'type', 'meta']
+        
+        def __init__(self, node_id: int, node_type:str,  meta: dict):
+            self.id = node_id
+            self.type = node_type
+            self.meta = meta
+
+        def __eq__(self, other):
+            return (self.id, self.type, self.meta) == (other.id, other.type, other.meta)
+        
+        def __repr__(self):
+            return '<Node(id={}, type={}, meta={})>'.format(self.id, self.type, self.meta)
+
+        def __lt__(self, other):
+            return (self.type, self.id) < (other.type, other.id)
+
+        def to_dict(self):
+             return {**{'id': self.id, 'type': self.type}, **self.meta}
+
+
+    class Edge:
+
+        __slots__ = ['start', 'end', 'type', 'meta']
+
+        def __init__(self, start:int, end:int, edge_type:str, meta:dict):
+            self.start = start
+            self.end = end
+            self.type = edge_type
+            self.meta = meta
+
+        def __eq__(self, other):
+            return (self.type, self.start, self.end, self.meta) == (other.type, other.start, other.end, other.meta)
+        
+        def __lt__(self, other):
+            return (self.type, self.start, self.end) < (other.type, other.start, other.end) 
+        
+        def __repr__(self):
+            return '<Edge(start={}, end={}, type={}, meta={})>'.format(
+                self.start, self.end, self.type, self.meta
+            )
+        
+        def to_dict(self):
+            return {
+                **{'start': self.start, 'end': self.end, 'type': self.type, 'weight': 1.},
+                **self.meta
+            }
+
     def __init__(self, query_id: int):
         self.query_id = query_id
         self._check_exists()
     
     def __eq__(self, other):
         return self.query_id == other.query_id
+
+    def __len__(self):
+        self._check_exists()
+        with session_scope() as session:
+            count = session.query(model.Match).filter(model.Match.query_id==self.query_id).count()
+        return count
     
     def _check_exists(self):
         with session_scope() as session:
