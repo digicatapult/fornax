@@ -400,7 +400,7 @@ class QueryHandle:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id==model.Query.start_graph_id
             ).filter(model.Query.query_id==self.query_id).all()
-            nodes = [self.Node(n.node_id, json.loads(n.meta)) for n in nodes]
+            nodes = [self.Node(n.node_id, 'query', json.loads(n.meta)) for n in nodes]
         return nodes
         
     def _query_edges(self):
@@ -416,7 +416,7 @@ class QueryHandle:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id==model.Query.end_graph_id
             ).filter(model.Query.query_id==self.query_id).all()
-            nodes = [self.Node(n.node_id, json.loads(n.meta)) for n in nodes]
+            nodes = [self.Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes]
         return nodes
 
     def execute(self, hopping_distance=2, max_iters=10, offsets=None):
