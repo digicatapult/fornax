@@ -47,7 +47,7 @@ query = fornax.QueryHandle.create(query_graph_handle, target_graph_handle)
 query.add_matches(match_starts, match_ends, weights)
 
 # go!
-results = query.execute()
+query.execute()
 ```
 
 ```json
