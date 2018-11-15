@@ -245,12 +245,38 @@ class GraphHandle:
 
 
 class QueryHandle:
+    """Represents a connection to a query in the database back end
+    """
+
 
     class Node:
+        """A representation of a node internal to QueryHandle
+        
+        Raises:
+            ValueError -- Raised if node.type is not {'query', 'target'}
+        
+        Returns:
+            Node -- A tuple of id, type and a dictionary of metadata
+        """
+
 
         __slots__ = ['id', 'type', 'meta']
         
         def __init__(self, node_id: int, node_type:str,  meta: dict):
+            """Create a new Node
+            
+            Arguments:
+                node_id {int} -- A unique indentifier for a node within a graph
+                node_type {str} -- Either `query` or `target`
+                meta {dict} -- A json serialisable dictionary of meta data
+            
+            Raises:
+                ValueError -- Raised if Node.type is not either `query` or `target`
+            
+            Returns:
+                Node -- new Node instance
+            """
+
             if node_type not in ('query', 'target'):
                 raise ValueError('Nodes must be of type "query", "target", "match"')
             self.id = node_id
@@ -267,14 +293,44 @@ class QueryHandle:
             return (self.type, self.id) < (other.type, other.id)
 
         def to_dict(self):
-             return {**{'id': hash((self.id, self.type)), 'type': self.type}, **self.meta}
+            """Return self as a json serialisable dictionary
+            
+            Returns:
+                dict -- Dictionary of node_id, type, and metadata
+                id is the hash of the node id and type so that nodes are unique
+                to either the query graph or the target graph
+            """
+            return {**{'id': hash((self.id, self.type)), 'type': self.type}, **self.meta}
 
 
     class Edge:
+        """Representation of an edge internal to QueryHandle
+        
+        Raises:
+            ValueError -- Raised if type is not `query`, `target` or `match`
+        
+        Returns:
+            Edge -- new edge object
+        """
 
         __slots__ = ['start', 'end', 'type', 'meta', 'weight']
 
         def __init__(self, start:int, end:int, edge_type:str, meta:dict, weight=1.):
+            """Create a new Edge
+            
+            Arguments:
+                start {int} -- id of start node
+                end {int} -- id of end node
+                edge_type {str} -- either query, target or match
+                meta {dict} -- dictionary of edge metadata
+            
+            Keyword Arguments:
+                weight {float} -- An edge weight between 0 and 1 (default: {1.})
+            
+            Raises:
+                ValueError -- Raised if type is not `query`, `target` or `match`
+            """
+
             if edge_type not in ('query', 'target', 'match'):
                 raise ValueError('Edges must be of type "query", "target", "match"')
             self.start = start
@@ -295,6 +351,13 @@ class QueryHandle:
             )
         
         def to_dict(self):
+            """Return self as a json serialisable dictionary
+            
+            Returns:
+                dict -- Dictionary of start, end, type, metadata and weight
+                start and end are the hash of the edge start/end and type so that nodes are unique
+                to either the query graph or the target graph
+            """
             if self.type == 'query' or self.type == 'target':
                 start, end = hash((self.start, self.type)), hash((self.end, self.type))
             elif self.type == 'match':
@@ -305,6 +368,12 @@ class QueryHandle:
             }
 
     def __init__(self, query_id: int):
+        """Get a handle to a query in the database backend
+        
+        Arguments:
+            query_id {int} -- An unique identifier for an existing query
+        """
+
         self.query_id = query_id
         self._check_exists()
     
@@ -312,12 +381,24 @@ class QueryHandle:
         return self.query_id == other.query_id
 
     def __len__(self):
+        """Return the number of matches in the query
+        
+        Returns:
+            {int} -- Count of matching edges
+        """
+
         self._check_exists()
         with session_scope() as session:
             count = session.query(model.Match).filter(model.Match.query_id==self.query_id).count()
         return count
     
     def _check_exists(self):
+        """Raise a value error is the query had been deleted
+        
+        Raises:
+            ValueError -- Raised if the query had been deleted
+        """
+
         with session_scope() as session:
             exists = session.query(model.Query).filter(model.Query.query_id==self.query_id).scalar()
         if not exists:
@@ -325,6 +406,16 @@ class QueryHandle:
     
     @classmethod
     def create(cls, query_graph:model.Query, target_graph:model.Query):
+        """Create a new query
+        
+        Arguments:
+            query_graph {model.Query} -- Query graph, this is the graph you're look for in the target graph
+            target_graph {model.Query} -- Target graph, this is the graph being searched
+        
+        Returns:
+            QueryHandle -- a new handle to a query
+        """
+
         with session_scope() as session:
             query_id = session.query(sqlalchemy.func.max(model.Query.query_id)).first()[0]
             if query_id is None:
@@ -337,15 +428,33 @@ class QueryHandle:
 
     @classmethod
     def read(cls, query_id:int):
+        """Get a handle to an existing query in the system
+        
+        Arguments:
+            query_id {int} -- unique id of an existing query
+        
+        Returns:
+            QueryHandle -- handle to an existing query
+        """
+
         return QueryHandle(query_id)
     
     def delete(self):
+        """Delete this query and any associated matches
+        """
+
         self._check_exists()
         with session_scope() as session:
             session.query(model.Query).filter(model.Query.query_id==self.query_id).delete()
             session.query(model.Match).filter(model.Match.query_id==self.query_id).delete()
     
     def query_graph(self) -> GraphHandle:
+        """Get a handle to the query graph used in this query
+        
+        Returns:
+            GraphHandle -- query graph
+        """
+
         self._check_exists()
         with session_scope() as session:
             start_graph = session.query(
@@ -357,6 +466,12 @@ class QueryHandle:
         return GraphHandle(graph_id)
     
     def target_graph(self) -> GraphHandle:
+        """Get a handle to the target graph used in this query
+        
+        Returns:
+            GraphHandle -- target graph
+        """
+
         self._check_exists()
         with session_scope() as session:
             end_graph = session.query(
@@ -367,7 +482,15 @@ class QueryHandle:
             graph_id = end_graph.graph_id
         return GraphHandle(graph_id)
 
-    def add_matches(self, sources, targets, weights, **kwargs):
+    def add_matches(self, sources:[int], targets:[int], weights:[int], **kwargs):
+        """Add candidate correspondances between the query graph and the target graph
+        
+        Arguments:
+            sources {[int]} -- integer offsets into the query graph
+            targets {[int]} -- integer offsets into the target graph
+            weights {[int]} -- corresondance scores between 0 and 1
+        """
+
         self._check_exists()
         keys = kwargs.keys()
         if 'start' in keys:
@@ -475,7 +598,22 @@ class QueryHandle:
             scores.append(score)
         return scores
 
-    def execute(self, n=5, hopping_distance=2, max_iters=10, offsets=None):
+    def execute(self, n=5, hopping_distance=2, max_iters=10):
+        """Execute a query
+        
+        Keyword Arguments:
+            n {int} -- number of subgraph matches to return (default: {5})
+            hopping_distance {int} -- hyperparameter (default: {2})
+            max_iters {int} -- maximum number of optimisation iterations before quitting (default: {10})
+        
+        Raises:
+            ValueError -- raised if no matches are present in the query
+        
+        Returns:
+            {dict} -- [description]
+        """
+
+        offsets = None # TODO: implement batching
         self._check_exists()
         if not len(self):
             raise ValueError('Cannot execute query with no matches')
