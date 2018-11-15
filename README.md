@@ -25,13 +25,13 @@ python run_test.py
 ```python
 # create a query graph
 query_graph_handle = fornax.GraphHandle.create()
-query_graph_handle.add_nodes(label=['Hulk', 'Lady', 'Storm'])
+query_graph_handle.add_nodes(id_src=[0, 1, 2], label=['Hulk', 'Lady', 'Storm'])
 query_graph_handle.add_edges([0, 1], [1, 2])
 
 
 # create a target graph
 target_graph_handle = fornax.GraphHandle.create()
-target_graph_handle.add_nodes(label=comic_book_nodes['name'])
+target_graph_handle.add_nodes(id_src=comic_book_nodes['id], label=comic_book_nodes['name'])
 target_graph_handle.add_edges(comic_book_edges['start'], comic_book_edges['end'])
 
 matches = [
@@ -51,77 +51,86 @@ query.execute()
 ```
 
 ```json
-{
+
     "graphs": [
         {
             "cost": 0.024416640711327393,
             "nodes": [
                 {
-                    "id": 5174074480569935113,
+                    "id": 9437002,
                     "type": "query",
-                    "name": "hulk"
+                    "id_src": 0,
+                    "label": "hulk"
                 },
                 {
-                    "id": 5174075668124758188,
+                    "id": 13982314,
                     "type": "query",
-                    "name": "lady"
+                    "id_src": 1,
+                    "label": "lady"
                 },
                 {
-                    "id": 5174076855952377563,
+                    "id": 76350203,
                     "type": "query",
-                    "name": "storm"
+                    "id_src": 2,
+                    "label": "storm"
                 },
                 {
-                    "id": -1950980926759484095,
+                    "id": 75367743,
                     "type": "target",
-                    "uid": 2142361735,
-                    "label": "She-Hulk",
-                    "type_": 0
+                    "id_src": 37644418,
+                    "label": " Susan Storm",
+                    "type_": 2
                 },
                 {
-                    "id": -1951729878043816045,
+                    "id": 5878004,
                     "type": "target",
-                    "uid": 995920086,
+                    "id_src": 995920086,
                     "label": "Lady Liberators",
                     "type_": 1
                 },
                 {
-                    "id": -1951205851414851420,
+                    "id": 71379958,
                     "type": "target",
-                    "uid": 37644418,
-                    "label": " Susan Storm",
-                    "type_": 2
+                    "id_src": 2142361735,
+                    "label": "She-Hulk",
+                    "type_": 0
                 }
             ],
             "links": [
                 {
-                    "start": 5174074480569935113,
-                    "end": -1950980926759484095,
+                    "start": 9437002,
+                    "end": 71379958,
                     "type": "match",
                     "weight": 0.9869624795392156
                 },
                 {
-                    "start": 5174075668124758188,
-                    "end": -1951729878043816045,
+                    "start": 13982314,
+                    "end": 5878004,
                     "type": "match",
                     "weight": 0.9746778514236212
                 },
                 {
-                    "start": 5174076855952377563,
-                    "end": -1951205851414851420,
+                    "start": 76350203,
+                    "end": 75367743,
                     "type": "match",
                     "weight": 0.9651097469031811
                 },
                 {
-                    "start": 5174074480569935113,
-                    "end": 5174075668124758188,
+                    "start": 9437002,
+                    "end": 13982314,
                     "type": "query",
                     "weight": 1.0
                 },
                 {
-                    "start": 5174075668124758188,
-                    "end": 5174076855952377563,
+                    "start": 13982314,
+                    "end": 76350203,
                     "type": "query",
+                    "weight": 1.0
+                },
+                {
+                    "start": 5878004,
+                    "end": 71379958,
+                    "type": "target",
                     "weight": 1.0
                 }
             ]
