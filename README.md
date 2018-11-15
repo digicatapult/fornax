@@ -50,6 +50,89 @@ query.add_matches(match_starts, match_ends, weights)
 results = query.execute()
 ```
 
+```json
+{
+    "graphs": [
+        {
+            "cost": 0.024416640711327393,
+            "nodes": [
+                {
+                    "id": 5174074480569935113,
+                    "type": "query",
+                    "name": "hulk"
+                },
+                {
+                    "id": 5174075668124758188,
+                    "type": "query",
+                    "name": "lady"
+                },
+                {
+                    "id": 5174076855952377563,
+                    "type": "query",
+                    "name": "storm"
+                },
+                {
+                    "id": -1950980926759484095,
+                    "type": "target",
+                    "uid": 2142361735,
+                    "label": "She-Hulk",
+                    "type_": 0
+                },
+                {
+                    "id": -1951729878043816045,
+                    "type": "target",
+                    "uid": 995920086,
+                    "label": "Lady Liberators",
+                    "type_": 1
+                },
+                {
+                    "id": -1951205851414851420,
+                    "type": "target",
+                    "uid": 37644418,
+                    "label": " Susan Storm",
+                    "type_": 2
+                }
+            ],
+            "links": [
+                {
+                    "start": 5174074480569935113,
+                    "end": -1950980926759484095,
+                    "type": "match",
+                    "weight": 0.9869624795392156
+                },
+                {
+                    "start": 5174075668124758188,
+                    "end": -1951729878043816045,
+                    "type": "match",
+                    "weight": 0.9746778514236212
+                },
+                {
+                    "start": 5174076855952377563,
+                    "end": -1951205851414851420,
+                    "type": "match",
+                    "weight": 0.9651097469031811
+                },
+                {
+                    "start": 5174074480569935113,
+                    "end": 5174075668124758188,
+                    "type": "query",
+                    "weight": 1.0
+                },
+                {
+                    "start": 5174075668124758188,
+                    "end": 5174076855952377563,
+                    "type": "query",
+                    "weight": 1.0
+                }
+            ]
+        }
+    ],
+    "iters": 2,
+    "hopping_distance": 2,
+    "max_iters": 10
+}
+```
+
 ## Tutorials
 
 See the tutorials for a full working example
