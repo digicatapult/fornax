@@ -251,7 +251,7 @@ class QueryHandle:
         __slots__ = ['id', 'type', 'meta']
         
         def __init__(self, node_id: int, node_type:str,  meta: dict):
-            if node_type not in ('query', 'target', 'match'):
+            if node_type not in ('query', 'target'):
                 raise ValueError('Nodes must be of type "query", "target", "match"')
             self.id = node_id
             self.type = node_type
