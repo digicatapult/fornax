@@ -34,6 +34,14 @@ fornax.model.Base.metadata.create_all(CONNECTION)
 
 
 def hash_id(item):
+    """An unsalted hash function with a range between 0 and MAX_SIZE
+    
+    Arguments:
+        item -- key that can be converted to a string using `str`
+    
+    Returns:
+        {int} -- hash in the range 0 -> MAX_SIZE
+    """
     if isinstance(item, int):
         return item % MAX_SIZE
     else:
