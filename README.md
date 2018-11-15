@@ -51,7 +51,7 @@ query.execute()
 ```
 
 ```json
-
+{
     "graphs": [
         {
             "cost": 0.024416640711327393,
