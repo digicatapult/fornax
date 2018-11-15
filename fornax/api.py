@@ -101,6 +101,124 @@ class NullValue:
         pass
 
 
+class Node:
+    """A representation of a node internal to QueryHandle
+    
+    Raises:
+        ValueError -- Raised if node.type is not {'query', 'target'}
+    
+    Returns:
+        Node -- A tuple of id, type and a dictionary of metadata
+    """
+
+
+    __slots__ = ['id', 'type', 'meta']
+    
+    def __init__(self, node_id: int, node_type:str,  meta: dict):
+        """Create a new Node
+        
+        Arguments:
+            node_id {int} -- A unique indentifier for a node within a graph
+            node_type {str} -- Either `query` or `target`
+            meta {dict} -- A json serialisable dictionary of meta data
+        
+        Raises:
+            ValueError -- Raised if Node.type is not either `query` or `target`
+        
+        Returns:
+            Node -- new Node instance
+        """
+
+        if node_type not in ('query', 'target'):
+            raise ValueError('Nodes must be of type "query", "target", "match"')
+        self.id = node_id
+        self.type = node_type
+        self.meta = meta
+
+    def __eq__(self, other):
+        return (self.id, self.type, self.meta) == (other.id, other.type, other.meta)
+    
+    def __repr__(self):
+        return '<Node(id={}, type={}, meta={})>'.format(self.id, self.type, self.meta)
+
+    def __lt__(self, other):
+        return (self.type, self.id) < (other.type, other.id)
+
+    def to_dict(self):
+        """Return self as a json serialisable dictionary
+        
+        Returns:
+            dict -- Dictionary of node_id, type, and metadata
+            id is the hash of the node id and type so that nodes are unique
+            to either the query graph or the target graph
+        """
+        return {**{'id': hash((self.id, self.type)), 'type': self.type}, **self.meta}
+
+
+class Edge:
+    """Representation of an edge internal to QueryHandle
+    
+    Raises:
+        ValueError -- Raised if type is not `query`, `target` or `match`
+    
+    Returns:
+        Edge -- new edge object
+    """
+
+    __slots__ = ['start', 'end', 'type', 'meta', 'weight']
+
+    def __init__(self, start:int, end:int, edge_type:str, meta:dict, weight=1.):
+        """Create a new Edge
+        
+        Arguments:
+            start {int} -- id of start node
+            end {int} -- id of end node
+            edge_type {str} -- either query, target or match
+            meta {dict} -- dictionary of edge metadata
+        
+        Keyword Arguments:
+            weight {float} -- An edge weight between 0 and 1 (default: {1.})
+        
+        Raises:
+            ValueError -- Raised if type is not `query`, `target` or `match`
+        """
+
+        if edge_type not in ('query', 'target', 'match'):
+            raise ValueError('Edges must be of type "query", "target", "match"')
+        self.start = start
+        self.end = end
+        self.type = edge_type
+        self.meta = meta
+        self.weight = weight
+
+    def __eq__(self, other):
+        return (self.type, self.start, self.end, self.meta) == (other.type, other.start, other.end, other.meta)
+    
+    def __lt__(self, other):
+        return (self.type, self.start, self.end) < (other.type, other.start, other.end) 
+    
+    def __repr__(self):
+        return '<Edge(start={}, end={}, type={}, meta={})>'.format(
+            self.start, self.end, self.type, self.meta
+        )
+    
+    def to_dict(self):
+        """Return self as a json serialisable dictionary
+        
+        Returns:
+            dict -- Dictionary of start, end, type, metadata and weight
+            start and end are the hash of the edge start/end and type so that nodes are unique
+            to either the query graph or the target graph
+        """
+        if self.type == 'query' or self.type == 'target':
+            start, end = hash((self.start, self.type)), hash((self.end, self.type))
+        elif self.type == 'match':
+            start, end = hash((self.start, 'query')), hash((self.end, 'target'))
+        return {
+            **{'start': start, 'end': end, 'type': self.type, 'weight': self.weight},
+            **self.meta
+        }
+
 class GraphHandle:
     """ Represents a connection to a graph in the database backend """
 
@@ -247,125 +365,6 @@ class GraphHandle:
 class QueryHandle:
     """Represents a connection to a query in the database back end
     """
-
-
-    class Node:
-        """A representation of a node internal to QueryHandle
-        
-        Raises:
-            ValueError -- Raised if node.type is not {'query', 'target'}
-        
-        Returns:
-            Node -- A tuple of id, type and a dictionary of metadata
-        """
-
-
-        __slots__ = ['id', 'type', 'meta']
-        
-        def __init__(self, node_id: int, node_type:str,  meta: dict):
-            """Create a new Node
-            
-            Arguments:
-                node_id {int} -- A unique indentifier for a node within a graph
-                node_type {str} -- Either `query` or `target`
-                meta {dict} -- A json serialisable dictionary of meta data
-            
-            Raises:
-                ValueError -- Raised if Node.type is not either `query` or `target`
-            
-            Returns:
-                Node -- new Node instance
-            """
-
-            if node_type not in ('query', 'target'):
-                raise ValueError('Nodes must be of type "query", "target", "match"')
-            self.id = node_id
-            self.type = node_type
-            self.meta = meta
-
-        def __eq__(self, other):
-            return (self.id, self.type, self.meta) == (other.id, other.type, other.meta)
-        
-        def __repr__(self):
-            return '<Node(id={}, type={}, meta={})>'.format(self.id, self.type, self.meta)
-
-        def __lt__(self, other):
-            return (self.type, self.id) < (other.type, other.id)
-
-        def to_dict(self):
-            """Return self as a json serialisable dictionary
-            
-            Returns:
-                dict -- Dictionary of node_id, type, and metadata
-                id is the hash of the node id and type so that nodes are unique
-                to either the query graph or the target graph
-            """
-            return {**{'id': hash((self.id, self.type)), 'type': self.type}, **self.meta}
-
-
-    class Edge:
-        """Representation of an edge internal to QueryHandle
-        
-        Raises:
-            ValueError -- Raised if type is not `query`, `target` or `match`
-        
-        Returns:
-            Edge -- new edge object
-        """
-
-        __slots__ = ['start', 'end', 'type', 'meta', 'weight']
-
-        def __init__(self, start:int, end:int, edge_type:str, meta:dict, weight=1.):
-            """Create a new Edge
-            
-            Arguments:
-                start {int} -- id of start node
-                end {int} -- id of end node
-                edge_type {str} -- either query, target or match
-                meta {dict} -- dictionary of edge metadata
-            
-            Keyword Arguments:
-                weight {float} -- An edge weight between 0 and 1 (default: {1.})
-            
-            Raises:
-                ValueError -- Raised if type is not `query`, `target` or `match`
-            """
-
-            if edge_type not in ('query', 'target', 'match'):
-                raise ValueError('Edges must be of type "query", "target", "match"')
-            self.start = start
-            self.end = end
-            self.type = edge_type
-            self.meta = meta
-            self.weight = weight
-
-        def __eq__(self, other):
-            return (self.type, self.start, self.end, self.meta) == (other.type, other.start, other.end, other.meta)
-        
-        def __lt__(self, other):
-            return (self.type, self.start, self.end) < (other.type, other.start, other.end) 
-        
-        def __repr__(self):
-            return '<Edge(start={}, end={}, type={}, meta={})>'.format(
-                self.start, self.end, self.type, self.meta
-            )
-        
-        def to_dict(self):
-            """Return self as a json serialisable dictionary
-            
-            Returns:
-                dict -- Dictionary of start, end, type, metadata and weight
-                start and end are the hash of the edge start/end and type so that nodes are unique
-                to either the query graph or the target graph
-            """
-            if self.type == 'query' or self.type == 'target':
-                start, end = hash((self.start, self.type)), hash((self.end, self.type))
-            elif self.type == 'match':
-                start, end = hash((self.start, 'query')), hash((self.end, 'target'))
-            return {
-                **{'start': start, 'end': end, 'type': self.type, 'weight': self.weight},
-                **self.meta
-            }
 
     def __init__(self, query_id: int):
         """Get a handle to a query in the database backend
@@ -526,7 +525,7 @@ class QueryHandle:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id==model.Query.start_graph_id
             ).filter(model.Query.query_id==self.query_id).all()
-            nodes = [self.Node(n.node_id, 'query', json.loads(n.meta)) for n in nodes]
+            nodes = [Node(n.node_id, 'query', json.loads(n.meta)) for n in nodes]
         return nodes
 
     def _query_edges(self):
@@ -538,7 +537,7 @@ class QueryHandle:
             ).filter(
                 model.Edge.start < model.Edge.end
             )
-            edges = [self.Edge(e.start, e.end, 'query', json.loads(e.meta)) for e in edges]
+            edges = [Edge(e.start, e.end, 'query', json.loads(e.meta)) for e in edges]
         return edges
         
     def _target_nodes(self):
@@ -546,14 +545,14 @@ class QueryHandle:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id==model.Query.end_graph_id
             ).filter(model.Query.query_id==self.query_id).all()
-            nodes = [self.Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes]
+            nodes = [Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes]
         return nodes
     
     def _target_edges(self, target_nodes, target_edges_arr):
         # only include target edges that are between the target nodes above
         target_ids = [n.id for n in target_nodes]
         is_between = lambda edge: edge.start in target_ids and edge.end in target_ids
-        edges = (self.Edge(int(start), int(end), 'target', None) for start, end, d in target_edges_arr[['u', 'uu', 'dist_u']] if d < 2)
+        edges = (Edge(int(start), int(end), 'target', None) for start, end, d in target_edges_arr[['u', 'uu', 'dist_u']] if d < 2)
         edges = filter(is_between, edges)
         starts, ends = [], []
         for edge in edges:
@@ -573,7 +572,7 @@ class QueryHandle:
             ).filter(
                 model.Edge.start < model.Edge.end
             ).distinct().all()
-            edges = [self.Edge(e.start, e.end, 'target', json.loads(e.meta)) for e in edges]
+            edges = [Edge(e.start, e.end, 'target', json.loads(e.meta)) for e in edges]
         return edges
 
     def _optimise(self, hopping_distance, max_iters, offsets):
@@ -641,7 +640,7 @@ class QueryHandle:
         for i, score in idxs[:min(n, len(idxs))]:
             _, match_ends = zip(*subgraphs[i])
             matches =[
-                self.Edge(s, e, 'match', {}, 1. - inference_costs[s,e]).to_dict() 
+                Edge(s, e, 'match', {}, 1. - inference_costs[s,e]).to_dict() 
                 for s, e in sorted(subgraphs[i])
             ]
             match_ends = set(hash((i, 'target')) for i in match_ends)
