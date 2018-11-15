@@ -2,7 +2,7 @@
 
 # Fornax
 
-An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using a sqlite or postgres backend with python3.
+An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using python3 and sqlite or postgres.
 
 ## Install
 
@@ -19,6 +19,13 @@ From the root directory
 ```bash
 python run_test.py
 ```
+
+## Tutorials
+
+See the tutorials for a full working example
+
+* [Part 1](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%201%20-%20Creating%20a%20Dataset.ipynb)
+* [Part 2](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%202%20-%20Making%20a%20Query.ipynb)
 
 ## Quick start
 
@@ -51,7 +58,7 @@ query.execute()
 ```
 
 ```json
-
+{
     "graphs": [
         {
             "cost": 0.024416640711327393,
@@ -141,10 +148,3 @@ query.execute()
     "max_iters": 10
 }
 ```
-
-## Tutorials
-
-See the tutorials for a full working example
-
-* [Part 1](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%201%20-%20Creating%20a%20Dataset.ipynb)
-* [Part 2](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%202%20-%20Making%20a%20Query.ipynb)
