@@ -24,18 +24,15 @@ python run_test.py
 
 ```python
 # create a query graph
-query_graph_handle = fornax.GraphHandle.create(
-    [0, 1, 2], 
-    [(0, 1), (1, 2)], 
-    metadata=[{'label': 'Hulk'}, {'label': 'Lady'}, {'label': 'Storm'}]
-)
+query_graph_handle = fornax.GraphHandle.create()
+query_graph_handle.add_nodes(label=['Hulk', 'Lady', 'Storm'])
+query_graph_handle.add_edges([0, 1], [1, 2])
+
 
 # create a target graph
-target_graph_handle = fornax.GraphHandle.create(
-    comic_book_nodes, 
-    comic_book_edges, 
-    metadata=node_metadata
-)
+target_graph_handle = fornax.GraphHandle.create()
+target_graph_handle.add_nodes(label=comic_book_nodes['name'])
+target_graph_handle.add_edges(comic_book_edges['start'], comic_book_edges['end'])
 
 matches = [
     (query_node_id, target_node_id, weight) 
@@ -43,11 +40,14 @@ matches = [
     in string_similarities
 ]
 
+match_starts, match_ends, weights = zip(*matches)
+
 # stage a query
-query = fornax.QueryHandle.create(query_graph_handle, target_graph_handle, matches)
+query = fornax.QueryHandle.create(query_graph_handle, target_graph_handle)
+query.add_matches(match_starts, match_ends, weights)
 
 # go!
-results = query.execute(n=10, edges=True)
+results = query.execute()
 ```
 
 ## Tutorials
