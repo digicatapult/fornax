@@ -321,6 +321,8 @@ class GraphHandle:
         
         Arguments:
             kwargs {Iterable} -- properties of the node are provided by iterables named using keyword args
+            Use id_src to give a unique id to each node, if not provided a range index will be used by default
+            id_src can be any type convertable to a string
             All iterables must be the same length.
             At least one keyword arg must be provided.
         """
@@ -351,15 +353,15 @@ class GraphHandle:
 
     def add_edges(self, sources, targets, **kwargs):
         """Add edges to the graph. 
-        Edges are specified by using integer offsets into the graph nodes in insertion order.
+        Edges are specified by using using the src_id of nodes.
         Use keyword args to attach json serialisable metadata to the edges.
         Edges may not start and end on the same node.
         Edges must be unique.
         Edges are undirected.
         
         Arguments:
-            sources {Iterable} -- Iterable of integers
-            targets {Iterable} -- Iterable of integers
+            sources {Iterable} -- Iterable of src_ids
+            targets {Iterable} -- Iterable of src_ids
             kwargs {Iterable} -- Iterable of json serialisable items
         """
 
