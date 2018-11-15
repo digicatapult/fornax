@@ -461,27 +461,27 @@ class TestExample(TestCaseDB):
     def test_first_graph_links(self):
         graph = self.payload['graphs'][0]
         matches = [
-            {"start": 0, "end": 7, "type": "match", "weight": 1.0},
-            {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
-            {"start": 2, "end": 11, "type": "match", "weight": 1.0}, 
-            {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
-            {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
-            {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
-            {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
-            {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
-            {"start": 3, "end": 4, "type": "query", "weight": 1.0},
-            {"start": 7, "end": 8, "type": "target", "weight": 1.0},
-            {"start": 7, "end": 11, "type": "target", "weight": 1.0},
-            {"start": 8, "end": 9, "type": "target", "weight": 1.0},
-            {"start": 9, "end": 10, "type": "target", "weight": 1.0},
+            {"source": 0, "target": 7, "type": "match", "weight": 1.0},
+            {"source": 1, "target": 8, "type": "match", "weight": 1.0}, 
+            {"source": 2, "target": 11, "type": "match", "weight": 1.0}, 
+            {"source": 3, "target": 9, "type": "match", "weight": 1.0}, 
+            {"source": 4, "target": 10, "type": "match", "weight": 1.0}, 
+            {"source": 0, "target": 1, "type": "query", "weight": 1.0}, 
+            {"source": 0, "target": 2, "type": "query", "weight": 1.0}, 
+            {"source": 1, "target": 3, "type": "query", "weight": 1.0}, 
+            {"source": 3, "target": 4, "type": "query", "weight": 1.0},
+            {"source": 7, "target": 8, "type": "target", "weight": 1.0},
+            {"source": 7, "target": 11, "type": "target", "weight": 1.0},
+            {"source": 8, "target": 9, "type": "target", "weight": 1.0},
+            {"source": 9, "target": 10, "type": "target", "weight": 1.0},
         ]
         for match in matches:
             if match['type'] == 'query' or match['type'] == 'target':
-                match['start'] = hash_id((match['start'], match['type']))
-                match['end'] = hash_id((match['end'], match['type']))
+                match['source'] = hash_id((match['source'], match['type']))
+                match['target'] = hash_id((match['target'], match['type']))
             else:
-                match['start'] = hash_id((match['start'], 'query'))
-                match['end'] = hash_id((match['end'], 'target'))
+                match['source'] = hash_id((match['source'], 'query'))
+                match['target'] = hash_id((match['target'], 'target'))
         self.assertListEqual(graph['links'], matches)
 
     def test_second_graph_cost(self):
@@ -512,25 +512,25 @@ class TestExample(TestCaseDB):
     def test_second_graph_links(self):
         graph = self.payload['graphs'][1]
         matches = [
-            {"start": 0, "end": 7, "type": "match", "weight": 1.0},
-            {"start": 1, "end": 8, "type": "match", "weight": 1.0}, 
-            {"start": 2, "end": 5, "type": "match", "weight": 1.0}, 
-            {"start": 3, "end": 9, "type": "match", "weight": 1.0}, 
-            {"start": 4, "end": 10, "type": "match", "weight": 1.0}, 
-            {"start": 0, "end": 1, "type": "query", "weight": 1.0}, 
-            {"start": 0, "end": 2, "type": "query", "weight": 1.0}, 
-            {"start": 1, "end": 3, "type": "query", "weight": 1.0}, 
-            {"start": 3, "end": 4, "type": "query", "weight": 1.0},
-            {"start": 5, "end": 7, "type": "target", "weight": 1.0},
-            {"start": 7, "end": 8, "type": "target", "weight": 1.0},
-            {"start": 8, "end": 9, "type": "target", "weight": 1.0},
-            {"start": 9, "end": 10, "type": "target", "weight": 1.0},
+            {"source": 0, "target": 7, "type": "match", "weight": 1.0},
+            {"source": 1, "target": 8, "type": "match", "weight": 1.0}, 
+            {"source": 2, "target": 5, "type": "match", "weight": 1.0}, 
+            {"source": 3, "target": 9, "type": "match", "weight": 1.0}, 
+            {"source": 4, "target": 10, "type": "match", "weight": 1.0}, 
+            {"source": 0, "target": 1, "type": "query", "weight": 1.0}, 
+            {"source": 0, "target": 2, "type": "query", "weight": 1.0}, 
+            {"source": 1, "target": 3, "type": "query", "weight": 1.0}, 
+            {"source": 3, "target": 4, "type": "query", "weight": 1.0},
+            {"source": 5, "target": 7, "type": "target", "weight": 1.0},
+            {"source": 7, "target": 8, "type": "target", "weight": 1.0},
+            {"source": 8, "target": 9, "type": "target", "weight": 1.0},
+            {"source": 9, "target": 10, "type": "target", "weight": 1.0},
         ]
         for match in matches:
             if match['type'] == 'query' or match['type'] == 'target':
-                match['start'] = hash_id((match['start'], match['type']))
-                match['end'] = hash_id((match['end'], match['type']))
+                match['source'] = hash_id((match['source'], match['type']))
+                match['target'] = hash_id((match['target'], match['type']))
             elif match['type'] == 'match':
-                match['start'] = hash_id((match['start'], 'query'))
-                match['end'] = hash_id((match['end'], 'target'))
+                match['source'] = hash_id((match['source'], 'query'))
+                match['target'] = hash_id((match['target'], 'target'))
         self.assertListEqual(graph['links'], matches)

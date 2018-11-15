@@ -237,7 +237,7 @@ class Edge:
         elif self.type == 'match':
             start, end = hash_id((self.start, 'query')), hash_id((self.end, 'target'))
         return {
-            **{'start': start, 'end': end, 'type': self.type, 'weight': self.weight},
+            **{'source': start, 'target': end, 'type': self.type, 'weight': self.weight},
             **self.meta
         }
 
@@ -677,6 +677,7 @@ class QueryHandle:
             ]
             match_ends = set(hash_id((i, 'target')) for i in match_ends)
             nxt_graph = {
+                'is_multigraph': False,
                 'cost': score,
                 'nodes': list(query_nodes_payload), # make a copy
                 'links': matches + list(query_edges_payload)  # make a copy
@@ -685,7 +686,7 @@ class QueryHandle:
             nxt_graph['links'].extend(
                 [
                     e for e in target_edges_payload 
-                    if e['start'] in match_ends and e['end'] in match_ends
+                    if e['source'] in match_ends and e['target'] in match_ends
                 ]
             )
             graphs.append(nxt_graph)
