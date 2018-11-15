@@ -6,6 +6,8 @@ import itertools
 import collections
 import json
 import os
+import sys
+import hashlib
 
 from typing import Iterable
 from sqlalchemy import event
@@ -19,11 +21,23 @@ DB_URL = os.environ.get('FORNAX_DB_URL')
 if DB_URL is None:
     DB_URL = 'sqlite://'
 
+MAX_SIZE = sys.maxsize
+SQLITE_MAX_SIZE = 2147483647
+if DB_URL == 'sqlite://':
+    MAX_SIZE = min(MAX_SIZE, SQLITE_MAX_SIZE)
+
 ECHO = False
 ENGINE = sqlalchemy.create_engine(DB_URL, echo=ECHO)
 CONNECTION = ENGINE.connect() 
 Session = sqlalchemy.orm.sessionmaker(bind=ENGINE)
 fornax.model.Base.metadata.create_all(CONNECTION)
+
+
+def hash_id(item):
+    if isinstance(item, int):
+        return item % MAX_SIZE
+    else:
+        return int(hashlib.sha256(str(item).encode('utf-8')).hexdigest(), 16) % MAX_SIZE
 
 
 # enforce foreign key constrains in SQLite
@@ -55,7 +69,7 @@ def check_nodes(nodes):
             node_id = int(node.node_id)
         except ValueError:
             raise ValueError('<Node(node_id={})>, node_id must be an integer'.format(node))
-        if node_id > 2147483647 and DB_URL == 'sqlite://':
+        if node_id > SQLITE_MAX_SIZE and DB_URL == 'sqlite://':
             raise ValueError('node id {} is too large'.format(node))
         yield node
 
@@ -152,7 +166,7 @@ class Node:
             id is the hash of the node id and type so that nodes are unique
             to either the query graph or the target graph
         """
-        return {**{'id': hash((self.id, self.type)), 'type': self.type}, **self.meta}
+        return {**{'id': hash_id((self.id, self.type)), 'type': self.type}, **self.meta}
 
 
 class Edge:
@@ -211,9 +225,9 @@ class Edge:
             to either the query graph or the target graph
         """
         if self.type == 'query' or self.type == 'target':
-            start, end = hash((self.start, self.type)), hash((self.end, self.type))
+            start, end = hash_id((self.start, self.type)), hash_id((self.end, self.type))
         elif self.type == 'match':
-            start, end = hash((self.start, 'query')), hash((self.end, 'target'))
+            start, end = hash_id((self.start, 'query')), hash_id((self.end, 'target'))
         return {
             **{'start': start, 'end': end, 'type': self.type, 'weight': self.weight},
             **self.meta
@@ -307,10 +321,16 @@ class GraphHandle:
             raise ValueError('add_nodes requires at least one keyword argument')
         if 'id' in keys:
             raise(ValueError('id is a reserved node attribute which cannot be assigned'))
-        zipped = enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
+        if 'id_src' in keys:
+            id_src = kwargs['id_src']
+            zipped = itertools.zip_longest(*kwargs.values(), fillvalue=NullValue())
+            zipped = itertools.zip_longest(id_src, zipped, fillvalue=NullValue())
+        else:
+            zipped = enumerate(itertools.zip_longest(*kwargs.values(), fillvalue=NullValue()))
+
         nodes = (
             model.Node(
-                node_id=node_id,
+                node_id=hash_id(node_id),
                 graph_id=self.graph_id, 
                 meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
@@ -344,7 +364,8 @@ class GraphHandle:
             raise(ValueError('type is a reserved node attribute which cannot be assigned using kwargs'))
         if 'weight' in keys:
             raise(ValueError('weight is a reserved node attribute which cannot be assigned using kwargs'))
-        zipped = itertools.zip_longest(sources, targets, *kwargs.values(), fillvalue=NullValue())
+        hashed_sources, hashed_targets = map(hash_id, sources), map(hash_id, targets)
+        zipped = itertools.zip_longest(hashed_sources, hashed_targets, *kwargs.values(), fillvalue=NullValue())
         edges = itertools.chain.from_iterable(
             (
                 model.Edge(start=start, end=end, graph_id=self._graph_id,
@@ -500,7 +521,8 @@ class QueryHandle:
             raise(ValueError('type is a reserved node attribute which cannot be assigned using kwargs'))
         if 'weight' in keys:
             raise(ValueError('weight is a reserved node attribute which cannot be assigned using kwargs'))
-        zipped = itertools.zip_longest(sources, targets, weights, *kwargs.values(), fillvalue=NullValue())
+        hashed_sources, hashed_targetes = map(hash_id, sources), map(hash_id, targets)
+        zipped = itertools.zip_longest(hashed_sources, hashed_targetes, weights, *kwargs.values(), fillvalue=NullValue())
         query_graph = self.query_graph()
         target_graph = self.target_graph()
         matches = (
@@ -630,7 +652,7 @@ class QueryHandle:
 
         scores = self._get_scores(inference_costs, query_nodes, subgraphs, sz)
         # sort graphs by score then deturministicly by hashing
-        idxs = sorted(enumerate(scores), key=lambda x: (x[1], hash(tuple(subgraphs[x[0]]))))
+        idxs = sorted(enumerate(scores), key=lambda x: (x[1], hash_id(tuple(subgraphs[x[0]]))))
 
         query_nodes_payload = [node.to_dict() for node in query_nodes]
         query_edges_payload = [edge.to_dict() for edge in query_edges]
@@ -643,7 +665,7 @@ class QueryHandle:
                 Edge(s, e, 'match', {}, 1. - inference_costs[s,e]).to_dict() 
                 for s, e in sorted(subgraphs[i])
             ]
-            match_ends = set(hash((i, 'target')) for i in match_ends)
+            match_ends = set(hash_id((i, 'target')) for i in match_ends)
             nxt_graph = {
                 'cost': score,
                 'nodes': list(query_nodes_payload), # make a copy
