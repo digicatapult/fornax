@@ -142,7 +142,7 @@ class TestGraph(TestCaseDB):
         names = ['adam', 'ben', 'chris']
         ages = [9, 10 ,11]
         graph.add_nodes(name=names, age=ages)
-        self.assertRaises(ValueError, graph.add_edges, [1, 0], [1, 2], relationship=['is_friend', 'is_foe'])
+        self.assertRaises(fornax.api.InvalidEdgeError, graph.add_edges, [1, 0], [1, 2], relationship=['is_friend', 'is_foe'])
 
     def test_add_nodes_id_src(self):
         graph = fornax.GraphHandle.create()
