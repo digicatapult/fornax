@@ -58,7 +58,11 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
 
 @contextlib.contextmanager
 def session_scope():
-    """Provide a transactional scope around a series of operations."""
+    """
+    Provide a transactional scope around a series of db operations.
+    Transactions will be rolled back in the case of an exception.
+    """
+
     session = Session()
     try:
         yield session
