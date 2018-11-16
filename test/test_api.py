@@ -5,7 +5,7 @@ import fornax.model
 from test_base import TestCaseDB
 from sqlalchemy.orm.session import Session
 from unittest import TestCase
-from fornax.api import hash_id
+from fornax.api import _hash
 
 
 class TestGraph(TestCaseDB):
@@ -151,7 +151,7 @@ class TestGraph(TestCaseDB):
         nodes = self.session.query(fornax.model.Node).all()
         self.assertEqual(
             [n.node_id for n in nodes],
-            [hash_id(item) for item in ('a', 'b', 'c', 'd')]
+            [_hash(item) for item in ('a', 'b', 'c', 'd')]
         )
 
     def test_add_nodes_id_src_meta(self):
@@ -176,7 +176,7 @@ class TestGraph(TestCaseDB):
         self.assertEqual(
             sorted([e.start, e.end] for e in edges),
             sorted(
-                sorted([hash_id(start), hash_id(end)]) 
+                sorted([_hash(start), _hash(end)]) 
                 for start, end in [('a', 'b'), ('b', 'c')]
             )
         )
@@ -345,7 +345,7 @@ class TestNode(TestCase):
 
     def test_to_dict(self):
         self.assertDictEqual(
-            self.node.to_dict(), {'id': hash_id((0, 'query')), 'type': 'query', 'a': 1}
+            self.node.to_dict(), {'id': _hash((0, 'query')), 'type': 'query', 'a': 1}
         )
 
     def test_node_raises(self):
@@ -452,7 +452,7 @@ class TestExample(TestCaseDB):
             {"id": 11, "type": "target", "my_id": 12}
         ]
         for node in nodes:
-            node['id'] = hash_id((node['id'], node['type']))
+            node['id'] = _hash((node['id'], node['type']))
         self.assertListEqual(
             graph['nodes'],
             nodes
@@ -477,11 +477,11 @@ class TestExample(TestCaseDB):
         ]
         for match in matches:
             if match['type'] == 'query' or match['type'] == 'target':
-                match['source'] = hash_id((match['source'], match['type']))
-                match['target'] = hash_id((match['target'], match['type']))
+                match['source'] = _hash((match['source'], match['type']))
+                match['target'] = _hash((match['target'], match['type']))
             else:
-                match['source'] = hash_id((match['source'], 'query'))
-                match['target'] = hash_id((match['target'], 'target'))
+                match['source'] = _hash((match['source'], 'query'))
+                match['target'] = _hash((match['target'], 'target'))
         self.assertListEqual(graph['links'], matches)
 
     def test_second_graph_cost(self):
@@ -503,7 +503,7 @@ class TestExample(TestCaseDB):
             {"id": 10, "type": "target", "my_id": 11},
         ]
         for node in nodes:
-            node['id'] = hash_id((node['id'], node['type']))
+            node['id'] = _hash((node['id'], node['type']))
         self.assertListEqual(
             graph['nodes'],
             nodes
@@ -528,9 +528,9 @@ class TestExample(TestCaseDB):
         ]
         for match in matches:
             if match['type'] == 'query' or match['type'] == 'target':
-                match['source'] = hash_id((match['source'], match['type']))
-                match['target'] = hash_id((match['target'], match['type']))
+                match['source'] = _hash((match['source'], match['type']))
+                match['target'] = _hash((match['target'], match['type']))
             elif match['type'] == 'match':
-                match['source'] = hash_id((match['source'], 'query'))
-                match['target'] = hash_id((match['target'], 'target'))
+                match['source'] = _hash((match['source'], 'query'))
+                match['target'] = _hash((match['target'], 'target'))
         self.assertListEqual(graph['links'], matches)

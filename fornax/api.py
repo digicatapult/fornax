@@ -33,15 +33,15 @@ Session = sqlalchemy.orm.sessionmaker(bind=ENGINE)
 fornax.model.Base.metadata.create_all(CONNECTION)
 
 
-def hash_id(item):
+def _hash(item:str) -> int:
     """An unsalted hash function with a range between 0 and MAX_SIZE
     
-    Arguments:
-        item -- key that can be converted to a string using `str`
-    
-    Returns:
-        {int} -- hash in the range 0 -> MAX_SIZE
+    :param item: string or string like object that is accepted by buildin function `str`
+    :type item: str
+    :return: hash between 0 and MAX_SIZE
+    :rtype: int
     """
+
     if isinstance(item, int):
         return item % MAX_SIZE
     else:
@@ -174,7 +174,7 @@ class Node:
             id is the hash of the node id and type so that nodes are unique
             to either the query graph or the target graph
         """
-        return {**{'id': hash_id((self.id, self.type)), 'type': self.type}, **self.meta}
+        return {**{'id': _hash((self.id, self.type)), 'type': self.type}, **self.meta}
 
 
 class Edge:
@@ -233,9 +233,9 @@ class Edge:
             to either the query graph or the target graph
         """
         if self.type == 'query' or self.type == 'target':
-            start, end = hash_id((self.start, self.type)), hash_id((self.end, self.type))
+            start, end = _hash((self.start, self.type)), _hash((self.end, self.type))
         elif self.type == 'match':
-            start, end = hash_id((self.start, 'query')), hash_id((self.end, 'target'))
+            start, end = _hash((self.start, 'query')), _hash((self.end, 'target'))
         return {
             **{'source': start, 'target': end, 'type': self.type, 'weight': self.weight},
             **self.meta
@@ -340,7 +340,7 @@ class GraphHandle:
 
         nodes = (
             model.Node(
-                node_id=hash_id(node_id),
+                node_id=_hash(node_id),
                 graph_id=self.graph_id, 
                 meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
@@ -374,7 +374,7 @@ class GraphHandle:
             raise(ValueError('type is a reserved node attribute which cannot be assigned using kwargs'))
         if 'weight' in keys:
             raise(ValueError('weight is a reserved node attribute which cannot be assigned using kwargs'))
-        hashed_sources, hashed_targets = map(hash_id, sources), map(hash_id, targets)
+        hashed_sources, hashed_targets = map(_hash, sources), map(_hash, targets)
         zipped = itertools.zip_longest(hashed_sources, hashed_targets, *kwargs.values(), fillvalue=NullValue())
         edges = itertools.chain.from_iterable(
             (
@@ -531,7 +531,7 @@ class QueryHandle:
             raise(ValueError('type is a reserved node attribute which cannot be assigned using kwargs'))
         if 'weight' in keys:
             raise(ValueError('weight is a reserved node attribute which cannot be assigned using kwargs'))
-        hashed_sources, hashed_targetes = map(hash_id, sources), map(hash_id, targets)
+        hashed_sources, hashed_targetes = map(_hash, sources), map(_hash, targets)
         zipped = itertools.zip_longest(hashed_sources, hashed_targetes, weights, *kwargs.values(), fillvalue=NullValue())
         query_graph = self.query_graph()
         target_graph = self.target_graph()
@@ -662,7 +662,7 @@ class QueryHandle:
 
         scores = self._get_scores(inference_costs, query_nodes, subgraphs, sz)
         # sort graphs by score then deturministicly by hashing
-        idxs = sorted(enumerate(scores), key=lambda x: (x[1], hash_id(tuple(subgraphs[x[0]]))))
+        idxs = sorted(enumerate(scores), key=lambda x: (x[1], _hash(tuple(subgraphs[x[0]]))))
 
         query_nodes_payload = [node.to_dict() for node in query_nodes]
         query_edges_payload = [edge.to_dict() for edge in query_edges]
@@ -675,7 +675,7 @@ class QueryHandle:
                 Edge(s, e, 'match', {}, 1. - inference_costs[s,e]).to_dict() 
                 for s, e in sorted(subgraphs[i])
             ]
-            match_ends = set(hash_id((i, 'target')) for i in match_ends)
+            match_ends = set(_hash((i, 'target')) for i in match_ends)
             nxt_graph = {
                 'is_multigraph': False,
                 'cost': score,
