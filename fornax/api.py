@@ -106,16 +106,35 @@ def check_nodes(nodes: typing.Iterable[model.Node]) -> typing.Generator[model.No
             raise InvalidNodeError('node id {} is too large'.format(node))
         yield node
 
+class InvalidEdgeError(Exception):
 
-def check_edges(edges):
-    """ guard for inserting nodes edges """
+    def __init__(self, message:str):
+        """This exception will be raised if invalid Edges are found to be inserted
+        into the database
+        
+        :param message: Description of the failed criteria
+        :type message: str
+        """
+        super().__init__(message)
+
+def check_edges(edges: typing.List[model.Edge]) -> typing.Generator[model.Edge, None, None]:
+    """Guard against invalid edges by raising an InvalidEdgeError for forbidden edge parameters
+    
+    :param edges: An iterable of Edges
+    :type edges: typing.List[model.Edge]
+    :raises InvalidEdgeError: Raised if edge start or edge end is not an integer
+    :raises InvalidEdgeError: Raised if edge start and edge end are the same
+    :return: Yield each edge if there are no uncaught exceptions
+    :rtype: typing.Generator[model.Edge, None, None]
+    """
+
     for edge in edges:
         try:
             start, end = int(edge.start), int(edge.end)
         except ValueError:
-            raise ValueError('<Edge(start={}, end={})>, edge start and end must be integers'.format(edge.start, edge.end))
+            raise InvalidEdgeError('{}, edge start and end must be integers'.format(edge))
         if start == end:
-            raise ValueError('<Edge(start={}, end={})>, edges must start and end on different nodes'.format(start, end))
+            raise InvalidEdgeError('{}, edges must start and end on different nodes'.format(edge))
         yield edge
 
 
