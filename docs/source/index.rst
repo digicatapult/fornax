@@ -3,16 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to fornax's documentation!
-==================================
+.. automodule:: fornax.api
+    :members: __doc__
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents
+.. autoclass:: fornax.GraphHandle
+    :members:
 
-   readme.rst
-   modules.rst
-
+.. autoclass:: fornax.QueryHandle
+    :members:
 
 Indices and tables
 ==================
