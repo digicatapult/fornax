@@ -31,14 +31,14 @@ class TestGraph(TestCaseDB):
     def test_create_two(self):
         """auto increment graph id
         """
-        _ = fornax.api.GraphHandle.create()
+        _ = fornax.GraphHandle.create()
         second = fornax.GraphHandle.create()
         self.assertEqual(second.graph_id, 1)
 
     def test_read(self):
         """get a graph handle using graph id
         """
-        graph = fornax.api.GraphHandle.create()
+        graph = fornax.GraphHandle.create()
         graph_id = graph.graph_id
         same_graph = fornax.GraphHandle.read(graph_id)
         self.assertEqual(same_graph.graph_id, graph_id)
@@ -48,7 +48,7 @@ class TestGraph(TestCaseDB):
         """
         graph = fornax.GraphHandle.create()
         graph.delete()
-        self.assertRaises(ValueError, fornax.api.GraphHandle.read, 0)
+        self.assertRaises(ValueError, fornax.GraphHandle.read, 0)
 
     def test_add_nodes(self):
         """meta data is stored on a node

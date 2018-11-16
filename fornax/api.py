@@ -1,3 +1,28 @@
+"""
+Fornax API documentation
+========================
+
+Introduction
+------------
+
+Fornax performs fuzzy subgraph matching between graphs with labelled nodes.
+Given a small graph (the query graph) and a large graph (the target graph)
+fornax will approximate the top `n` subgraphs in the target graph that are most 
+similar to the query graph even if the node labels and graph relationships are not
+exactly the same.
+
+Use this query API to specify query and target graphs and to seach for fuzzy
+subgraph matches of the query graph to the target graph.
+
+fornax is designed to handle very large graphs of millions of nodes.
+As such graphs are persisted in a database.
+Rather than interacting directly with a graph, the API implements GraphHandles.
+These are similar to file handles or file pointers for a file system.
+They allow the user to Create, Read, Update and Delete graphs but much like a
+file the graphs will still persist even if the handle goes out of scope.
+
+Similarly query objects, which define a search operation, can be created using a QueryHandle.
+"""
 import fornax.select
 import fornax.opt
 import sqlalchemy
@@ -16,7 +41,7 @@ import fornax.model as model
 
 #TODO: sqlalchemy database integrity exceptions are not caught by the API
 
-# Set this environment variable to point towards another database
+"""URL for a supported SQL database backend"""
 DB_URL = os.environ.get('FORNAX_DB_URL')
 if DB_URL is None:
     DB_URL = 'sqlite://'
@@ -117,7 +142,7 @@ class InvalidEdgeError(Exception):
         """
         super().__init__(message)
 
-def check_edges(edges: typing.List[model.Edge]) -> typing.Generator[model.Edge, None, None]:
+def check_edges(edges: typing.Iterable[model.Edge]) -> typing.Generator[model.Edge, None, None]:
     """Guard against invalid edges by raising an InvalidEdgeError for forbidden edge parameters
     
     :param edges: An iterable of Edges
@@ -137,9 +162,30 @@ def check_edges(edges: typing.List[model.Edge]) -> typing.Generator[model.Edge, 
             raise InvalidEdgeError('{}, edges must start and end on different nodes'.format(edge))
         yield edge
 
+class InvalidMatchError(Exception):
 
-def check_matches(matches):
-    """ guard for inserted matches """
+    def __init__(self, message:str):
+        """This exception will be raised if invalid Matches are found to be inserted
+        into the database
+        
+        :param message: Description of the failed criteria
+        :type message: str
+        """
+        super().__init__(message)
+
+def check_matches(matches: typing.Iterable[model.Match]) -> typing.Generator[model.Match, None, None]:
+    """Guard against invalid matches by raising an InvalidMatchError for forbidden Match parameters
+    
+    :param matches: Iterable of Match objects
+    :type matches: typing.Iterable[model.Match]
+    :raises ValueError: Raised if match start cannot be coorced to an integer
+    :raises ValueError: Raised if match end cannot be coorced to an integer
+    :raises ValueError: Raised if match weight cannot be coorced to a float
+    :raises ValueError: Raised if match weight is not in the range 0 to 1
+    :return: yield each match
+    :rtype: typing.Generator[model.Match, None, None]
+    """
+
     for match in matches:
         try:
             start = int(match.start) 
@@ -159,8 +205,8 @@ def check_matches(matches):
 
 
 class NullValue:
-    """A dummy class to represent a missing value.
-    This class intentionally cannot be json serialised
+    """
+    A dummy nul value that will cause an exception when serialised to json
     """
 
     def __init__(self):
@@ -168,35 +214,22 @@ class NullValue:
 
 
 class Node:
-    """A representation of a node internal to QueryHandle
-    
-    Raises:
-        ValueError -- Raised if node.type is not {'query', 'target'}
-    
-    Returns:
-        Node -- A tuple of id, type and a dictionary of metadata
+    """Representation of a Node use internally by QueryHandle
+
+    :param node_id: unique id of a node
+    :type node_id: int
+    :param node_type: either `source` or `target` 
+    :type node_type: str
+    :param meta: meta data to attach to a node to be json serialised
+    :type meta: dict
+    :raises ValueError: Raised is type is not either `source` or `target`
     """
 
-
     __slots__ = ['id', 'type', 'meta']
-    
-    def __init__(self, node_id: int, node_type:str,  meta: dict):
-        """Create a new Node
-        
-        Arguments:
-            node_id {int} -- A unique indentifier for a node within a graph
-            node_type {str} -- Either `query` or `target`
-            meta {dict} -- A json serialisable dictionary of meta data
-        
-        Raises:
-            ValueError -- Raised if Node.type is not either `query` or `target`
-        
-        Returns:
-            Node -- new Node instance
-        """
 
+    def __init__(self, node_id: int, node_type:str,  meta: dict):
         if node_type not in ('query', 'target'):
-            raise ValueError('Nodes must be of type "query", "target", "match"')
+            raise ValueError('Nodes must be of type "query", "target"')
         self.id = node_id
         self.type = node_type
         self.meta = meta
@@ -210,45 +243,39 @@ class Node:
     def __lt__(self, other):
         return (self.type, self.id) < (other.type, other.id)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """Return self as a json serialisable dictionary
         
-        Returns:
-            dict -- Dictionary of node_id, type, and metadata
-            id is the hash of the node id and type so that nodes are unique
-            to either the query graph or the target graph
+        :return: dictionary with keys `id`, `type` and `meta`
+        :rtype: dict 
         """
-        return {**{'id': _hash((self.id, self.type)), 'type': self.type}, **self.meta}
 
+        return {
+            # hash id with type so that the node id is unique to a given
+            # submatch result
+            **{'id': _hash((self.id, self.type)),  
+            'type': self.type},
+            **self.meta
+        }
 
+        
 class Edge:
-    """Representation of an edge internal to QueryHandle
+    """Representation of an Edge used internally be QueryHandle
     
-    Raises:
-        ValueError -- Raised if type is not `query`, `target` or `match`
-    
-    Returns:
-        Edge -- new edge object
+    :param start: id of start node
+    :type start: int
+    :param end: id of end node
+    :type end: int
+    :param edge_type: either query target or match
+    :type edge_type: str
+    :param meta: dictionary of edge metadata to be json serialised
+    :type meta: dict
+    :param weight: weight between 0 and 1, defaults to 1.
+    :raises ValueError: Raised if type is not `query`, `target` or `match`
     """
-
     __slots__ = ['start', 'end', 'type', 'meta', 'weight']
 
     def __init__(self, start:int, end:int, edge_type:str, meta:dict, weight=1.):
-        """Create a new Edge
-        
-        Arguments:
-            start {int} -- id of start node
-            end {int} -- id of end node
-            edge_type {str} -- either query, target or match
-            meta {dict} -- dictionary of edge metadata
-        
-        Keyword Arguments:
-            weight {float} -- An edge weight between 0 and 1 (default: {1.})
-        
-        Raises:
-            ValueError -- Raised if type is not `query`, `target` or `match`
-        """
-
         if edge_type not in ('query', 'target', 'match'):
             raise ValueError('Edges must be of type "query", "target", "match"')
         self.start = start
@@ -272,13 +299,13 @@ class Edge:
         """Return self as a json serialisable dictionary
         
         Returns:
-            dict -- Dictionary of start, end, type, metadata and weight
-            start and end are the hash of the edge start/end and type so that nodes are unique
-            to either the query graph or the target graph
+            dict -- dictionart with keys start, end, type, metadata and weight
         """
         if self.type == 'query' or self.type == 'target':
+            # hash start and end with the edge type to make id unique within a subgraph match
             start, end = _hash((self.start, self.type)), _hash((self.end, self.type))
         elif self.type == 'match':
+            # hash start and end with the edge type to make id unique within a subgraph match
             start, end = _hash((self.start, 'query')), _hash((self.end, 'target'))
         return {
             **{'source': start, 'target': end, 'type': self.type, 'weight': self.weight},
@@ -286,25 +313,30 @@ class Edge:
         }
 
 class GraphHandle:
-    """ Represents a connection to a graph in the database backend """
+    """Accessor for a graph
+
+    Because fornax is designed to operate on very large graphs node and edges
+    are not stored in memory.
+    Rather, they are persisted using a database back end.
+    Currently sqlite and postgres are supported.
+
+    GraphHandle is an interface to this persistent layer.
+    One can access an existing graph by specifying it using the `graph_id` itentifier.
+    
+    :param graph_id: unique id for an existing graph
+    :type graph_id: int
+    """
 
     def __init__(self, graph_id: int):
-        """Get a handle to the graph with id `graph_id` in the database backend
-        
-        Arguments:
-            graph_id {int} -- unique id for an existing graph
-        """
-
         self._graph_id = graph_id
-        self.check_exists()
+        self._check_exists()
     
     def __len__(self):
         """Return the number of nodes in the graph
         
-        Returns:
-            int -- node count
+        :return: node count
+        :rtype: int
         """
-
         with session_scope() as session:
             count = session.query(model.Node).filter(model.Node.graph_id==self._graph_id).count()
         return count
@@ -317,14 +349,15 @@ class GraphHandle:
 
     @property
     def graph_id(self):
+        """Unique identifier for a graph"""
         return self._graph_id
 
     @classmethod
     def create(cls): 
-        """Create a new graph
+        """Create a new empy graph and return a GraphHandle to it
         
-        Returns:
-            GraphHandle -- a new graph handle with no nodes or edges
+        :return: GraphHandle to a new graph
+        :rtype: GraphHandle
         """
 
         with session_scope() as session:
@@ -342,40 +375,61 @@ class GraphHandle:
 
     @classmethod
     def read(cls, graph_id: int):
-        """ return a handle to the graph with id graph_id"""
+        """Create a new GraphHandle to an existing graph with unique identifier `graph_id`
+        
+        :param graph_id: unique identifier for an existing graph
+        :type graph_id: int
+        :return: A new graph handle to an existing graph
+        :rtype: GraphHandle
+        """
+
         return GraphHandle(graph_id)
 
     def delete(self):
-        """ delete this graph from the database back end """
-        self.check_exists()
+        """Delete a graph. 
+
+        Delete the graph accessed through graph handle and all of the associated nodes and edges.
+        
+        """
+
+        self._check_exists()
         with session_scope() as session:
             session.query(model.Graph).filter(model.Graph.graph_id==self._graph_id).delete()
             session.query(model.Edge).filter(model.Edge.graph_id==self._graph_id).delete()
             session.query(model.Node).filter(model.Node.graph_id==self._graph_id).delete()
 
-    def check_exists(self):
-        """ raise an exception if the graph handle is pointing to a graph that no longer exists """
+    def _check_exists(self):
         with session_scope() as session:
             exists = session.query(sqlalchemy.exists().where(model.Graph.graph_id==self._graph_id)).scalar()
         if not exists:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
 
-    def add_nodes(self, **kwargs):
-        """append nodes onto the graph
+    def add_nodes(self, id_src=None, **kwargs):
+        """Append nodes to a graph
         
-        Arguments:
-            kwargs {Iterable} -- properties of the node are provided by iterables named using keyword args
-            Use id_src to give a unique id to each node, if not provided a range index will be used by default
-            id_src can be any type convertable to a string
-            All iterables must be the same length.
-            At least one keyword arg must be provided.
+        :param id_src: An iterable if Unique hashable identifiers for each node, defaults to None
+        :raises ValueError: Raised if `id` is used as a keyword argument
+        :raises ValueError: Raised if no keyword arguments are provided
+
+        If `id_src` is not provided each node with be indentifed by order of insertion
+        using a continuous range index starting at zero.
+
+        Metadata can be attached to each node by specifying extra keyword arguments
+        (not that id is reserved).
+        For example, to attach a name to each node:
+
+        :Example:
+
+        graph_handle.add_node(id_src=[1,2,3], name=['a', 'b', 'c'])
+        
         """
+
         keys = kwargs.keys()
         if not len(keys):
             raise ValueError('add_nodes requires at least one keyword argument')
         if 'id' in keys:
             raise(ValueError('id is a reserved node attribute which cannot be assigned'))
-        if 'id_src' in keys:
+        if kwargs['id_src'] is not None:
             id_src = kwargs['id_src']
             zipped = itertools.zip_longest(*kwargs.values(), fillvalue=NullValue())
             zipped = itertools.zip_longest(id_src, zipped, fillvalue=NullValue())
@@ -395,18 +449,20 @@ class GraphHandle:
             session.add_all(nodes)
             session.commit()
 
-    def add_edges(self, sources, targets, **kwargs):
-        """Add edges to the graph. 
-        Edges are specified by using using the src_id of nodes.
-        Use keyword args to attach json serialisable metadata to the edges.
-        Edges may not start and end on the same node.
-        Edges must be unique.
-        Edges are undirected.
+    def add_edges(self, sources: typing.Iterable, targets: typing.Iterable, **kwargs):
+        """Append edges to a graph representing relationships between nodes
         
-        Arguments:
-            sources {Iterable} -- Iterable of src_ids
-            targets {Iterable} -- Iterable of src_ids
-            kwargs {Iterable} -- Iterable of json serialisable items
+        :param sources: node `id_src`
+        :type sources: typing.Iterable
+        :param targets: node `id_src`
+        :type targets: typing.Iterable
+
+        keyword arguments can be used to attach metadata to the edges.
+
+        :Example:
+
+        graph_handle.add_edges([0, 0], [1, 1], relation=['friend', 'foe'])
+
         """
 
         keys = kwargs.keys()
@@ -438,16 +494,13 @@ class GraphHandle:
 
 
 class QueryHandle:
-    """Represents a connection to a query in the database back end
+    """Accessor for a fuzzy subgraph matching query
+        
+    :param query_id: unique id for an existing query
+    :type query_id: int
     """
 
     def __init__(self, query_id: int):
-        """Get a handle to a query in the database backend
-        
-        Arguments:
-            query_id {int} -- An unique identifier for an existing query
-        """
-
         self.query_id = query_id
         self._check_exists()
     
@@ -479,15 +532,15 @@ class QueryHandle:
             raise ValueError('cannot read query with query id {}'.format(self.query_id))
     
     @classmethod
-    def create(cls, query_graph:model.Query, target_graph:model.Query):
-        """Create a new query
+    def create(cls, query_graph:GraphHandle, target_graph:GraphHandle):
+        """[summary]
         
-        Arguments:
-            query_graph {model.Query} -- Query graph, this is the graph you're look for in the target graph
-            target_graph {model.Query} -- Target graph, this is the graph being searched
-        
-        Returns:
-            QueryHandle -- a new handle to a query
+        :param query_graph: Subgraph to be search for in the target graph
+        :type query_graph: GraphHandle
+        :param target_graph: Graph to be searched
+        :type target_graph: GraphHandle
+        :return: new QueryHandle
+        :rtype: QueryHandle
         """
 
         with session_scope() as session:
@@ -502,13 +555,12 @@ class QueryHandle:
 
     @classmethod
     def read(cls, query_id:int):
-        """Get a handle to an existing query in the system
+        """Create a new QueryHandle to an existing query with unique id `query_id`
         
-        Arguments:
-            query_id {int} -- unique id of an existing query
-        
-        Returns:
-            QueryHandle -- handle to an existing query
+        :param query_id: unique identifier for a query
+        :type query_id: int
+        :return: new QueryHandle
+        :rtype: QueryHandle
         """
 
         return QueryHandle(query_id)
@@ -523,11 +575,12 @@ class QueryHandle:
             session.query(model.Match).filter(model.Match.query_id==self.query_id).delete()
     
     def query_graph(self) -> GraphHandle:
-        """Get a handle to the query graph used in this query
+        """Get a QueryHandle for the query graph
         
-        Returns:
-            GraphHandle -- query graph
+        :return: query graph
+        :rtype: GraphHandle
         """
+
 
         self._check_exists()
         with session_scope() as session:
@@ -540,10 +593,10 @@ class QueryHandle:
         return GraphHandle(graph_id)
     
     def target_graph(self) -> GraphHandle:
-        """Get a handle to the target graph used in this query
+        """Get a QueryHandle for the target graph
         
-        Returns:
-            GraphHandle -- target graph
+        :return: target graph
+        :rtype: GraphHandle
         """
 
         self._check_exists()
@@ -556,13 +609,21 @@ class QueryHandle:
             graph_id = end_graph.graph_id
         return GraphHandle(graph_id)
 
-    def add_matches(self, sources:[int], targets:[int], weights:[int], **kwargs):
-        """Add candidate correspondances between the query graph and the target graph
+    def add_matches(self, sources:typing.Iterable[int], targets:typing.Iterable[int], weights:typing.Iterable[float], **kwargs):
+        """Add candidate matches between the query graph and the target graph
         
-        Arguments:
-            sources {[int]} -- integer offsets into the query graph
-            targets {[int]} -- integer offsets into the target graph
-            weights {[int]} -- corresondance scores between 0 and 1
+        Matches represent a pairwise node similarity between all nodes in the query graph
+        and all nodes in the target graph.
+        Only similarities with non zero score need to be stated explicitly.
+        Matches with zero score are implicit. 
+
+        :param sources: Iterable of `src_id` in the query graph
+        :type sources: typing.Iterable[int]
+        :param targets: Iterable of `src_id` in the target graph
+        :type targets: typing.Iterable[int]
+        :param weights: Iterable of weights between 0 and 1
+        :type weights: typing.Iterable[float]
+
         """
 
         self._check_exists()
@@ -674,18 +735,17 @@ class QueryHandle:
         return scores
 
     def execute(self, n=5, hopping_distance=2, max_iters=10):
-        """Execute a query
+        """Execute a fuzzy subgraph matching query
         
-        Keyword Arguments:
-            n {int} -- number of subgraph matches to return (default: {5})
-            hopping_distance {int} -- hyperparameter (default: {2})
-            max_iters {int} -- maximum number of optimisation iterations before quitting (default: {10})
-        
-        Raises:
-            ValueError -- raised if no matches are present in the query
-        
-        Returns:
-            {dict} -- [description]
+        :param n: number of subgraph matches to return, defaults to 5
+        :param n: int, optional
+        :param hopping_distance: lengthscale hyperparameter, defaults to 2
+        :param hopping_distance: int, optional
+        :param max_iters: maximum number of optimisation iterations, defaults to 10
+        :param max_iters: int, optional
+        :raises ValueError: Raised if there are no matches between the query and target graph
+        :return: query result
+        :rtype: dict
         """
 
         offsets = None # TODO: implement batching
