@@ -9,7 +9,7 @@ import os
 import sys
 import hashlib
 
-from typing import Iterable
+import typing
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import fornax.model as model
@@ -74,15 +74,36 @@ def session_scope():
         session.close()
 
 
-def check_nodes(nodes):
-    """ guard for inserting nodes """
+class InvalidNodeError(Exception):
+
+    def __init__(self, message:str):
+        """This exception will be raised if invalid Nodes are found to be inserted
+        into the database
+        
+        :param message: Description of the failed criteria
+        :type message: str
+        """
+        super().__init__(message)
+
+
+def check_nodes(nodes: typing.Iterable[model.Node]) -> typing.Generator[model.Node, None, None]:
+    """Guard against invalid nodes by raising an InvalidNodeError for forbidden node parameters
+    
+    :param nodes: An iterable of Nodes
+    :type nodes: typing.Iterable[model.Node]
+    :raises InvalidNodeError: Raised when Node.node_id is not an integer
+    :raises InvalidNodeError: Raised when Node.node_id is larger than MAX_INT
+    :return: Yield each node if there are no uncaught exceptions
+    :rtype: typing.Generator[model.Node, None, None]
+    """
+
     for node in nodes:
         try:
             node_id = int(node.node_id)
         except ValueError:
-            raise ValueError('<Node(node_id={})>, node_id must be an integer'.format(node))
+            raise InvalidNodeError('{}, node_id must be an integer'.format(node))
         if node_id > SQLITE_MAX_SIZE and DB_URL == 'sqlite://':
-            raise ValueError('node id {} is too large'.format(node))
+            raise InvalidNodeError('node id {} is too large'.format(node))
         yield node
 
 
