@@ -4,7 +4,7 @@
 
 An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using python3 and sqlite or postgres.
 
-## Install
+## Install (Dev)
 
 From the root directory:
 
@@ -19,6 +19,9 @@ From the root directory
 ```bash
 python run_test.py
 ```
+
+Fornax requires numpy to be installed (part of the SciPy ecosystem). 
+The available options for installing SciPy packages are listed [here](https://scipy.org/install.html).
 
 ## Tutorials
 
