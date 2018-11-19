@@ -104,8 +104,7 @@ class Node(Base):
 
     def __repr__(self):
         return "<Node(node_id={}, graph_id={})>".format(
-            self.node_id, self.graph_id
-        )
+            self.node_id, self.graph_id)
 
 
 class Edge(Base):
