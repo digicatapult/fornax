@@ -404,7 +404,7 @@ class GraphHandle:
         if not exists:
             raise ValueError('cannot read graph with graph id: {}'.format(self._graph_id))
 
-    def add_nodes(self, id_src=None, **kwargs):
+    def add_nodes(self, **kwargs):
         """Append nodes to a graph
         
         :param id_src: An iterable if Unique hashable identifiers for each node, defaults to None
@@ -429,7 +429,7 @@ class GraphHandle:
             raise ValueError('add_nodes requires at least one keyword argument')
         if 'id' in keys:
             raise(ValueError('id is a reserved node attribute which cannot be assigned'))
-        if kwargs['id_src'] is not None:
+        if kwargs.get('id_src') is not None:
             id_src = kwargs['id_src']
             zipped = itertools.zip_longest(*kwargs.values(), fillvalue=NullValue())
             zipped = itertools.zip_longest(id_src, zipped, fillvalue=NullValue())
