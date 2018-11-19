@@ -9,7 +9,7 @@ An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.
 From the root directory:
 
 ```bash
-pip install -r requirements.txt .
+pip install -r requirements/dev.txt
 ``` 
 
 ## Test
@@ -25,7 +25,17 @@ The available options for installing SciPy packages are listed [here](https://sc
 
 ## Tutorials
 
-See the tutorials for a full working example
+See the tutorials for a full working example.
+
+### Tutorial Dependencies
+
+The following tutorials use jupyter notebooks to create a worked example.
+We reccomend you use the anaconda python distribution to run the notebooks.
+
+```bash
+conda env create -f environment.yml
+pip install -r requirements.txt
+```
 
 * [Part 1](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%201%20-%20Creating%20a%20Dataset.ipynb)
 * [Part 2](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%202%20-%20Making%20a%20Query.ipynb)
