@@ -1,2 +1,1 @@
-# use requirements/dev.txt for local development and testing
 -r requirements/common.txt
