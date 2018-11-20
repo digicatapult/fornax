@@ -299,7 +299,13 @@ class TestQuery(TestCaseDB):
         query.add_matches(sources, targets, weights, my_id=uids)
         _, _, _, _, target_edges_arr = query._optimise(2, 10, None)
         target_edges = query._target_edges(query._target_nodes(), target_edges_arr)
-        self.assertListEqual([fornax.api.Edge(1, 2, 'target', dict())], target_edges)
+        self.assertListEqual(
+            [
+                fornax.api.Edge(0, 1, 'target', dict()),
+                fornax.api.Edge(1, 2, 'target', dict()),
+            ],
+            target_edges
+        )
 
     def test_add_matches(self):
         query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
