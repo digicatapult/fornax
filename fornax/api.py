@@ -43,17 +43,17 @@ import fornax.model as model
 # TODO: sqlalchemy database integrity exceptions are not caught by the API
 
 """URL for a supported SQL database backend"""
-DB_URL = os.environ.get('FORNAX_DB_URL')
-if DB_URL is None:
-    DB_URL = 'sqlite://'
+FORNAX_DB_URL = os.environ.get('FORNAX_DB_URL')
+if FORNAX_DB_URL is None:
+    FORNAX_DB_URL = 'sqlite://'
 
 MAX_SIZE = sys.maxsize
 SQLITE_MAX_SIZE = 2147483647
-if DB_URL == 'sqlite://':
+if FORNAX_DB_URL == 'sqlite://':
     MAX_SIZE = min(MAX_SIZE, SQLITE_MAX_SIZE)
 
 ECHO = False
-ENGINE = sqlalchemy.create_engine(DB_URL, echo=ECHO)
+ENGINE = sqlalchemy.create_engine(FORNAX_DB_URL, echo=ECHO)
 CONNECTION = ENGINE.connect()
 Session = sqlalchemy.orm.sessionmaker(bind=ENGINE)
 fornax.model.Base.metadata.create_all(CONNECTION)
@@ -136,7 +136,7 @@ def check_nodes(
             raise InvalidNodeError(
                 '{}, node_id must be an integer'.format(node)
             )
-        if node_id > SQLITE_MAX_SIZE and DB_URL == 'sqlite://':
+        if node_id > SQLITE_MAX_SIZE and FORNAX_DB_URL == 'sqlite://':
             raise InvalidNodeError('node id {} is too large'.format(node))
         yield node
 
