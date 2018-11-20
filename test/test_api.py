@@ -301,8 +301,9 @@ class TestQuery(TestCaseDB):
         target_edges = query._target_edges(query._target_nodes(), target_edges_arr)
         self.assertListEqual(
             [
-                fornax.api.Edge(0, 1, 'target', dict()),
-                fornax.api.Edge(1, 2, 'target', dict()),
+                #  no matches end on node 0
+                #  fornax.api.Edge(0, 1, 'target', dict()),
+                fornax.api.Edge(1, 2, 'target', dict())
             ],
             target_edges
         )
