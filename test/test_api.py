@@ -18,7 +18,9 @@ class TestGraph(TestCaseDB):
         fornax.api.Session = lambda: Session(self._connection)
 
     def test_init_raises(self):
-        """ raise an ValueError if a hadle to a graph is constructed that does not exist """
+        """ raise an ValueError if a hadle to a graph
+        is constructed that does not exist
+        """
         self.assertRaises(ValueError, fornax.GraphHandle, 0)
         self.assertRaises(ValueError, fornax.GraphHandle.read, 0)
 
@@ -56,22 +58,27 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
         graph.add_nodes(name=names)
-        nodes = self.session.query(fornax.model.Node).filter(fornax.model.Node.graph_id==0).all()
+        nodes = self.session.query(fornax.model.Node).filter(
+            fornax.model.Node.graph_id == 0).all()
         nodes = sorted(nodes, key=lambda node: node.node_id)
-        self.assertListEqual(names, [json.loads(node.meta)['name'] for node in nodes])
+        self.assertListEqual(
+            names, [json.loads(node.meta)['name'] for node in nodes])
 
     def test_add_nodes_more_meta(self):
         """multiple metadata is stored on a node
         """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
-        ages = [9, 10 ,11]
+        ages = [9, 10, 11]
         graph.add_nodes(name=names, age=ages)
-        nodes = self.session.query(fornax.model.Node).filter(fornax.model.Node.graph_id==0).all()
+        nodes = self.session.query(fornax.model.Node).filter(
+            fornax.model.Node.graph_id == 0).all()
         nodes = sorted(nodes, key=lambda node: node.node_id)
-        self.assertListEqual(names, [json.loads(node.meta)['name'] for node in nodes])
-        self.assertListEqual(ages, [json.loads(node.meta)['age'] for node in nodes])
-        
+        self.assertListEqual(
+            names, [json.loads(node.meta)['name'] for node in nodes])
+        self.assertListEqual(
+            ages, [json.loads(node.meta)['age'] for node in nodes])
+
     def test_missing_attribute(self):
         """Null values for metadata must be explicit
         """
@@ -98,51 +105,56 @@ class TestGraph(TestCaseDB):
         """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
-        ages = [9, 10 ,11]
+        ages = [9, 10, 11]
         graph.add_nodes(name=names, age=ages)
         relationships = ['is_friend', 'is_foe']
         graph.add_edges([0, 0], [1, 2], relationship=relationships)
         edges = self.session.query(
             fornax.model.Edge
         ).filter(
-            fornax.model.Edge.graph_id==graph.graph_id
+            fornax.model.Edge.graph_id == graph.graph_id
         ).filter(
             fornax.model.Edge.start < fornax.model.Edge.end
         ).all()
         edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
-        self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
+        self.assertListEqual(relationships, [json.loads(
+            edge.meta)['relationship'] for edge in edges])
 
     def test_add_edges_more_meta(self):
         """store multiple metadata on edges
         """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
-        ages = [9, 10 ,11]
+        ages = [9, 10, 11]
         graph.add_nodes(name=names, age=ages)
         relationships = ['is_friend', 'is_foe']
-        types = [0 , 1]
-        graph.add_edges([0, 0], [1, 2], relationship=relationships, type_=types)
+        types = [0, 1]
+        graph.add_edges(
+            [0, 0], [1, 2], relationship=relationships, type_=types)
         edges = self.session.query(
             fornax.model.Edge
         ).filter(
-            fornax.model.Edge.graph_id==graph.graph_id
+            fornax.model.Edge.graph_id == graph.graph_id
         ).filter(
             fornax.model.Edge.start < fornax.model.Edge.end
         ).all()
         edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
-        self.assertListEqual(relationships, [json.loads(edge.meta)['relationship'] for edge in edges])
-        self.assertListEqual(types, [json.loads(edge.meta)['type_'] for edge in edges])
+        self.assertListEqual(relationships, [json.loads(
+            edge.meta)['relationship'] for edge in edges])
+        self.assertListEqual(
+            types, [json.loads(edge.meta)['type_'] for edge in edges])
 
     def test_simple_graph(self):
         """Test for a simple graph.
         A simple graph is a graph with no loops.
-        A loop is an edge that connects a vertex to itself 
+        A loop is an edge that connects a vertex to itself
         """
         graph = fornax.GraphHandle.create()
         names = ['adam', 'ben', 'chris']
-        ages = [9, 10 ,11]
+        ages = [9, 10, 11]
         graph.add_nodes(name=names, age=ages)
-        self.assertRaises(fornax.api.InvalidEdgeError, graph.add_edges, [1, 0], [1, 2], relationship=['is_friend', 'is_foe'])
+        self.assertRaises(fornax.api.InvalidEdgeError, graph.add_edges, [
+                          1, 0], [1, 2], relationship=['is_friend', 'is_foe'])
 
     def test_add_nodes_id_src(self):
         graph = fornax.GraphHandle.create()
@@ -176,7 +188,7 @@ class TestGraph(TestCaseDB):
         self.assertEqual(
             sorted([e.start, e.end] for e in edges),
             sorted(
-                sorted([_hash(start), _hash(end)]) 
+                sorted([_hash(start), _hash(end)])
                 for start, end in [('a', 'b'), ('b', 'c')]
             )
         )
@@ -190,7 +202,7 @@ class TestQuery(TestCaseDB):
         """
         super().setUp(self)
         fornax.api.Session = lambda: Session(self._connection)
-    
+
     def test_init_query_raises(self):
         self.assertRaises(ValueError, fornax.QueryHandle, 0)
 
@@ -200,44 +212,54 @@ class TestQuery(TestCaseDB):
     def test_create(self):
         query_graphs = [fornax.GraphHandle.create() for _ in range(3)]
         target_graphs = [fornax.GraphHandle.create() for _ in range(3)]
-        queries = [fornax.QueryHandle.create(q, t) for q, t in zip(query_graphs, target_graphs)]
+        queries = [fornax.QueryHandle.create(
+            q, t) for q, t in zip(query_graphs, target_graphs)]
         self.assertEqual([q.query_id for q in queries], [0, 1, 2])
-    
+
     def test_create_query_target(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
-        query_db = self.session.query(fornax.model.Query).filter(fornax.model.Query.query_id==query.query_id).first()
+        query_db = self.session.query(fornax.model.Query).filter(
+            fornax.model.Query.query_id == query.query_id).first()
         self.assertEqual(query_db.start_graph_id, query_graph.graph_id)
         self.assertEqual(query_db.end_graph_id, target_graph.graph_id)
-    
+
     def test_read(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         q1 = fornax.QueryHandle.create(query_graph, target_graph)
         q2 = fornax.QueryHandle.read(q1.query_id)
         self.assertEqual(q1.query_id, q2.query_id)
 
     def test_delete(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         query_id = query.query_id
         query.delete()
-        query_exists = self.session.query(fornax.model.Query).filter(fornax.model.Query.query_id==query_id).scalar()
-        matches_exists = self.session.query(fornax.model.Match).filter(fornax.model.Match.query_id==query_id).scalar()
+        query_exists = self.session.query(fornax.model.Query).filter(
+            fornax.model.Query.query_id == query_id).scalar()
+        matches_exists = self.session.query(fornax.model.Match).filter(
+            fornax.model.Match.query_id == query_id).scalar()
         self.assertFalse(query_exists)
         self.assertFalse(matches_exists)
-    
+
     def test_get_query_graph(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         self.assertEqual(query.query_graph(), query_graph)
 
     def test_get_target_graph(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         self.assertEqual(query.target_graph(), target_graph)
 
     def test_query_nodes(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         q_uids = [0, 1, 2]
         t_uids = [3, 4, 5]
@@ -245,12 +267,14 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         query_nodes = query._query_nodes()
         self.assertListEqual(
-            [fornax.api.Node(i, 'query' ,{'uid':uid}) for i, uid in enumerate(q_uids)], 
+            [fornax.api.Node(i, 'query', {'uid': uid})
+             for i, uid in enumerate(q_uids)],
             query_nodes
         )
 
     def test_query_edges(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         q_uids = [0, 1, 2]
         t_uids = [3, 4, 5]
@@ -259,8 +283,9 @@ class TestQuery(TestCaseDB):
         target_graph.add_nodes(uid=t_uids)
         query_edges = query._query_edges()
         self.assertListEqual(
-            [fornax.api.Edge(0, 1, 'query', {'my_id':'a'}), fornax.api.Edge(0, 2, 'query', {'my_id':'b'})], 
-            query_edges    
+            [fornax.api.Edge(0, 1, 'query', {'my_id': 'a'}), fornax.api.Edge(
+                0, 2, 'query', {'my_id': 'b'})],
+            query_edges
         )
 
     def test_target_nodes(self):
@@ -286,14 +311,15 @@ class TestQuery(TestCaseDB):
         """Each edge needs to be stored in both directions
         """
         graph = fornax.GraphHandle.create()
-        graph.add_nodes(myid=[1,2,3])
+        graph.add_nodes(myid=[1, 2, 3])
         graph.add_edges([0], [1])
-        src = [(e.start, e.end) for e in self.session.query(fornax.model.Edge).all()]
+        src = [(e.start, e.end)
+               for e in self.session.query(fornax.model.Edge).all()]
         self.assertListEqual(sorted(src), [(0, 1), (1, 0)])
 
-
     def test_target_edges(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         uids = [0, 1]
         query_graph.add_nodes(uid=range(3))
@@ -304,7 +330,8 @@ class TestQuery(TestCaseDB):
         weights = [1, 1]
         query.add_matches(sources, targets, weights, my_id=uids)
         _, _, _, _, target_edges_arr = query._optimise(2, 10, None)
-        target_edges = query._target_edges(query._target_nodes(), target_edges_arr)
+        target_edges = query._target_edges(
+            query._target_nodes(), target_edges_arr)
         self.assertListEqual(
             [
                 #  no matches end on node 0
@@ -315,7 +342,8 @@ class TestQuery(TestCaseDB):
         )
 
     def test_add_matches(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         uids = [0, 1]
         query_graph.add_nodes(uid=range(3))
@@ -325,15 +353,16 @@ class TestQuery(TestCaseDB):
         weights = [1, 1]
         query.add_matches(sources, targets, weights, my_id=uids)
         matches = self.session.query(fornax.model.Match).filter(
-            fornax.model.Match.query_id==query.query_id
+            fornax.model.Match.query_id == query.query_id
         ).order_by(fornax.model.Match.end.asc())
         self.assertEqual(sources, [m.start for m in matches])
         self.assertEqual(targets, [m.end for m in matches])
         self.assertEqual(weights, [m.weight for m in matches])
         self.assertEqual(uids, [json.loads(m.meta)['my_id'] for m in matches])
-    
+
     def test_execute_raises(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         self.assertRaises(ValueError, query.execute)
 
@@ -342,10 +371,10 @@ class TestNode(TestCase):
 
     def setUp(self):
         self.node = fornax.api.Node(0, 'query', {'a': 1})
-    
+
     def test_id(self):
         self.assertEqual(self.node.id, 0)
-    
+
     def test_meta(self):
         self.assertEqual(self.node.meta, {'a': 1})
 
@@ -358,11 +387,13 @@ class TestNode(TestCase):
 
     def test_to_dict(self):
         self.assertDictEqual(
-            self.node.to_dict(), {'id': _hash((0, 'query')), 'type': 'query', 'a': 1}
+            self.node.to_dict(), {'id': _hash(
+                (0, 'query')), 'type': 'query', 'a': 1}
         )
 
     def test_node_raises(self):
         self.assertRaises(ValueError, fornax.api.Node, 0, 'a', {})
+
 
 class TestEdge(TestCase):
 
@@ -377,13 +408,17 @@ class TestEdge(TestCase):
 
     def test_meta(self):
         self.assertEqual(self.edge.meta, {'a': 1})
-    
+
     def test_eq(self):
         self.assertEqual(self.edge, fornax.api.Edge(0, 1, 'query', {'a': 1}))
-        self.assertNotEqual(self.edge, fornax.api.Edge(1, 1, 'query', {'a': 1}))
-        self.assertNotEqual(self.edge, fornax.api.Edge(0, 0, 'query', {'a': 1}))
-        self.assertNotEqual(self.edge, fornax.api.Edge(0, 1, 'query', {'a': 2}))
-        self.assertNotEqual(self.edge, fornax.api.Edge(0, 1, 'target', {'a': 1}))
+        self.assertNotEqual(
+            self.edge, fornax.api.Edge(1, 1, 'query', {'a': 1}))
+        self.assertNotEqual(
+            self.edge, fornax.api.Edge(0, 0, 'query', {'a': 1}))
+        self.assertNotEqual(
+            self.edge, fornax.api.Edge(0, 1, 'query', {'a': 2}))
+        self.assertNotEqual(
+            self.edge, fornax.api.Edge(0, 1, 'target', {'a': 1}))
 
     def test_edge_raises(self):
         self.assertRaises(ValueError, fornax.api.Edge, 0, 1, 'a', {})
@@ -397,31 +432,31 @@ class TestExample(TestCaseDB):
         """
         super().setUp(self)
         fornax.api.Session = lambda: Session(self._connection)
-        
+
         query_graph = fornax.GraphHandle.create()
-        query_graph.add_nodes(my_id=range(1,6))
+        query_graph.add_nodes(my_id=range(1, 6))
         starts, ends = zip(*[(1, 3), (1, 2), (2, 4), (4, 5)])
         query_graph.add_edges(
-            [i - 1 for i in  starts],
-            [i - 1 for i in  ends]
+            [i - 1 for i in starts],
+            [i - 1 for i in ends]
         )
 
         target_graph = fornax.GraphHandle.create()
-        target_graph.add_nodes(my_id=range(1,14))
+        target_graph.add_nodes(my_id=range(1, 14))
         starts, ends = zip(*[
-                (1, 2), (1, 3), (1, 4),
-                (3, 7), (4, 5), (4, 6),
-                (5, 7), (6, 8), (7, 10),
-                (8, 9), (8, 12), (9, 10),
-                (10, 11), (11, 12), (11, 13),
+            (1, 2), (1, 3), (1, 4),
+            (3, 7), (4, 5), (4, 6),
+            (5, 7), (6, 8), (7, 10),
+            (8, 9), (8, 12), (9, 10),
+            (10, 11), (11, 12), (11, 13),
         ])
         target_graph.add_edges(
             [s - 1 for s in starts],
-            [e - 1 for e in ends]           
+            [e - 1 for e in ends]
         )
 
         query = fornax.QueryHandle.create(
-            query_graph, 
+            query_graph,
             target_graph
         )
         starts, ends, weights = zip(*[
@@ -442,10 +477,10 @@ class TestExample(TestCaseDB):
 
     def test_iters(self):
         self.assertEqual(self.payload['max_iters'], 10)
-    
+
     def test_hopping_distance(self):
         self.assertEqual(self.payload['hopping_distance'], 2)
-    
+
     def test_first_graph_cost(self):
         graph = self.payload['graphs'][0]
         self.assertEqual(graph['cost'], 0)
@@ -453,14 +488,14 @@ class TestExample(TestCaseDB):
     def test_first_graph_nodes(self):
         graph = self.payload['graphs'][0]
         nodes = [
-            {"id": 0, "type": "query", "my_id": 1}, 
-            {"id": 1, "type": "query", "my_id": 2}, 
-            {"id": 2, "type": "query", "my_id": 3}, 
-            {"id": 3, "type": "query", "my_id": 4}, 
-            {"id": 4, "type": "query", "my_id": 5}, 
-            {"id": 7, "type": "target", "my_id": 8}, 
-            {"id": 8, "type": "target", "my_id": 9}, 
-            {"id": 9, "type": "target", "my_id": 10}, 
+            {"id": 0, "type": "query", "my_id": 1},
+            {"id": 1, "type": "query", "my_id": 2},
+            {"id": 2, "type": "query", "my_id": 3},
+            {"id": 3, "type": "query", "my_id": 4},
+            {"id": 4, "type": "query", "my_id": 5},
+            {"id": 7, "type": "target", "my_id": 8},
+            {"id": 8, "type": "target", "my_id": 9},
+            {"id": 9, "type": "target", "my_id": 10},
             {"id": 10, "type": "target", "my_id": 11},
             {"id": 11, "type": "target", "my_id": 12}
         ]
@@ -475,13 +510,13 @@ class TestExample(TestCaseDB):
         graph = self.payload['graphs'][0]
         matches = [
             {"source": 0, "target": 7, "type": "match", "weight": 1.0},
-            {"source": 1, "target": 8, "type": "match", "weight": 1.0}, 
-            {"source": 2, "target": 11, "type": "match", "weight": 1.0}, 
-            {"source": 3, "target": 9, "type": "match", "weight": 1.0}, 
-            {"source": 4, "target": 10, "type": "match", "weight": 1.0}, 
-            {"source": 0, "target": 1, "type": "query", "weight": 1.0}, 
-            {"source": 0, "target": 2, "type": "query", "weight": 1.0}, 
-            {"source": 1, "target": 3, "type": "query", "weight": 1.0}, 
+            {"source": 1, "target": 8, "type": "match", "weight": 1.0},
+            {"source": 2, "target": 11, "type": "match", "weight": 1.0},
+            {"source": 3, "target": 9, "type": "match", "weight": 1.0},
+            {"source": 4, "target": 10, "type": "match", "weight": 1.0},
+            {"source": 0, "target": 1, "type": "query", "weight": 1.0},
+            {"source": 0, "target": 2, "type": "query", "weight": 1.0},
+            {"source": 1, "target": 3, "type": "query", "weight": 1.0},
             {"source": 3, "target": 4, "type": "query", "weight": 1.0},
             {"source": 7, "target": 8, "type": "target", "weight": 1.0},
             {"source": 7, "target": 11, "type": "target", "weight": 1.0},
@@ -505,15 +540,15 @@ class TestExample(TestCaseDB):
     def test_second_graph_nodes(self):
         graph = self.payload['graphs'][1]
         nodes = [
-            {"id": 0, "type": "query", "my_id": 1}, 
-            {"id": 1, "type": "query", "my_id": 2}, 
-            {"id": 2, "type": "query", "my_id": 3}, 
-            {"id": 3, "type": "query", "my_id": 4}, 
+            {"id": 0, "type": "query", "my_id": 1},
+            {"id": 1, "type": "query", "my_id": 2},
+            {"id": 2, "type": "query", "my_id": 3},
+            {"id": 3, "type": "query", "my_id": 4},
             {"id": 4, "type": "query", "my_id": 5},
             {"id": 5, "type": "target", "my_id": 6},
-            {"id": 7, "type": "target", "my_id": 8}, 
-            {"id": 8, "type": "target", "my_id": 9}, 
-            {"id": 9, "type": "target", "my_id": 10}, 
+            {"id": 7, "type": "target", "my_id": 8},
+            {"id": 8, "type": "target", "my_id": 9},
+            {"id": 9, "type": "target", "my_id": 10},
             {"id": 10, "type": "target", "my_id": 11},
         ]
         for node in nodes:
@@ -527,13 +562,13 @@ class TestExample(TestCaseDB):
         graph = self.payload['graphs'][1]
         matches = [
             {"source": 0, "target": 7, "type": "match", "weight": 1.0},
-            {"source": 1, "target": 8, "type": "match", "weight": 1.0}, 
-            {"source": 2, "target": 5, "type": "match", "weight": 1.0}, 
-            {"source": 3, "target": 9, "type": "match", "weight": 1.0}, 
-            {"source": 4, "target": 10, "type": "match", "weight": 1.0}, 
-            {"source": 0, "target": 1, "type": "query", "weight": 1.0}, 
-            {"source": 0, "target": 2, "type": "query", "weight": 1.0}, 
-            {"source": 1, "target": 3, "type": "query", "weight": 1.0}, 
+            {"source": 1, "target": 8, "type": "match", "weight": 1.0},
+            {"source": 2, "target": 5, "type": "match", "weight": 1.0},
+            {"source": 3, "target": 9, "type": "match", "weight": 1.0},
+            {"source": 4, "target": 10, "type": "match", "weight": 1.0},
+            {"source": 0, "target": 1, "type": "query", "weight": 1.0},
+            {"source": 0, "target": 2, "type": "query", "weight": 1.0},
+            {"source": 1, "target": 3, "type": "query", "weight": 1.0},
             {"source": 3, "target": 4, "type": "query", "weight": 1.0},
             {"source": 5, "target": 7, "type": "target", "weight": 1.0},
             {"source": 7, "target": 8, "type": "target", "weight": 1.0},
