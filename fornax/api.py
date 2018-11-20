@@ -847,7 +847,7 @@ class QueryHandle:
             ).filter(
                 model.Edge.start < model.Edge.end
             ).order_by(model.Edge.start.asc()).all()
-            
+
             edges = [
                 Edge(e.start, e.end, 'target', json.loads(e.meta))
                 for e in edges
