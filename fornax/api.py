@@ -96,7 +96,7 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except BaseException:
         session.rollback()
         raise
     finally:
@@ -233,7 +233,7 @@ def check_matches(
             raise ValueError(
                 '<Match(start={}, end={}, weight={})>,\
                  bounds error: 0 < weight <= 1'
-                )
+            )
         yield match
 
 
@@ -260,7 +260,7 @@ class Node:
 
     __slots__ = ['id', 'type', 'meta']
 
-    def __init__(self, node_id: int, node_type: str,  meta: dict):
+    def __init__(self, node_id: int, node_type: str, meta: dict):
         if node_type not in ('query', 'target'):
             raise ValueError('Nodes must be of type "query", "target"')
         self.id = node_id
