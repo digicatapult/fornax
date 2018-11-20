@@ -42,6 +42,13 @@ pip install -r requirements.txt
 * [Part 1](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%201%20-%20Creating%20a%20Dataset.ipynb)
 * [Part 2](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%202%20-%20Making%20a%20Query.ipynb)
 
+## Database Setup
+
+By default fornax will use an in memory SQlite database.
+Alternative databases can be used by setting the environment variable `FORNAX_DB_URL` using the [sqlalchemy database url format](https://docs.sqlalchemy.org/en/latest/core/engines.html).
+SQLite and Postgresql are supported although other databases are untested.
+All tables and indicies are initialised at import time if they do not exist already.
+
 ## Quick start
 
 ```python
