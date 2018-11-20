@@ -4,6 +4,8 @@
 
 An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using python3 and sqlite or postgres.
 
+![FORNAX](./fornax.png)
+
 ## Install (Dev)
 
 From the root directory:
