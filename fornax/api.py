@@ -816,7 +816,11 @@ class QueryHandle:
         with session_scope() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id == model.Query.end_graph_id
-            ).filter(model.Query.query_id == self.query_id).all()
+            ).filter(
+                model.Query.query_id == self.query_id
+            ).join(
+                model.Match, model.Node.node_id == model.Match.end
+            ).order_by(model.Node.node_id.asc()).all()
             nodes = [
                 Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes
             ]
@@ -828,19 +832,22 @@ class QueryHandle:
 
     def _target_edges(self, target_nodes, target_edges_arr):
         # only include target edges that are between the target nodes above
-        target_ids = [n.id for n in target_nodes]
         with session_scope() as session:
+            EndMatch = sqlalchemy.alias(model.Match, "end_match")
+            EndNode = sqlalchemy.alias(model.Node, "end_node")
+            StartNode = sqlalchemy.alias(model.Node, "start_node")
             edges = session.query(model.Edge).join(
-                model.Query, model.Query.end_graph_id == model.Edge.graph_id
-            ).filter(
-                model.Query.query_id == self.query_id
-            ).filter(
-                model.Edge.start.in_(target_ids)
-            ).filter(
-                model.Edge.end.in_(target_ids)
+                model.Node, model.Edge.start == model.Node.node_id
+            ).join(
+                StartNode, model.Edge.end == StartNode.c.node_id
+            ).join(
+                EndMatch, EndMatch.c.end == model.Node.node_id
+            ).join(
+                model.Query, model.Node.graph_id == model.Query.end_graph_id
             ).filter(
                 model.Edge.start < model.Edge.end
-            ).distinct().order_by(model.Edge.start.asc()).all()
+            ).order_by(model.Edge.start.asc()).all()
+            
             edges = [
                 Edge(e.start, e.end, 'target', json.loads(e.meta))
                 for e in edges
