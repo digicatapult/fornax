@@ -32,7 +32,7 @@ class TestEdge(TestCaseDB):
         self.session.commit()
 
         new_edges = [
-            model.Edge(start=0, end=1, graph_id=0), 
+            model.Edge(start=0, end=1, graph_id=0),
             model.Edge(start=1, end=0, graph_id=1),
         ]
         self.session.add_all(new_edges)
@@ -48,10 +48,10 @@ class TestEdge(TestCaseDB):
         """ find a node by joining on the start of an edge """
         query = self.session.query(model.Node)
         query = query.join(
-            model.Edge, 
+            model.Edge,
             sqlalchemy.and_(
-                model.Node.node_id==model.Edge.start,
-                model.Node.graph_id==model.Edge.graph_id
+                model.Node.node_id == model.Edge.start,
+                model.Node.graph_id == model.Edge.graph_id
             )
         )
         row = query.first()
@@ -62,10 +62,10 @@ class TestEdge(TestCaseDB):
         """ find a node by joining on the end of an edge """
         query = self.session.query(model.Node)
         query = query.join(
-            model.Edge, 
+            model.Edge,
             sqlalchemy.and_(
-                model.Node.node_id==model.Edge.end,
-                model.Node.graph_id==model.Edge.graph_id
+                model.Node.node_id == model.Edge.end,
+                model.Node.graph_id == model.Edge.graph_id
             )
         )
         row = query.first()
@@ -86,8 +86,8 @@ class TestNeighbours(TestCaseDB):
 
         new_edges = [
             model.Edge(start=0, end=1, graph_id=0),
-            model.Edge(start=0, end=2, graph_id=0), 
-            model.Edge(start=2, end=3, graph_id=0), 
+            model.Edge(start=0, end=2, graph_id=0),
+            model.Edge(start=2, end=3, graph_id=0),
         ]
 
         self.session.add_all(new_edges)
@@ -133,9 +133,12 @@ class TestMatch(TestCaseDB):
         self.session.commit()
 
         new_edges = [
-            model.Match(start=0, end=0, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-            model.Match(start=1, end=0, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-            model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1, query_id=0)
+            model.Match(start=0, end=0, weight=1, start_graph_id=0,
+                        end_graph_id=1, query_id=0),
+            model.Match(start=1, end=0, weight=1, start_graph_id=0,
+                        end_graph_id=1, query_id=0),
+            model.Match(start=1, end=1, weight=1, start_graph_id=0,
+                        end_graph_id=1, query_id=0)
         ]
         self.session.add_all(new_edges)
         self.session.commit()
@@ -154,18 +157,21 @@ class TestMatch(TestCaseDB):
         )
 
     def test_test_min_check(self):
-        self.session.add(model.Match(start=0, end=0, weight=1.1, start_graph_id=0, end_graph_id=0))
-        self.assertRaises(
-            sqlalchemy.exc.IntegrityError,
-            self.session.commit
-        )    
-
-    def test_test_max_check(self):
-        self.session.add(model.Match(start=0, end=0, weight=0, start_graph_id=0, end_graph_id=0))
+        self.session.add(model.Match(start=0, end=0, weight=1.1,
+                                     start_graph_id=0, end_graph_id=0))
         self.assertRaises(
             sqlalchemy.exc.IntegrityError,
             self.session.commit
         )
+
+    def test_test_max_check(self):
+        self.session.add(model.Match(start=0, end=0, weight=0,
+                                     start_graph_id=0, end_graph_id=0))
+        self.assertRaises(
+            sqlalchemy.exc.IntegrityError,
+            self.session.commit
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

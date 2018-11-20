@@ -7,6 +7,7 @@ import fornax.model as model
 
 Base = model.Base
 
+
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
@@ -19,12 +20,13 @@ class TestCaseDB(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """ Create the engine, create one connection and start a transaction """
+        """ Create the engine, create one connection
+        and start a transaction """
         engine = create_engine(
-            'sqlite://', 
+            'sqlite://',
             echo=False
         )
-        
+
         connection = engine.connect()
         cls._engine = engine
         cls._connection = connection

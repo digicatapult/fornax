@@ -2,6 +2,7 @@ import unittest
 import fornax.opt as opt
 import numpy as np
 
+
 class TestProximity(unittest.TestCase):
 
     def setUp(self):
@@ -60,7 +61,8 @@ class TestNeighbourHoodMatchingCosts(unittest.TestCase):
         self.assertEqual(self.costs[0].u, 2)
 
     def test_type(self):
-        self.assertTrue(isinstance(self.costs[:1], opt.NeighbourHoodMatchingCosts))
+        self.assertTrue(isinstance(
+            self.costs[:1], opt.NeighbourHoodMatchingCosts))
 
 
 class TestOpt(unittest.TestCase):
@@ -72,18 +74,24 @@ class TestOpt(unittest.TestCase):
         self.alpha = .5
         self.lmbda = .5
         self.records = ([
-            (1, 1, 1, 1, 0, 0, 1), (1, 1, 1, 4, 0, 1, 1), (1, 1, 3, 3, 1, 1, 1),  
-            (1, 4, 1, 1, 0, 1, 1), (1, 4, 1, 4, 0, 0, 1), (1, 4, 2, 5, 1, 1, 1), 
-            (1, 4, 3, 6, 1, 1, 1), (1, 8, 1, 8, 0, 0, 1), (1, 8, 2, 9, 1, 1, 1), 
-            (1, 8, 3, 6, 1, 1, 1), (1, 8, 3, 12, 1, 1, 1), (2, 2, 2, 2, 0, 0, 1), 
-            (2, 2, 1, 1, 1, 1, 1), (2, 2, 4, None, 1, None, 1), (2, 5, 1, 4, 1, 1, 1), 
-            (2, 5, 2, 5, 0, 0, 1), (2, 5, 4, 7, 1, 1, 1), (2, 9, 1, 8, 1, 1, 1), 
-            (2, 9, 2, 9, 0, 0, 1), (2, 9, 4, 10, 1, 1, 1), (3, 3, 1, 1, 1, 1, 1),
-            (3, 3, 3, 3, 0, 0, 1), (3, 6, 1, 4, 1, 1, 1), (3, 6, 1, 8, 1, 1, 1),
-            (3, 6, 3, 6, 0, 0, 1), (3, 12, 1, 8, 1, 1, 1), (3, 12, 3, 12, 0, 0, 1), 
-            (3, 13, 1, None, 1, None, 1), (3, 13, 3, 13, 0, 0, 1), (4, 7, 2, 5, 1, 1, 1), 
-            (4, 7, 4, 7, 0, 0, 1), (4, 7, 4, 10, 0, 1, 1),  (4, 10, 2, 9, 1, 1, 1), 
-            (4, 10, 4, 7, 0, 1, 1), (4, 10, 4, 10, 0, 0, 1), (4, 10, 5, 11, 1, 1, 1),
+            (1, 1, 1, 1, 0, 0, 1), (1, 1, 1, 4, 0, 1, 1),
+            (1, 1, 3, 3, 1, 1, 1), (1, 4, 1, 1, 0, 1, 1),
+            (1, 4, 1, 4, 0, 0, 1), (1, 4, 2, 5, 1, 1, 1),
+            (1, 4, 3, 6, 1, 1, 1), (1, 8, 1, 8, 0, 0, 1),
+            (1, 8, 2, 9, 1, 1, 1), (1, 8, 3, 6, 1, 1, 1),
+            (1, 8, 3, 12, 1, 1, 1), (2, 2, 2, 2, 0, 0, 1),
+            (2, 2, 1, 1, 1, 1, 1), (2, 2, 4, None, 1, None, 1),
+            (2, 5, 1, 4, 1, 1, 1), (2, 5, 2, 5, 0, 0, 1),
+            (2, 5, 4, 7, 1, 1, 1), (2, 9, 1, 8, 1, 1, 1),
+            (2, 9, 2, 9, 0, 0, 1), (2, 9, 4, 10, 1, 1, 1),
+            (3, 3, 1, 1, 1, 1, 1), (3, 3, 3, 3, 0, 0, 1),
+            (3, 6, 1, 4, 1, 1, 1), (3, 6, 1, 8, 1, 1, 1),
+            (3, 6, 3, 6, 0, 0, 1), (3, 12, 1, 8, 1, 1, 1),
+            (3, 12, 3, 12, 0, 0, 1), (3, 13, 1, None, 1, None, 1),
+            (3, 13, 3, 13, 0, 0, 1), (4, 7, 2, 5, 1, 1, 1),
+            (4, 7, 4, 7, 0, 0, 1), (4, 7, 4, 10, 0, 1, 1),
+            (4, 10, 2, 9, 1, 1, 1), (4, 10, 4, 7, 0, 1, 1),
+            (4, 10, 4, 10, 0, 0, 1), (4, 10, 5, 11, 1, 1, 1),
             (5, 11, 4, 10, 1, 1, 1), (5, 11, 5, 11, 0, 0, 1)
         ])
 
@@ -94,35 +102,40 @@ class TestOpt(unittest.TestCase):
             (1. - self.lmbda) * self.alpha
         ]
         target = [
-            (1, 1, 1, 1, 0), (1, 1, 1, 4, vals[0]), (1, 1, 3, 3, 0),                        
-            (1, 4, 1, 1, vals[0]), (1, 4, 1, 4, 0), (1, 4, 2, 5, 0), 
-            (1, 4, 3, 6, 0), (1, 8, 1, 8, 0), (1, 8, 2, 9, 0), 
-            (1, 8, 3, 6, 0), (1, 8, 3, 12, 0), (2, 2, 1, 1, 0), 
+            (1, 1, 1, 1, 0), (1, 1, 1, 4, vals[0]), (1, 1, 3, 3, 0),
+            (1, 4, 1, 1, vals[0]), (1, 4, 1, 4, 0), (1, 4, 2, 5, 0),
+            (1, 4, 3, 6, 0), (1, 8, 1, 8, 0), (1, 8, 2, 9, 0),
+            (1, 8, 3, 6, 0), (1, 8, 3, 12, 0), (2, 2, 1, 1, 0),
             (2, 2, 2, 2, 0), (2, 2, 4, -1, vals[1]), (2, 5, 1, 4, 0),
-            (2, 5, 2, 5, 0), (2, 5, 4, 7, 0), (2, 9, 1, 8, 0), 
+            (2, 5, 2, 5, 0), (2, 5, 4, 7, 0), (2, 9, 1, 8, 0),
             (2, 9, 2, 9, 0), (2, 9, 4, 10, 0), (3, 3, 1, 1, 0),
             (3, 3, 3, 3, 0), (3, 6, 1, 4, 0), (3, 6, 1, 8, 0),
-            (3, 6, 3, 6, 0), (3, 12, 1, 8, 0), (3, 12, 3, 12, 0), 
-            (3, 13, 1, -1, vals[1]), (3, 13, 3, 13, 0), (4, 7, 2, 5, 0), 
-            (4, 7, 4, 7, 0), (4, 7, 4, 10, vals[0]),  (4, 10, 2, 9, 0), 
+            (3, 6, 3, 6, 0), (3, 12, 1, 8, 0), (3, 12, 3, 12, 0),
+            (3, 13, 1, -1, vals[1]), (3, 13, 3, 13, 0), (4, 7, 2, 5, 0),
+            (4, 7, 4, 7, 0), (4, 7, 4, 10, vals[0]),  (4, 10, 2, 9, 0),
             (4, 10, 4, 7, vals[0]), (4, 10, 4, 10, 0), (4, 10, 5, 11, 0),
             (5, 11, 4, 10, 0), (5, 11, 5, 11, 0)
         ]
-        result, _, _ = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
+        result, _, _ = opt._get_matching_costs(
+            self.records, 1, self.lmbda, self.alpha)
         self.assertListEqual(result.tolist(), target)
 
     def test_beta_1(self):
 
         target = {1: 2.0, 2: 2.0, 3: 1.5, 4: 2.0, 5: 1.5}
-        _, _, beta = opt._get_matching_costs(self.records, 1, self.lmbda, self.alpha)
-        result = {k:v for k,v in zip(range(1, 6), beta(range(1, 6)))}
+        _, _, beta = opt._get_matching_costs(
+            self.records, 1, self.lmbda, self.alpha)
+        result = {k: v for k, v in zip(range(1, 6), beta(range(1, 6)))}
         self.assertDictEqual(result, target)
 
     def test_optimal_matches(self):
-        inference_costs, subgraphs, _, sz, target_edges = opt.solve(self.records, hopping_distance=1)
+        inference_costs, subgraphs, _, sz, target_edges = opt.solve(
+            self.records, hopping_distance=1)
         perfect = []
         for sub_graph in subgraphs:
-            cost = sz - len(sub_graph) + sum(inference_costs[item] for item in sub_graph) / len(sub_graph)
+            cost = sz - \
+                len(sub_graph) + sum(inference_costs[item]
+                                     for item in sub_graph) / len(sub_graph)
             if cost == 0:
                 perfect.append(sub_graph)
 
@@ -130,7 +143,7 @@ class TestOpt(unittest.TestCase):
             perfect[0],
             [(1, 8), (2, 9), (3, 6), (4, 10), (5, 11)]
         )
-        
+
         self.assertSequenceEqual(
             perfect[1],
             [(1, 8), (2, 9), (3, 12), (4, 10), (5, 11)]

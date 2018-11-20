@@ -10,7 +10,7 @@ class TestSelect(TestCaseDB):
     """Reproduce the scenario set out in figure 4 of the paper"""
 
     def setUp(self):
-        super().setUp()  
+        super().setUp()
 
         new_graphs = [
             model.Graph(graph_id=0),
@@ -25,14 +25,14 @@ class TestSelect(TestCaseDB):
             for id_, label in enumerate('abcde')
         ]
 
-        start_finish =  [(1,2), (1,3), (2,4), (4,5)]
+        start_finish = [(1, 2), (1, 3), (2, 4), (4, 5)]
 
         new_edges = [
-            model.Edge(start=start, end=end, graph_id=0) 
+            model.Edge(start=start, end=end, graph_id=0)
             for start, end in start_finish
         ]
         new_edges += [
-            model.Edge(start=end, end=start, graph_id=0) 
+            model.Edge(start=end, end=start, graph_id=0)
             for start, end in start_finish
         ]
 
@@ -43,20 +43,21 @@ class TestSelect(TestCaseDB):
         # Create the target graph from figure 4 (ids are offset by 100)
         labels = 'abcabcdabdecc'
         start_finish = [
-            (1,2), (1,3), (1,4), (3,7), (4,5), (4,6), (5,7),           
-            (6,8), (8,9), (8, 12), (9,10), (10,7), (10,11), (11,12), (11,13)
+            (1, 2), (1, 3), (1, 4), (3, 7), (4, 5), (4, 6), (5, 7),
+            (6, 8), (8, 9), (8, 12), (9, 10), (10, 7),
+            (10, 11), (11, 12), (11, 13)
         ]
         new_nodes = [
-            model.Node(node_id=id_+1, graph_id=1) 
+            model.Node(node_id=id_+1, graph_id=1)
             for id_, label in enumerate(labels)
         ]
 
         new_edges = [
-            model.Edge(start=start, end=end, graph_id=1) 
+            model.Edge(start=start, end=end, graph_id=1)
             for start, end in start_finish
         ]
         new_edges += [
-            model.Edge(start=end, end=start, graph_id=1) 
+            model.Edge(start=end, end=start, graph_id=1)
             for start, end in start_finish
         ]
 
@@ -71,19 +72,32 @@ class TestSelect(TestCaseDB):
 
         self.session.add_all(
             [
-                model.Match(start=1, end=1, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=1, end=4, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=1, end=8, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=2, end=2, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=2, end=5, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=2, end=9, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=3, end=3, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=3, end=6, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=3, end=12, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=3, end=13, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=4, end=7, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=4, end=10, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
-                model.Match(start=5, end=11, weight=1, start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=1, end=1, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=1, end=4, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=1, end=8, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=2, end=2, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=2, end=5, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=2, end=9, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=3, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=6, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=12, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=3, end=13, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=4, end=7, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=4, end=10, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
+                model.Match(start=5, end=11, weight=1,
+                            start_graph_id=0, end_graph_id=1, query_id=0),
             ]
         )
         self.session.commit()
@@ -98,8 +112,8 @@ class TestSelect(TestCaseDB):
         ]).join(
             model.Node,
             and_(
-                model.Node.node_id==model.Match.start,
-                model.Node.graph_id==model.Match.start_graph_id                
+                model.Node.node_id == model.Match.start,
+                model.Node.graph_id == model.Match.start_graph_id
             )
         )
         query = select._neighbours(nodes, 1, 1)
@@ -123,8 +137,8 @@ class TestSelect(TestCaseDB):
         ]).join(
             model.Node,
             and_(
-                model.Node.node_id==model.Match.start,
-                model.Node.graph_id==model.Match.start_graph_id                
+                model.Node.node_id == model.Match.start,
+                model.Node.graph_id == model.Match.start_graph_id
             )
         )
         query = select._neighbours(nodes, 1, 2)
@@ -141,17 +155,17 @@ class TestSelect(TestCaseDB):
                 (5, 0, 5, 2),
             ])
         )
-    
+
     def test_neighbours_1(self):
         query = select.neighbours(1, True)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
             sorted([
-                (1, 1, 0), (1, 2, 1), (1, 3, 1), 
-                (2, 2, 0), (2, 1, 1), (2, 4, 1), 
-                (3, 3, 0), (3, 1, 1), (4, 4, 0), 
-                (4, 2, 1), (4, 5, 1), (5, 5, 0), 
+                (1, 1, 0), (1, 2, 1), (1, 3, 1),
+                (2, 2, 0), (2, 1, 1), (2, 4, 1),
+                (3, 3, 0), (3, 1, 1), (4, 4, 0),
+                (4, 2, 1), (4, 5, 1), (5, 5, 0),
                 (5, 4, 1)
             ])
         )
@@ -184,12 +198,13 @@ class TestSelect(TestCaseDB):
         query = select.join(0, 1)
         records = query.with_session(self.session).all()
         self.assertListEqual(
-            sorted(filter(lambda x: x[0] == x[1] == 1, records)), 
+            sorted(filter(lambda x: x[0] == x[1] == 1, records)),
             sorted([
                 (1, 1, 1, 1, 0, 0, 1.0),
                 (1, 1, 1, 4, 0, 1, 1.0),
-                (1, 1, 2, None, 1, None, 1.0), # <- Node 2 has no correspondences
-                (1, 1, 3, 3, 1, 1, 1.0),       #    in the target graph
+                # <- Node 2 has no correspondences
+                (1, 1, 2, None, 1, None, 1.0),
+                (1, 1, 3, 3, 1, 1, 1.0),  # in the target graph
             ])
         )
 
@@ -213,7 +228,7 @@ class TestSelect(TestCaseDB):
             i += batch_size
 
         self.assertListEqual(
-            sorted(records), 
+            sorted(records),
             sorted(batched_records)
         )
 
@@ -238,12 +253,13 @@ class TestSelect(TestCaseDB):
             i += batch_size
 
         self.assertListEqual(
-            sorted(records), 
+            sorted(records),
             sorted(batched_records)
         )
 
     def test_join_val_error(self):
         self.assertRaises(ValueError, select.join, 0, 1, offsets=[1])
+
 
 if __name__ == '__main__':
     unittest.main()
