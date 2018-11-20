@@ -474,6 +474,7 @@ class TestExample(TestCaseDB):
             {"source": 7, "target": 11, "type": "target", "weight": 1.0},
             {"source": 8, "target": 9, "type": "target", "weight": 1.0},
             {"source": 9, "target": 10, "type": "target", "weight": 1.0},
+            {"source": 10, "target": 11, "type": "target", "weight": 1.0},
         ]
         for match in matches:
             if match['type'] == 'query' or match['type'] == 'target':
