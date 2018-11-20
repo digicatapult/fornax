@@ -829,31 +829,18 @@ class QueryHandle:
     def _target_edges(self, target_nodes, target_edges_arr):
         # only include target edges that are between the target nodes above
         target_ids = [n.id for n in target_nodes]
-        edges = (
-            Edge(int(start), int(end), 'target', None)
-            for start, end, d
-            in target_edges_arr[['u', 'uu', 'dist_u']]
-            if d < 2
-        )
-        edges = [edge for edge in edges if self.is_between(target_ids, edge)]
-        starts, ends = [], []
-        for edge in edges:
-            start, end = sorted((edge.start, edge.end))
-            starts.append(start)
-            ends.append(end)
-
         with session_scope() as session:
             edges = session.query(model.Edge).join(
                 model.Query, model.Query.end_graph_id == model.Edge.graph_id
             ).filter(
                 model.Query.query_id == self.query_id
             ).filter(
-                model.Edge.start.in_(starts)
+                model.Edge.start.in_(target_ids)
             ).filter(
-                model.Edge.end.in_(ends)
+                model.Edge.end.in_(target_ids)
             ).filter(
                 model.Edge.start < model.Edge.end
-            ).distinct().all()
+            ).distinct().order_by(model.Edge.start.asc()).all()
             edges = [
                 Edge(e.start, e.end, 'target', json.loads(e.meta))
                 for e in edges
