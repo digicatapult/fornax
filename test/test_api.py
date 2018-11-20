@@ -264,15 +264,21 @@ class TestQuery(TestCaseDB):
         )
 
     def test_target_nodes(self):
-        query_graph, target_graph = fornax.GraphHandle.create(), fornax.GraphHandle.create()
+        query_graph = fornax.GraphHandle.create()
+        target_graph = fornax.GraphHandle.create()
         query = fornax.QueryHandle.create(query_graph, target_graph)
         q_uids = [0, 1, 2]
         t_uids = [3, 4, 5]
-        query_graph.add_nodes(uid=q_uids)
-        target_graph.add_nodes(uid=t_uids)
+        query_graph.add_nodes(id_src=q_uids)
+        target_graph.add_nodes(id_src=t_uids)
+        #  no target nodes will appear if there are no matches
+        query.add_matches(q_uids, t_uids, [1, 1, 1])
         target_nodes = query._target_nodes()
         self.assertListEqual(
-            [fornax.api.Node(i, 'target', {'uid':uid}) for i, uid in enumerate(t_uids)], 
+            [
+                fornax.api.Node(uid, 'target', {'id_src': uid})
+                for uid in t_uids
+            ],
             target_nodes
         )
 
