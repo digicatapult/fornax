@@ -115,9 +115,7 @@ class InvalidNodeError(Exception):
         super().__init__(message)
 
 
-def check_nodes(
-    nodes: typing.Iterable[model.Node]
-) -> typing.Generator[model.Node, None, None]:
+def check_nodes(nodes) -> typing.Generator:
     """Guard against invalid nodes by raising an InvalidNodeError for
     forbidden node parameters
 
@@ -153,9 +151,7 @@ class InvalidEdgeError(Exception):
         super().__init__(message)
 
 
-def check_edges(
-    edges: typing.Iterable[model.Edge]
-) -> typing.Generator[model.Edge, None, None]:
+def check_edges(edges: typing.Iterable[model.Edge]) -> typing.Generator:
     """Guard against invalid edges by raising an InvalidEdgeError for
     forbidden edge parameters
 
@@ -193,9 +189,7 @@ class InvalidMatchError(Exception):
         super().__init__(message)
 
 
-def check_matches(
-    matches: typing.Iterable[model.Match]
-) -> typing.Generator[model.Match, None, None]:
+def check_matches(matches: typing.Iterable[model.Match]) -> typing.Generator:
     """Guard against invalid matches by raising an InvalidMatchError
     for forbidden Match parameters
 
