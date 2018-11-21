@@ -115,30 +115,6 @@ class InvalidNodeError(Exception):
         super().__init__(message)
 
 
-def check_nodes(nodes) -> typing.Generator:
-    """Guard against invalid nodes by raising an InvalidNodeError for
-    forbidden node parameters
-
-    :param nodes: An iterable of Nodes
-    :type nodes: typing.Iterable[model.Node]
-    :raises InvalidNodeError: Raised when Node.node_id is not an integer
-    :raises InvalidNodeError: Raised when Node.node_id is larger than MAX_INT
-    :return: Yield each node if there are no uncaught exceptions
-    :rtype: typing.Generator[model.Node, None, None]
-    """
-
-    for node in nodes:
-        try:
-            node_id = int(node.node_id)
-        except ValueError:
-            raise InvalidNodeError(
-                '{}, node_id must be an integer'.format(node)
-            )
-        if node_id > SQLITE_MAX_SIZE and FORNAX_DB_URL == 'sqlite://':
-            raise InvalidNodeError('node id {} is too large'.format(node))
-        yield node
-
-
 class InvalidEdgeError(Exception):
 
     def __init__(self, message: str):
@@ -151,32 +127,6 @@ class InvalidEdgeError(Exception):
         super().__init__(message)
 
 
-def check_edges(edges: typing.Iterable[model.Edge]) -> typing.Generator:
-    """Guard against invalid edges by raising an InvalidEdgeError for
-    forbidden edge parameters
-
-    :param edges: An iterable of Edges
-    :type edges: typing.List[model.Edge]
-    :raises InvalidEdgeError: Raised if edge start or edge end is not an int
-    :raises InvalidEdgeError: Raised if edge start and edge end are the same
-    :return: Yield each edge if there are no uncaught exceptions
-    :rtype: typing.Generator[model.Edge, None, None]
-    """
-
-    for edge in edges:
-        try:
-            start, end = int(edge.start), int(edge.end)
-        except ValueError:
-            raise InvalidEdgeError(
-                '{}, edge start and end must be integers'.format(edge)
-            )
-        if start == end:
-            raise InvalidEdgeError(
-                '{}, edges must start and end on different nodes'.format(edge)
-            )
-        yield edge
-
-
 class InvalidMatchError(Exception):
 
     def __init__(self, message: str):
@@ -187,48 +137,6 @@ class InvalidMatchError(Exception):
         :type message: str
         """
         super().__init__(message)
-
-
-def check_matches(matches: typing.Iterable[model.Match]) -> typing.Generator:
-    """Guard against invalid matches by raising an InvalidMatchError
-    for forbidden Match parameters
-
-    :param matches: Iterable of Match objects
-    :type matches: typing.Iterable[model.Match]
-    :raises ValueError: Raised if match start cannot be coorced to an integer
-    :raises ValueError: Raised if match end cannot be coorced to an integer
-    :raises ValueError: Raised if match weight cannot be coorced to a float
-    :raises ValueError: Raised if match weight is not in the range 0 to 1
-    :return: yield each match
-    :rtype: typing.Generator[model.Match, None, None]
-    """
-
-    for match in matches:
-        try:
-            start = int(match.start)
-        except ValueError:
-            raise ValueError(
-                '<Match(start={}, end={}, weight={})>, match start must be int'
-            )
-        try:
-            end = int(match.end)
-        except ValueError:
-            raise ValueError(
-                '<Match(start={}, end={}, weight={})>, match end must be int'
-            )
-        try:
-            weight = float(match.weight)
-        except ValueError:
-            raise ValueError(
-                '<Match(start={}, end={}, weight={})>,\
-                 match weight must be number'
-            )
-        if not 0 < weight <= 1:
-            raise ValueError(
-                '<Match(start={}, end={}, weight={})>,\
-                 bounds error: 0 < weight <= 1'
-            )
-        yield match
 
 
 class NullValue:
@@ -524,7 +432,7 @@ class GraphHandle:
             )
             for node_id, values in zipped
         )
-        nodes = check_nodes(nodes)
+        nodes = self._check_nodes(nodes)
         with session_scope() as session:
             session.add_all(nodes)
             session.commit()
@@ -582,10 +490,65 @@ class GraphHandle:
             )
             for start, end, *values in zipped
         )
-        edges = check_edges(edges)
+        edges = self._check_edges(edges)
         with session_scope() as session:
             session.add_all(edges)
             session.commit()
+
+    @staticmethod
+    def _check_nodes(nodes) -> typing.Generator:
+        """Guard against invalid nodes by raising an InvalidNodeError for
+        forbidden node parameters
+
+        :param nodes: An iterable of Nodes
+        :type nodes: typing.Iterable[model.Node]
+        :raises InvalidNodeError: Raised when Node.node_id is not an integer
+        :raises InvalidNodeError: Raised when Node.node_id is larger than
+        MAX_INT
+        :return: Yield each node if there are no uncaught exceptions
+        :rtype: typing.Generator[model.Node, None, None]
+        """
+
+        for node in nodes:
+            try:
+                node_id = int(node.node_id)
+            except ValueError:
+                raise InvalidNodeError(
+                    '{}, node_id must be an integer'.format(node)
+                )
+            if node_id > SQLITE_MAX_SIZE and FORNAX_DB_URL == 'sqlite://':
+                raise InvalidNodeError('node id {} is too large'.format(node))
+            yield node
+
+    @staticmethod
+    def _check_edges(edges: typing.Iterable[model.Edge]) -> typing.Generator:
+        """Guard against invalid edges by raising an InvalidEdgeError for
+        forbidden edge parameters
+
+        :param edges: An iterable of Edges
+        :type edges: typing.List[model.Edge]
+        :raises InvalidEdgeError: Raised if edge start or edge end is
+        not an int
+        :raises InvalidEdgeError: Raised if edge start and edge end
+        are the same
+        :return: Yield each edge if there are no uncaught exceptions
+        :rtype: typing.Generator[model.Edge, None, None]
+        """
+
+        for edge in edges:
+            try:
+                start, end = int(edge.start), int(edge.end)
+            except ValueError:
+                raise InvalidEdgeError(
+                    '{}, edge start and end must be integers'.format(edge)
+                )
+            if start == end:
+                raise InvalidEdgeError(
+                    '{}, edges must start and end on different nodes'.format(
+                        edge
+                    )
+                )
+            yield edge
 
 
 class QueryHandle:
@@ -776,10 +739,57 @@ class QueryHandle:
             )
             for start, end, weight, *values in zipped
         )
-        matches = check_matches(matches)
+        matches = self._check_matches(matches)
         with session_scope() as session:
             session.add_all(matches)
             session.commit()
+
+    @staticmethod
+    def _check_matches(
+        matches: typing.Iterable[model.Match]
+    ) -> typing.Generator:
+        """Guard against invalid matches by raising an InvalidMatchError
+        for forbidden Match parameters
+
+        :param matches: Iterable of Match objects
+        :type matches: typing.Iterable[model.Match]
+        :raises ValueError: Raised if match start cannot be coorced to
+        an integer
+        :raises ValueError: Raised if match end cannot be coorced to an integer
+        :raises ValueError: Raised if match weight cannot be coorced to a float
+        :raises ValueError: Raised if match weight is not in the range 0 to 1
+        :return: yield each match
+        :rtype: typing.Generator[model.Match, None, None]
+        """
+
+        for match in matches:
+            try:
+                start = int(match.start)
+            except ValueError:
+                raise ValueError(
+                    '<Match(start={}, end={}, weight={})>, \
+                    match start must be int'
+                )
+            try:
+                end = int(match.end)
+            except ValueError:
+                raise ValueError(
+                    '<Match(start={}, end={}, weight={})>, \
+                    match end must be int'
+                )
+            try:
+                weight = float(match.weight)
+            except ValueError:
+                raise ValueError(
+                    '<Match(start={}, end={}, weight={})>,\
+                    match weight must be number'
+                )
+            if not 0 < weight <= 1:
+                raise ValueError(
+                    '<Match(start={}, end={}, weight={})>,\
+                    bounds error: 0 < weight <= 1'
+                )
+            yield match
 
     def _query_nodes(self):
         with session_scope() as session:
