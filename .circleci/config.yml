@@ -20,6 +20,7 @@ jobs:
       - run:
           command: |
             . venv/bin/activate
-            python run_test.py
+            coverage run --source=fornax run_test.py
+            coveralls
       - store_test_results:
           path: test-reports/

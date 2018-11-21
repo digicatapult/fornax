@@ -1,4 +1,5 @@
 [![CircleCI](https://circleci.com/gh/CDECatapult/fornax.svg?style=svg&circle-token=2110b6bc1d713698d241fd08ae60cd925e60062f)](https://circleci.com/gh/CDECatapult/fornax)
+[![Coverage Status](https://coveralls.io/repos/github/CDECatapult/fornax/badge.svg?branch=master)](https://coveralls.io/github/CDECatapult/fornax?branch=master)
 
 # Fornax
 
