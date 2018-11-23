@@ -33,7 +33,7 @@ See the tutorials for a full working example.
 ### Tutorial Dependencies
 
 The following tutorials use jupyter notebooks to create a worked example.
-We reccomend you use the anaconda python distribution to run the notebooks.
+We recommend you use the anaconda python distribution to run the notebooks.
 
 ```bash
 conda env create -f environment.yml
@@ -63,7 +63,7 @@ query_graph_handle.add_edges([0, 1], [1, 2])
 
 # create a target graph
 target_graph_handle = fornax.GraphHandle.create()
-target_graph_handle.add_nodes(id_src=comic_book_nodes['id], label=comic_book_nodes['name'])
+target_graph_handle.add_nodes(id_src=comic_book_nodes['id'], label=comic_book_nodes['name'])
 target_graph_handle.add_edges(comic_book_edges['start'], comic_book_edges['end'])
 
 matches = [
