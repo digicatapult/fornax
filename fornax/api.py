@@ -42,40 +42,6 @@ import fornax.model as model
 
 # TODO: sqlalchemy database integrity exceptions are not caught by the API
 
-"""URL for a supported SQL database backend"""
-FORNAX_DB_URL = os.environ.get('FORNAX_DB_URL')
-if FORNAX_DB_URL is None:
-    FORNAX_DB_URL = 'sqlite://'
-
-MAX_SIZE = sys.maxsize
-SQLITE_MAX_SIZE = 2147483647
-if FORNAX_DB_URL == 'sqlite://':
-    MAX_SIZE = min(MAX_SIZE, SQLITE_MAX_SIZE)
-
-ECHO = False
-ENGINE = sqlalchemy.create_engine(FORNAX_DB_URL, echo=ECHO)
-CONNECTION = ENGINE.connect()
-Session = sqlalchemy.orm.sessionmaker(bind=ENGINE)
-fornax.model.Base.metadata.create_all(CONNECTION)
-
-
-def _hash(item: str) -> int:
-    """An unsalted hash function with a range between 0 and MAX_SIZE
-
-    :param item: string or string like object that is accepted by builtin
-    function `str`
-    :type item: str
-    :return: hash between 0 and MAX_SIZE
-    :rtype: int
-    """
-
-    if isinstance(item, int):
-        return item % MAX_SIZE
-    else:
-        return int(
-            hashlib.sha256(str(item).encode('utf-8')).hexdigest(), 16
-        ) % MAX_SIZE
-
 
 # enforce foreign key constrains in SQLite
 @event.listens_for(Engine, "connect")
@@ -85,22 +51,76 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
-@contextlib.contextmanager
-def session_scope():
-    """
-    Provide a transactional scope around a series of db operations.
-    Transactions will be rolled back in the case of an exception.
-    """
+def _hash(item: str, maxsize=sys.maxsize) -> int:
+    """An unsalted hash function with a range between 0 and MAX_SIZEMAX_SIZE
 
-    session = Session()
-    try:
-        yield session
-        session.commit()
-    except BaseException:
-        session.rollback()
-        raise
-    finally:
-        session.close()
+    :param item: string or string like object that is accepted by builtin
+    function `str`
+    :type item: str
+    :return: hash between 0 and MAX_SIZE
+    :rtype: int
+    """
+    if isinstance(item, int):
+        return item % maxsize
+    else:
+        return int(
+            hashlib.sha256(str(item).encode('utf-8')).hexdigest(), 16
+        ) % maxsize
+
+
+class Connection:
+
+    sqlite_max_size = 2147483647
+
+    def __init__(self, url='sqlite://', **kwargs):
+        """[summary]
+
+        :param url: dialect[+driver]://user:password@host/dbname[?key=value..],
+        defaults to 'sqlite://'
+        :param url: str, optional
+        """
+
+        self.url = url
+        self.engine = sqlalchemy.create_engine(self.url, **kwargs)
+        self.make_session = sqlalchemy.orm.sessionmaker(bind=self.engine)
+        self.maxsize = sys.maxsize
+        if self.url.startswith('sqlite'):
+            self.maxsize = self.sqlite_max_size
+
+    def __enter__(self):
+        self.connection = self.engine.connect()
+        fornax.model.Base.metadata.create_all(self.connection)
+        return self
+
+    def __exit__(self, *args):
+        self.connection.close()
+
+    @contextlib.contextmanager
+    def get_session(self):
+        """
+        Provide a transactional scope around a series of db operations.
+        Transactions will be rolled back in the case of an exception.
+        """
+        session = self.make_session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def _hash(self, item: str) -> int:
+        """An unsalted hash function with a range between 0 and MAX_SIZEMAX_SIZE
+
+        :param item: string or string like object that is accepted by builtin
+        function `str`
+        :type item: str
+        :return: hash between 0 and MAX_SIZE
+        :rtype: int
+        """
+        return _hash(item, self.maxsize)
 
 
 class InvalidNodeError(Exception):
@@ -180,23 +200,6 @@ class Node:
     def __lt__(self, other):
         return (self.type, self.id) < (other.type, other.id)
 
-    def to_dict(self) -> dict:
-        """Return self as a json serialisable dictionary
-
-        :return: dictionary with keys `id`, `type` and `meta`
-        :rtype: dict
-        """
-
-        return {
-            # hash id with type so that the node id is unique to a given
-            # submatch result
-            **{
-                'id': _hash((self.id, self.type)),
-                'type': self.type
-            },
-            **self.meta
-        }
-
 
 class Edge:
     """Representation of an Edge used internally be QueryHandle
@@ -241,33 +244,6 @@ class Edge:
             self.start, self.end, self.type, self.meta
         )
 
-    def to_dict(self):
-        """Return self as a json serialisable dictionary
-
-        Returns:
-            dict -- dictionart with keys start, end, type, metadata and weight
-        """
-        if self.type == 'query' or self.type == 'target':
-            # hash start and end with the edge type
-            # to make id unique within a subgraph match
-            start = _hash((self.start, self.type))
-            end = _hash((self.end, self.type))
-
-        elif self.type == 'match':
-            # hash start and end with the edge type
-            # to make id unique within a subgraph match
-            start = _hash((self.start, 'query'))
-            end = _hash((self.end, 'target'))
-        return {
-            **{
-                'source': start,
-                'target': end,
-                'type': self.type,
-                'weight': self.weight
-            },
-            **self.meta
-        }
-
 
 class GraphHandle:
     """Accessor for a graph
@@ -285,8 +261,9 @@ class GraphHandle:
     :type graph_id: int
     """
 
-    def __init__(self, graph_id: int):
+    def __init__(self, connection: Connection, graph_id: int):
         self._graph_id = graph_id
+        self.conn = connection
         self._check_exists()
 
     def __len__(self):
@@ -313,14 +290,14 @@ class GraphHandle:
         return self._graph_id
 
     @classmethod
-    def create(cls):
+    def create(cls, connection: Connection):
         """Create a new empy graph and return a GraphHandle to it
 
         :return: GraphHandle to a new graph
         :rtype: GraphHandle
         """
 
-        with session_scope() as session:
+        with connection.get_session() as session:
 
             query = session.query(
                 sqlalchemy.func.max(model.Graph.graph_id)
@@ -332,11 +309,10 @@ class GraphHandle:
             else:
                 graph_id += 1
             session.add(model.Graph(graph_id=graph_id))
-            session.commit()
-        return GraphHandle(graph_id)
+        return GraphHandle(connection, graph_id)
 
     @classmethod
-    def read(cls, graph_id: int):
+    def read(cls, connection: Connection, graph_id: int):
         """Create a new GraphHandle to an existing graph
         with unique identifier `graph_id`
 
@@ -346,7 +322,7 @@ class GraphHandle:
         :rtype: GraphHandle
         """
 
-        return GraphHandle(graph_id)
+        return GraphHandle(connection, graph_id)
 
     def delete(self):
         """Delete a graph.
@@ -357,7 +333,7 @@ class GraphHandle:
         """
 
         self._check_exists()
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             session.query(
                 model.Graph
             ).filter(model.Graph.graph_id == self._graph_id).delete()
@@ -369,7 +345,7 @@ class GraphHandle:
             ).filter(model.Node.graph_id == self._graph_id).delete()
 
     def _check_exists(self):
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             exists = session.query(sqlalchemy.exists().where(
                 model.Graph.graph_id == self._graph_id
             )).scalar()
@@ -426,14 +402,14 @@ class GraphHandle:
 
         nodes = (
             model.Node(
-                node_id=_hash(node_id),
+                node_id=self.conn._hash(node_id),
                 graph_id=self.graph_id,
                 meta=json.dumps({key: val for key, val in zip(keys, values)})
             )
             for node_id, values in zipped
         )
         nodes = self._check_nodes(nodes)
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             session.add_all(nodes)
             session.commit()
 
@@ -469,8 +445,8 @@ class GraphHandle:
         if 'weight' in keys:
             raise(ValueError('weight is a reserved node attribute \
             which cannot be assigned using kwargs'))
-        hashed_sources = map(_hash, sources)
-        hashed_targets = map(_hash, targets)
+        hashed_sources = map(self.conn._hash, sources)
+        hashed_targets = map(self.conn._hash, targets)
         zipped = itertools.zip_longest(
             hashed_sources, hashed_targets,
             *kwargs.values(), fillvalue=NullValue()
@@ -491,12 +467,11 @@ class GraphHandle:
             for start, end, *values in zipped
         )
         edges = self._check_edges(edges)
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             session.add_all(edges)
             session.commit()
 
-    @staticmethod
-    def _check_nodes(nodes) -> typing.Generator:
+    def _check_nodes(self, nodes) -> typing.Generator:
         """Guard against invalid nodes by raising an InvalidNodeError for
         forbidden node parameters
 
@@ -516,7 +491,7 @@ class GraphHandle:
                 raise InvalidNodeError(
                     '{}, node_id must be an integer'.format(node)
                 )
-            if node_id > SQLITE_MAX_SIZE and FORNAX_DB_URL == 'sqlite://':
+            if node_id > self.conn.maxsize and self.conn.startswith('sqlite'):
                 raise InvalidNodeError('node id {} is too large'.format(node))
             yield node
 
@@ -558,8 +533,9 @@ class QueryHandle:
     :type query_id: int
     """
 
-    def __init__(self, query_id: int):
+    def __init__(self, connection: Connection, query_id: int):
         self.query_id = query_id
+        self.conn = connection
         self._check_exists()
 
     def __eq__(self, other):
@@ -571,9 +547,8 @@ class QueryHandle:
         Returns:
             {int} -- Count of matching edges
         """
-
         self._check_exists()
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             count = session.query(model.Match).filter(
                 model.Match.query_id == self.query_id).count()
         return count
@@ -584,8 +559,7 @@ class QueryHandle:
         Raises:
             ValueError -- Raised if the query had been deleted
         """
-
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             exists = session.query(model.Query).filter(
                 model.Query.query_id == self.query_id
             ).scalar()
@@ -595,7 +569,10 @@ class QueryHandle:
             )
 
     @classmethod
-    def create(cls, query_graph: GraphHandle, target_graph: GraphHandle):
+    def create(
+        cls, connection: Connection,
+        query_graph: GraphHandle, target_graph: GraphHandle
+    ):
         """Create a new query and return a QueryHandle for it
 
         :param query_graph: Subgraph to be search for in the target graph
@@ -605,8 +582,7 @@ class QueryHandle:
         :return: new QueryHandle
         :rtype: QueryHandle
         """
-
-        with session_scope() as session:
+        with connection.get_session() as session:
             query_id = session.query(
                 sqlalchemy.func.max(model.Query.query_id)
             ).first()[0]
@@ -620,10 +596,10 @@ class QueryHandle:
                 end_graph_id=target_graph.graph_id
             )
             session.add(new_query)
-        return QueryHandle(query_id)
+        return QueryHandle(connection, query_id)
 
     @classmethod
-    def read(cls, query_id: int):
+    def read(cls, connection: Connection, query_id: int):
         """Create a new QueryHandle to an existing query with unique id `query_id`
 
         :param query_id: unique identifier for a query
@@ -631,15 +607,13 @@ class QueryHandle:
         :return: new QueryHandle
         :rtype: QueryHandle
         """
-
-        return QueryHandle(query_id)
+        return QueryHandle(connection, query_id)
 
     def delete(self):
         """Delete this query and any associated matches
         """
-
         self._check_exists()
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             session.query(model.Query).filter(
                 model.Query.query_id == self.query_id
             ).delete()
@@ -655,14 +629,14 @@ class QueryHandle:
         """
 
         self._check_exists()
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             start_graph = session.query(
                 model.Graph
             ).join(
                 model.Query, model.Graph.graph_id == model.Query.start_graph_id
             ).filter(model.Query.query_id == self.query_id).first()
             graph_id = start_graph.graph_id
-        return GraphHandle(graph_id)
+        return GraphHandle(self.conn, graph_id)
 
     def target_graph(self) -> GraphHandle:
         """Get a QueryHandle for the target graph
@@ -672,14 +646,14 @@ class QueryHandle:
         """
 
         self._check_exists()
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             end_graph = session.query(
                 model.Graph
             ).join(
                 model.Query, model.Graph.graph_id == model.Query.end_graph_id
             ).filter(model.Query.query_id == self.query_id).first()
             graph_id = end_graph.graph_id
-        return GraphHandle(graph_id)
+        return GraphHandle(self.conn, graph_id)
 
     def add_matches(
         self,
@@ -719,8 +693,8 @@ class QueryHandle:
         if 'weight' in keys:
             raise(ValueError('weight is a reserved node attribute \
             which cannot be assigned using kwargs'))
-        hashed_sources = map(_hash, sources)
-        hashed_targetes = map(_hash, targets)
+        hashed_sources = map(self.conn._hash, sources)
+        hashed_targetes = map(self.conn._hash, targets)
         zipped = itertools.zip_longest(
             hashed_sources, hashed_targetes, weights,
             *kwargs.values(), fillvalue=NullValue()
@@ -740,7 +714,7 @@ class QueryHandle:
             for start, end, weight, *values in zipped
         )
         matches = self._check_matches(matches)
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             session.add_all(matches)
             session.commit()
 
@@ -792,7 +766,7 @@ class QueryHandle:
             yield match
 
     def _query_nodes(self):
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id == model.Query.start_graph_id
             ).filter(model.Query.query_id == self.query_id).all()
@@ -802,7 +776,7 @@ class QueryHandle:
         return nodes
 
     def _query_edges(self):
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             edges = session.query(model.Edge).join(
                 model.Query, model.Edge.graph_id == model.Query.start_graph_id
             ).filter(
@@ -817,7 +791,7 @@ class QueryHandle:
         return edges
 
     def _target_nodes(self):
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id == model.Query.end_graph_id
             ).filter(
@@ -836,7 +810,7 @@ class QueryHandle:
 
     def _target_edges(self, target_nodes, target_edges_arr):
         # only include target edges that are between the target nodes above
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             EndMatch = sqlalchemy.alias(model.Match, "end_match")
             EndNode = sqlalchemy.alias(model.Node, "end_node")
             StartNode = sqlalchemy.alias(model.Node, "start_node")
@@ -859,7 +833,7 @@ class QueryHandle:
         return edges
 
     def _optimise(self, hopping_distance, max_iters, offsets):
-        with session_scope() as session:
+        with self.conn.get_session() as session:
             sql_query = fornax.select.join(
                 self.query_id, h=hopping_distance, offsets=offsets
             )
@@ -882,6 +856,50 @@ class QueryHandle:
             score /= len(query_nodes)
             scores.append(score)
         return scores
+
+    def _node_to_dict(self, node: Node) -> dict:
+        """Return self as a json serialisable dictionary
+
+        :return: dictionary with keys `id`, `type` and `meta`
+        :rtype: dict
+        """
+
+        return {
+            # hash id with type so that the node id is unique to a given
+            # submatch result
+            **{
+                'id': self.conn._hash((node.id, node.type)),
+                'type': node.type
+            },
+            **node.meta
+        }
+
+    def _edge_to_dict(self, edge: Edge):
+        """Return self as a json serialisable dictionary
+
+        Returns:
+            dict -- dictionart with keys start, end, type, metadata and weight
+        """
+        if edge.type == 'query' or edge.type == 'target':
+            # hash start and end with the edge type
+            # to make id unique within a subgraph match
+            start = self.conn._hash((edge.start, edge.type))
+            end = self.conn._hash((edge.end, edge.type))
+
+        elif edge.type == 'match':
+            # hash start and end with the edge type
+            # to make id unique within a subgraph match
+            start = self.conn._hash((edge.start, 'query'))
+            end = self.conn._hash((edge.end, 'target'))
+        return {
+            **{
+                'source': start,
+                'target': end,
+                'type': edge.type,
+                'weight': edge.weight
+            },
+            **edge.meta
+        }
 
     def execute(self, n=5, hopping_distance=2, max_iters=10):
         """Execute a fuzzy subgraph matching query
@@ -921,37 +939,64 @@ class QueryHandle:
         # sort graphs by score then deturministicly by hashing
         idxs = sorted(
             enumerate(scores),
-            key=lambda x: (x[1], _hash(tuple(subgraphs[x[0]])))
+            key=lambda x: (x[1], self.conn._hash(tuple(subgraphs[x[0]])))
         )
 
-        query_nodes_payload = [node.to_dict() for node in query_nodes]
-        query_edges_payload = [edge.to_dict() for edge in query_edges]
-        target_nodes_payload = [node.to_dict() for node in target_nodes]
-        target_edges_payload = [edge.to_dict() for edge in target_edges]
+        query_nodes_payload = [
+            self._node_to_dict(node)
+            for node in query_nodes
+        ]
+
+        query_edges_payload = [
+            self._edge_to_dict(edge)
+            for edge in query_edges
+        ]
+
+        target_nodes_payload = [
+            self._node_to_dict(node)
+            for node in target_nodes
+        ]
+
+        target_edges_payload = [
+            self._edge_to_dict(edge)
+            for edge in target_edges
+        ]
 
         for i, score in idxs[:min(n, len(idxs))]:
+
             _, match_ends = zip(*subgraphs[i])
+
             matches = [
-                Edge(s, e, 'match', {}, 1. - inference_costs[s, e]).to_dict()
+                self._edge_to_dict(
+                    Edge(s, e, 'match', {}, 1. - inference_costs[s, e])
+                )
                 for s, e in sorted(subgraphs[i])
             ]
-            match_ends = set(_hash((i, 'target')) for i in match_ends)
+
+            match_ends = set(
+                self.conn._hash((i, 'target'))
+                for i in match_ends
+            )
+
             nxt_graph = {
                 'is_multigraph': False,
                 'cost': score,
                 'nodes': list(query_nodes_payload),  # make a copy
                 'links': matches + list(query_edges_payload)  # make a copy
             }
+
             nxt_graph['nodes'].extend([
                 n for n in target_nodes_payload
                 if n['id'] in match_ends
             ])
+
             nxt_graph['links'].extend(
                 [
                     e for e in target_edges_payload
                     if e['source'] in match_ends and e['target'] in match_ends
                 ]
             )
+
             graphs.append(nxt_graph)
 
         return {
