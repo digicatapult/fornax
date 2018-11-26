@@ -93,3 +93,7 @@ dependencies:
 - xz=5.2.4=h1de35cc_4
 - zeromq=4.2.5=h0a44026_1
 - zlib=1.2.11=hf3cbc9b_2
+- pip:
+  - sparqlwrapper
+  - psycopg2
+  - SQLAlchemy
