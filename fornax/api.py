@@ -52,7 +52,7 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 def _hash(item: str, maxsize=sys.maxsize) -> int:
-    """An unsalted hash function with a range between 0 and MAX_SIZEMAX_SIZE
+    """An unsalted hash function with a range between 0 and maxsize
 
     :param item: string or string like object that is accepted by builtin
     function `str`
