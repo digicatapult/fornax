@@ -1,4 +1,3 @@
 psycopg2
 SQLAlchemy
 numpy
-sparqlwrapper
