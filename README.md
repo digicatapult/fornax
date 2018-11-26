@@ -40,7 +40,7 @@ We recommend you use the anaconda python distribution to run the notebooks.
 
 ```bash
 conda env create -f environment.yml
-pip install -r requirements.txt
+source activate fornax_tutorial
 ```
 
 ## Database Setup
