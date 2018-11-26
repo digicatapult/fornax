@@ -1,8 +1,8 @@
+name: fornax_tutorial
 channels:
 - conda-forge
 - defaults
 dependencies:
-- keepalive=0.5=py_1
 - appnope=0.1.0=py36hf537a9a_0
 - backcall=0.1.0=py36_0
 - blas=1.0=mkl
@@ -31,6 +31,7 @@ dependencies:
 - jupyter_console=6.0.0=py36_0
 - jupyter_core=4.4.0=py36_0
 - jupyter=1.0.0=py36_7
+- keepalive=0.5=py_1
 - kiwisolver=1.0.1=py36h0a44026_0
 - libcxx=4.0.1=hcfea43d_1
 - libcxxabi=4.0.1=hcfea43d_1
@@ -49,6 +50,7 @@ dependencies:
 - nbconvert=5.3.1=py36_0
 - nbformat=4.4.0=py36h827af21_0
 - ncurses=6.1=h0a44026_0
+- networkx=2.2=py36_1
 - notebook=5.7.1=py36_0
 - numpy-base=1.15.4=py36h8a80b8c_0
 - numpy=1.15.4=py36h6a91979_0
@@ -91,4 +93,3 @@ dependencies:
 - xz=5.2.4=h1de35cc_4
 - zeromq=4.2.5=h0a44026_1
 - zlib=1.2.11=hf3cbc9b_2
-name: fornax_tutorial
