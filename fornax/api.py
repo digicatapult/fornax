@@ -73,7 +73,12 @@ class Connection:
     sqlite_max_size = 2147483647
 
     def __init__(self, url='sqlite://', **kwargs):
-        """[summary]
+        """Create a new connection to Fornax.
+
+        The creation of graphs and queries requires a connection to fornax.
+        The connection class manages the life cycle of a connection to a SQL
+        database where graphs and queries are persisted and processed.
+        By default an in memory sqlite instance is used.
 
         :param url: dialect[+driver]://user:password@host/dbname[?key=value..],
         defaults to 'sqlite://'
@@ -88,10 +93,19 @@ class Connection:
             self.maxsize = self.sqlite_max_size
 
     def open(self):
+        """ start the fornax connection
+
+        This method must be called at the start of a user session
+        """
         self.connection = self.engine.connect()
         fornax.model.Base.metadata.create_all(self.connection)
 
     def close(self):
+        """ close the fornax connection
+
+        Cleanly end the user session by disconecting from the backend database
+        """
+
         self.connection.close()
 
     def __enter__(self):
