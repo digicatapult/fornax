@@ -57,6 +57,8 @@ def _hash(item: str, maxsize=sys.maxsize) -> int:
     :param item: string or string like object that is accepted by builtin
     function `str`
     :type item: str
+    param maxsize: maximum value of returned integer
+    :type maxsize: int
     :return: hash between 0 and maxsize
     :rtype: int
     """
