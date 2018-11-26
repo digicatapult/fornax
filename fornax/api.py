@@ -277,6 +277,8 @@ class GraphHandle:
     One can access an existing graph by
     specifying it using the `graph_id` itentifier.
 
+    :param connection: a fornax database connection
+    :type connection: Connection
     :param graph_id: unique id for an existing graph
     :type graph_id: int
     """
@@ -313,6 +315,8 @@ class GraphHandle:
     def create(cls, connection: Connection):
         """Create a new empy graph and return a GraphHandle to it
 
+        :param connection: a fornax database connection
+        :type connection: Connection
         :return: GraphHandle to a new graph
         :rtype: GraphHandle
         """
@@ -336,6 +340,8 @@ class GraphHandle:
         """Create a new GraphHandle to an existing graph
         with unique identifier `graph_id`
 
+        :param connection: a fornax database connection
+        :type connection: Connection
         :param graph_id: unique identifier for an existing graph
         :type graph_id: int
         :return: A new graph handle to an existing graph
@@ -549,6 +555,8 @@ class GraphHandle:
 class QueryHandle:
     """Accessor for a fuzzy subgraph matching query
 
+    :param connection: a fornax database connection
+    :type connection: Connection
     :param query_id: unique id for an existing query
     :type query_id: int
     """
@@ -595,6 +603,8 @@ class QueryHandle:
     ):
         """Create a new query and return a QueryHandle for it
 
+        :param connection: a fornax database connection
+        :type connection: Connection
         :param query_graph: Subgraph to be search for in the target graph
         :type query_graph: GraphHandle
         :param target_graph: Graph to be searched
@@ -622,6 +632,8 @@ class QueryHandle:
     def read(cls, connection: Connection, query_id: int):
         """Create a new QueryHandle to an existing query with unique id `query_id`
 
+        :param connection: a fornax database connection
+        :type connection: Connection
         :param query_id: unique identifier for a query
         :type query_id: int
         :return: new QueryHandle
