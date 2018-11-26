@@ -87,13 +87,19 @@ class Connection:
         if self.url.startswith('sqlite'):
             self.maxsize = self.sqlite_max_size
 
-    def __enter__(self):
+    def open(self):
         self.connection = self.engine.connect()
         fornax.model.Base.metadata.create_all(self.connection)
+
+    def close(self):
+        self.connection.close()
+
+    def __enter__(self):
+        self.open()
         return self
 
     def __exit__(self, *args):
-        self.connection.close()
+        self.close()
 
     @contextlib.contextmanager
     def get_session(self):
