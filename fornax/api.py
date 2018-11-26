@@ -134,12 +134,12 @@ class Connection:
             session.close()
 
     def _hash(self, item: str) -> int:
-        """An unsalted hash function with a range between 0 and MAX_SIZEMAX_SIZE
+        """An unsalted hash function with a range between 0 and self.maxsize
 
         :param item: string or string like object that is accepted by builtin
         function `str`
         :type item: str
-        :return: hash between 0 and MAX_SIZE
+        :return: hash between 0 and self.maxsize
         :rtype: int
         """
         return _hash(item, self.maxsize)
