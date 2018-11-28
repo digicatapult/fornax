@@ -1,29 +1,3 @@
-"""
-Fornax API documentation
-========================
-
-Introduction
-------------
-
-Fornax performs fuzzy subgraph matching between graphs with labelled nodes.
-Given a small graph (the query graph) and a large graph (the target graph)
-fornax will approximate the top `n` subgraphs in the target graph that are most
-similar to the query graph even if the node labels and graph relationships are
-not exactly the same.
-
-Use this query API to specify query and target graphs and to seach for fuzzy
-subgraph matches of the query graph to the target graph.
-
-fornax is designed to handle very large graphs of millions of nodes.
-As such graphs are persisted in a database.
-Rather than interacting directly with a graph, the API implements GraphHandles.
-These are similar to file handles or file pointers for a file system.
-They allow the user to Create, Read, Update and Delete graphs but much like a
-file the graphs will still persist even if the handle goes out of scope.
-
-Similarly query objects, which define a search operation, can be created using
-a QueryHandle.
-"""
 import fornax.select
 import fornax.opt
 import sqlalchemy
@@ -71,41 +45,45 @@ def _hash(item: str, maxsize=sys.maxsize) -> int:
 
 
 class Connection:
+    """
+    Create a new database connection.
+    If the database is empty :class:`Connection` will create
+    any missing schema.
 
-    sqlite_max_size = 2147483647
+    Currrently sqlite and postgresql are activly supported
+    as backend databases.
+
+    In addition to the open, close syntax
+    Connection supports the context manager syntax::
+
+        with Connection("postgres:://user/0.0.0.0./mydb") as conn:
+            graph = fornax.GraphHandle.create(conn)
+
+    :param url: dialect[+driver]://user:password@host/dbname[?key=value..]
+    :type url: str, optional
+        """
+
+    SQLITE_MAX_SIZE = 2147483647
 
     def __init__(self, url='sqlite://', **kwargs):
-        """Create a new connection to Fornax.
-
-        The creation of graphs and queries requires a connection to fornax.
-        The connection class manages the life cycle of a connection to a SQL
-        database where graphs and queries are persisted and processed.
-        By default an in memory sqlite instance is used.
-
-        :param url: dialect[+driver]://user:password@host/dbname[?key=value..],
-        defaults to 'sqlite://'
-        :param url: str, optional
-        """
 
         self.url = url
         self.engine = sqlalchemy.create_engine(self.url, **kwargs)
         self.make_session = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.maxsize = sys.maxsize
         if self.url.startswith('sqlite'):
-            self.maxsize = self.sqlite_max_size
+            self.maxsize = self.SQLITE_MAX_SIZE
 
     def open(self):
-        """ start the fornax connection
-
-        This method must be called at the start of a user session
+        """ Open the fornax database connection
+        and create any absent tables and indicies
         """
         self.connection = self.engine.connect()
         fornax.model.Base.metadata.create_all(self.connection)
 
     def close(self):
-        """ close the fornax connection
-
-        Cleanly end the user session by disconecting from the backend database
+        """ Close the fornax database connection
+        and free any connections in the connection pool
         """
 
         self.connection.close()
@@ -268,18 +246,12 @@ class Edge:
 
 
 class GraphHandle:
-    """Accessor for a graph
+    """
 
-    Because fornax is designed to operate on very large graphs node and edges
-    are not stored in memory.
-    Rather, they are persisted using a database back end.
-    Currently sqlite and postgres are supported.
+    Create a handle to an existing graph with id *graph_id*
+    accessed via *connection*.
 
-    GraphHandle is an interface to this persistent layer.
-    One can access an existing graph by
-    specifying it using the `graph_id` itentifier.
-
-    :param connection: a fornax database connection
+    :param connection: fornax database connection
     :type connection: Connection
     :param graph_id: unique id for an existing graph
     :type graph_id: int
@@ -310,12 +282,15 @@ class GraphHandle:
 
     @property
     def graph_id(self):
-        """Unique identifier for a graph"""
+        """Get the unique id for this graph
+
+        Graph id's are automaticly assigned at creation time.
+        """
         return self._graph_id
 
     @classmethod
     def create(cls, connection: Connection):
-        """Create a new empy graph and return a GraphHandle to it
+        """Create a new empty graph via *connection* and return a GraphHandle to it
 
         :param connection: a fornax database connection
         :type connection: Connection
@@ -353,7 +328,7 @@ class GraphHandle:
         return GraphHandle(connection, graph_id)
 
     def delete(self):
-        """Delete a graph.
+        """Delete this graph.
 
         Delete the graph accessed through graph handle and
         all of the associated nodes and edges.
@@ -385,24 +360,27 @@ class GraphHandle:
     def add_nodes(self, **kwargs):
         """Append nodes to a graph
 
-        :param id_src: An iterable if Unique hashable identifiers
-        for each node, defaults to None
-        :raises ValueError: Raised if `id` is used as a keyword argument
-        :raises ValueError: Raised if no keyword arguments are provided
+        :param id_src: An iterable of unique hashable identifiers, default None
+        :type id_src: Iterable
 
-        If `id_src` is not provided,
-        each node will be indentifed by order of insertion
-        using a continuous range index starting at zero.
+        Keyword arguments can be used to attached arbitrary JSON serialised
+        metadata to each node::
 
-        Metadata can be attached to each node
-        by specifying extra keyword arguments
-        (not that id is reserved).
-        For example, to attach a name to each node:
+            #  create 3 nodes with ids: 0, 1, 2
+            #  and names 'Anne', 'Ben', 'Charles'
+            graph_handle.add_nodes(names=['Anne', 'Ben', 'Charles'])
 
-        :Example:
+        By default, each node will be assigned a sequential integer id
+        starting from 0. A custom id can be assigned using the *id_src*
+        keyword provided that all of the ids are hashable::
 
-        graph_handle.add_node(id_src=[1,2,3], name=['a', 'b', 'c'])
+            #  create 3 nodes with ids: 'Anne', 'Ben', 'Charles'
+            #  and no explicit name field
+            graph_handle.add_nodes(id_src=['Anne', 'Ben', 'Charles'])
 
+        .. note::
+
+            *id* is a reserved keyword argument which will raise an exception
         """
 
         keys = kwargs.keys()
@@ -446,16 +424,32 @@ class GraphHandle:
     ):
         """Append edges to a graph representing relationships between nodes
 
-        :param sources: node `id_src`
+        :param sources: node id_src
         :type sources: typing.Iterable
-        :param targets: node `id_src`
+        :param targets: node id_src
         :type targets: typing.Iterable
 
-        keyword arguments can be used to attach metadata to the edges.
+        Keyword arguments can be used to attach metadata to the edges.
+        For example to add three edges with a relationship attribute friend or 
+        foe::
 
-        :Example:
+            graph_handle.add_edges(
+                sources=[0, 1, 2],
+                targets=[1, 2, 0],
+                relationship=['friend', 'friend', 'foe']
+            )
+        Keyword arguments can be used to attach any arbitrary JSON
+        serialisable data to edges.
 
-        graph_handle.add_edges([0, 0], [1, 1], relation=['friend', 'foe'])
+        .. note::
+
+            The following reserved keywords are not reserved and will raise
+            an exception
+
+                * *start*
+                * *end*
+                * *type*
+                * *weight*
 
         """
 
