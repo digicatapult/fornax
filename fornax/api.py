@@ -549,7 +549,8 @@ class GraphHandle:
 
 
 class QueryHandle:
-    """Accessor for a fuzzy subgraph matching query
+    """Create a handle to an existing query via *connection* with unique id
+    *query_id*.
 
     :param connection: a fornax database connection
     :type connection: Connection
@@ -601,7 +602,7 @@ class QueryHandle:
 
         :param connection: a fornax database connection
         :type connection: Connection
-        :param query_graph: Subgraph to be search for in the target graph
+        :param query_graph: subgraph to find target graph
         :type query_graph: GraphHandle
         :param target_graph: Graph to be searched
         :type target_graph: GraphHandle
@@ -626,7 +627,8 @@ class QueryHandle:
 
     @classmethod
     def read(cls, connection: Connection, query_id: int):
-        """Create a new QueryHandle to an existing query with unique id `query_id`
+        """Create a new QueryHandle to an existing query with unique id *query_id*
+        via *connection*.
 
         :param connection: a fornax database connection
         :type connection: Connection
@@ -690,13 +692,7 @@ class QueryHandle:
         weights: typing.Iterable[float],
         **kwargs
     ):
-        """Add candidate matches between the query graph and the target graph
-
-        Matches represent a pairwise node similarity
-        between all nodes in the query graph
-        and all nodes in the target graph.
-        Only similarities with non zero score need to be stated explicitly.
-        Matches with zero score are implicit.
+        """Add matches between the query graph and the target graph
 
         :param sources: Iterable of `src_id` in the query graph
         :type sources: typing.Iterable[int]
@@ -704,6 +700,22 @@ class QueryHandle:
         :type targets: typing.Iterable[int]
         :param weights: Iterable of weights between 0 and 1
         :type weights: typing.Iterable[float]
+
+        For example, to add matches between
+
+            * node *0* in the query graph and node *0* in the target graph \
+            with weight *.9*
+
+            * node *0* in the query graph and node *1* in the target graph \
+            with weight *.1*
+
+        then::
+
+            query.add_matches([0, 0], [0, 1], [.9, .1])
+
+        .. note::
+
+            Adding weights that compare equal to zero will raise an exception.
 
         """
 
@@ -930,17 +942,15 @@ class QueryHandle:
         }
 
     def execute(self, n=5, hopping_distance=2, max_iters=10):
-        """Execute a fuzzy subgraph matching query
+        """Execute a fuzzy subgraph matching query finding the top *n* subgraph
+        matches between the query graph and the target graph.
 
-        :param n: number of subgraph matches to return, defaults to 5
-        :param n: int, optional
+        :param n: number of subgraph matches to return
+        :type n: int, optional
         :param hopping_distance: lengthscale hyperparameter, defaults to 2
-        :param hopping_distance: int, optional
-        :param max_iters: maximum number of optimisation iterations,
-        defaults to 10
-        :param max_iters: int, optional
-        :raises ValueError: Raised if there are no matches
-        between the query and target graph
+        :type hopping_distance: int, optional
+        :param max_iters: maximum number of optimisation iterations
+        :type max_iters: int, optional
         :return: query result
         :rtype: dict
         """
