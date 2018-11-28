@@ -4,32 +4,34 @@ fornax package
 Submodules
 ----------
 
-fornax\.api module
-------------------
+.. _fornax-api-module:
+
+fornax.api module
+-----------------
 
 .. automodule:: fornax.api
     :members:
     :undoc-members:
     :show-inheritance:
 
-fornax\.model module
---------------------
+fornax.model module
+-------------------
 
 .. automodule:: fornax.model
     :members:
     :undoc-members:
     :show-inheritance:
 
-fornax\.opt module
-------------------
+fornax.opt module
+-----------------
 
 .. automodule:: fornax.opt
     :members:
     :undoc-members:
     :show-inheritance:
 
-fornax\.select module
----------------------
+fornax.select module
+--------------------
 
 .. automodule:: fornax.select
     :members:
