@@ -118,7 +118,7 @@ class Connection:
         self.close()
 
     @contextlib.contextmanager
-    def get_session(self):
+    def _get_session(self):
         """
         Provide a transactional scope around a series of db operations.
         Transactions will be rolled back in the case of an exception.
@@ -323,7 +323,7 @@ class GraphHandle:
         :rtype: GraphHandle
         """
 
-        with connection.get_session() as session:
+        with connection._get_session() as session:
 
             query = session.query(
                 sqlalchemy.func.max(model.Graph.graph_id)
@@ -361,7 +361,7 @@ class GraphHandle:
         """
 
         self._check_exists()
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             session.query(
                 model.Graph
             ).filter(model.Graph.graph_id == self._graph_id).delete()
@@ -373,7 +373,7 @@ class GraphHandle:
             ).filter(model.Node.graph_id == self._graph_id).delete()
 
     def _check_exists(self):
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             exists = session.query(sqlalchemy.exists().where(
                 model.Graph.graph_id == self._graph_id
             )).scalar()
@@ -437,7 +437,7 @@ class GraphHandle:
             for node_id, values in zipped
         )
         nodes = self._check_nodes(nodes)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             session.add_all(nodes)
             session.commit()
 
@@ -495,7 +495,7 @@ class GraphHandle:
             for start, end, *values in zipped
         )
         edges = self._check_edges(edges)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             session.add_all(edges)
             session.commit()
 
@@ -578,7 +578,7 @@ class QueryHandle:
             {int} -- Count of matching edges
         """
         self._check_exists()
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             count = session.query(model.Match).filter(
                 model.Match.query_id == self.query_id).count()
         return count
@@ -589,7 +589,7 @@ class QueryHandle:
         Raises:
             ValueError -- Raised if the query had been deleted
         """
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             exists = session.query(model.Query).filter(
                 model.Query.query_id == self.query_id
             ).scalar()
@@ -614,7 +614,7 @@ class QueryHandle:
         :return: new QueryHandle
         :rtype: QueryHandle
         """
-        with connection.get_session() as session:
+        with connection._get_session() as session:
             query_id = session.query(
                 sqlalchemy.func.max(model.Query.query_id)
             ).first()[0]
@@ -647,7 +647,7 @@ class QueryHandle:
         """Delete this query and any associated matches
         """
         self._check_exists()
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             session.query(model.Query).filter(
                 model.Query.query_id == self.query_id
             ).delete()
@@ -663,7 +663,7 @@ class QueryHandle:
         """
 
         self._check_exists()
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             start_graph = session.query(
                 model.Graph
             ).join(
@@ -680,7 +680,7 @@ class QueryHandle:
         """
 
         self._check_exists()
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             end_graph = session.query(
                 model.Graph
             ).join(
@@ -748,7 +748,7 @@ class QueryHandle:
             for start, end, weight, *values in zipped
         )
         matches = self._check_matches(matches)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             session.add_all(matches)
             session.commit()
 
@@ -800,7 +800,7 @@ class QueryHandle:
             yield match
 
     def _query_nodes(self):
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id == model.Query.start_graph_id
             ).filter(model.Query.query_id == self.query_id).all()
@@ -810,7 +810,7 @@ class QueryHandle:
         return nodes
 
     def _query_edges(self):
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             edges = session.query(model.Edge).join(
                 model.Query, model.Edge.graph_id == model.Query.start_graph_id
             ).filter(
@@ -825,7 +825,7 @@ class QueryHandle:
         return edges
 
     def _target_nodes(self):
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             nodes = session.query(model.Node).join(
                 model.Query, model.Node.graph_id == model.Query.end_graph_id
             ).filter(
@@ -844,7 +844,7 @@ class QueryHandle:
 
     def _target_edges(self, target_nodes, target_edges_arr):
         # only include target edges that are between the target nodes above
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             EndMatch = sqlalchemy.alias(model.Match, "end_match")
             EndNode = sqlalchemy.alias(model.Node, "end_node")
             StartNode = sqlalchemy.alias(model.Node, "start_node")
@@ -867,7 +867,7 @@ class QueryHandle:
         return edges
 
     def _optimise(self, hopping_distance, max_iters, offsets):
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             sql_query = fornax.select.join(
                 self.query_id, h=hopping_distance, offsets=offsets
             )
