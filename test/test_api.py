@@ -178,7 +178,7 @@ class TestGraph(TestCaseDB):
             self.assertEqual(
                 [json.loads(n.meta)['id_src'] for n in nodes],
                 ['a', 'b', 'c', 'd']
-        )
+            )
 
     def test_add_edges_id_src(self):
         graph = fornax.GraphHandle.create(self.conn)
@@ -215,7 +215,9 @@ class TestQuery(TestCaseDB):
 
     def test_create(self):
         query_graphs = [fornax.GraphHandle.create(self.conn) for _ in range(3)]
-        target_graphs = [fornax.GraphHandle.create(self.conn) for _ in range(3)]
+        target_graphs = [
+            fornax.GraphHandle.create(self.conn) for _ in range(3)
+        ]
         queries = [fornax.QueryHandle.create(
             self.conn, q, t) for q, t in zip(query_graphs, target_graphs)]
         self.assertEqual([q.query_id for q in queries], [0, 1, 2])
@@ -434,7 +436,7 @@ class TestExample(TestCaseDB):
         """trick fornax into using the test database setup
         """
         super().setUp(self)
-        self.maxsize = fornax.Connection.sqlite_max_size
+        self.maxsize = fornax.Connection.SQLITE_MAX_SIZE
         with fornax.Connection() as conn:
             conn.make_session = lambda: Session(self._connection)
             query_graph = fornax.GraphHandle.create(conn)
