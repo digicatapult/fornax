@@ -61,7 +61,7 @@ class Connection:
 
     :param url: dialect[+driver]://user:password@host/dbname[?key=value..]
     :type url: str, optional
-        """
+    """
 
     SQLITE_MAX_SIZE = 2147483647
 
@@ -430,7 +430,7 @@ class GraphHandle:
         :type targets: typing.Iterable
 
         Keyword arguments can be used to attach metadata to the edges.
-        For example to add three edges with a relationship attribute friend or 
+        For example to add three edges with a relationship attribute friend or
         foe::
 
             graph_handle.add_edges(
