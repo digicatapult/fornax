@@ -56,30 +56,36 @@ All tables and indicies are initialised at import time if they do not exist alre
 
 ```python
 # create a query graph
-query_graph_handle = fornax.GraphHandle.create()
-query_graph_handle.add_nodes(id_src=[0, 1, 2], label=['Hulk', 'Lady', 'Storm'])
-query_graph_handle.add_edges([0, 1], [1, 2])
+with fornax.Connection() as conn:
 
+    query_graph_handle = fornax.GraphHandle.create()
+    query_graph_handle.add_nodes(id_src=[0, 1, 2], label=['Hulk', 'Lady', 'Storm'])
+    query_graph_handle.add_edges([0, 1], [1, 2])
 
-# create a target graph
-target_graph_handle = fornax.GraphHandle.create()
-target_graph_handle.add_nodes(id_src=comic_book_nodes['id'], label=comic_book_nodes['name'])
-target_graph_handle.add_edges(comic_book_edges['start'], comic_book_edges['end'])
+    # create a target graph
+    target_graph_handle = fornax.GraphHandle.create()
+    target_graph_handle.add_nodes(id_src=comic_book_nodes['id'], label=comic_book_nodes['name'])
+    target_graph_handle.add_edges(comic_book_edges['start'], comic_book_edges['end'])
 
-matches = [
-    (query_node_id, target_node_id, weight) 
-    for query_node_id, target_node_id, weight 
-    in string_similarities
-]
+    # create a target graph
+    target_graph_handle = fornax.GraphHandle.create()
+    target_graph_handle.add_nodes(id_src=comic_book_nodes['id], label=comic_book_nodes['name'])
+    target_graph_handle.add_edges(comic_book_edges['start'], comic_book_edges['end'])
 
-match_starts, match_ends, weights = zip(*matches)
+    matches = [
+        (query_node_id, target_node_id, weight)
+        for query_node_id, target_node_id, weight
+        in string_similarities
+    ]
 
-# stage a query
-query = fornax.QueryHandle.create(query_graph_handle, target_graph_handle)
-query.add_matches(match_starts, match_ends, weights)
+    match_starts, match_ends, weights = zip(*matches)
 
-# go!
-query.execute()
+    # stage a query
+    query = fornax.QueryHandle.create(query_graph_handle, target_graph_handle)
+    query.add_matches(match_starts, match_ends, weights)
+
+    # go!
+    query.execute()
 ```
 
 ```json
