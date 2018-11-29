@@ -1,3 +1,5 @@
 -r common.txt
 xmlrunner
 coveralls
+sphinx>=1.4
+nbsphinx

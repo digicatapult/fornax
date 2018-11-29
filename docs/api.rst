@@ -1,7 +1,9 @@
 .. module:: fornax.api
 
-API Documentation
-========================
+API
+===
+
+.. _fornax-api-introduction:
 
 Introduction
 ------------

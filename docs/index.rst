@@ -9,8 +9,11 @@ Welcome to fornax's documentation!
 .. toctree::
    :maxdepth: 2
 
+   guide
+   tutorial
    api
    modules
+
 
 Indices and tables
 ==================
