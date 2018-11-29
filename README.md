@@ -47,7 +47,7 @@ source activate fornax_tutorial
 
 ## Documentation
 
-### Build the Docs
+### Build the Docs (requires dev dependencies)
 
 ```bash
 cd docs
