@@ -59,11 +59,11 @@ jupyter notebook
 ```bash
 cd docs
 make html
-cd _build/html
 ```
 
 ### View the Docs Locally
 
 ```bash
+cd _build/html
 python3 -m http.server
 ```
