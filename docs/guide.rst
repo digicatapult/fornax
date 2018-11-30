@@ -61,6 +61,6 @@ in a database.
 
 To facilite ease of use fornax can use *sqlite* or *postgresql*
 as a back end.
-For more details seethe API :ref:`fornax-api-introduction`.
+For more details see the API :ref:`fornax-api-introduction`.
 
 .. image:: /img/fornax.png

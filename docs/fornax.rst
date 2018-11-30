@@ -1,8 +1,5 @@
-fornax package
-==============
-
 Submodules
-----------
+==============
 
 .. _fornax-api-module:
 

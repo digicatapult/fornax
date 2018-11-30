@@ -10,7 +10,8 @@ Welcome to fornax's documentation!
    :maxdepth: 2
 
    guide
-   tutorial
+   tutorial/tutorial1
+   tutorial/tutorial2
    api
    modules
 
