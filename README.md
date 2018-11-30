@@ -49,7 +49,7 @@ conda env create -f environment.yml
 ```bash
 source activate fornax_tutorial
 cd docs/tutorial
-jupyter notebook
+jupyter-notebook
 ```
 
 ## Documentation
