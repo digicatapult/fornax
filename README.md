@@ -32,17 +32,24 @@ The available options for installing SciPy packages are listed [here](https://sc
 
 See the tutorials for a full working example.
 
-* [Part 1](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%201%20-%20Creating%20a%20Dataset.ipynb) - Download a small graph dataset 
-* [Part 2](https://github.com/CDECatapult/fornax/blob/master/notebooks/tutorial/Tutorial%202%20-%20Making%20a%20Query.ipynb) - Search the dataset using fornax
+* [Part 1](https://github.com/CDECatapult/fornax/blob/master/docs/tutorial/tutorial1.ipynb) - Download a small graph dataset
+* [Part 2](https://github.com/CDECatapult/fornax/blob/master/docs/tutorial/tutorial2.ipynb) - Search the dataset using fornax
 
-### Tutorial Dependencies
+### Install Tutorial Dependencies (using conda)
 
 The following tutorials use jupyter notebooks to create a worked example.
 We recommend you use the anaconda python distribution to run the notebooks.
 
 ```bash
 conda env create -f environment.yml
+```
+
+### Run the Tutorials
+
+```bash
 source activate fornax_tutorial
+cd docs/tutorial
+jupyter notebook
 ```
 
 ## Documentation
