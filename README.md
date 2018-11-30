@@ -32,8 +32,8 @@ The available options for installing SciPy packages are listed [here](https://sc
 
 See the tutorials for a full working example.
 
-* [Part 1](https://github.com/CDECatapult/fornax/blob/master/docs/tutorial/tutorial1.ipynb) - Download a small graph dataset
-* [Part 2](https://github.com/CDECatapult/fornax/blob/master/docs/tutorial/tutorial2.ipynb) - Search the dataset using fornax
+* [Part 1](docs/tutorial/tutorial1.ipynb) - Download a small graph dataset
+* [Part 2](docs/tutorial/tutorial2.ipynb) - Search the dataset using fornax
 
 ### Install Tutorial Dependencies (using conda)
 
