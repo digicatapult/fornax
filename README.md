@@ -67,3 +67,5 @@ make html
 cd _build/html
 python3 -m http.server
 ```
+
+navigate to 0.0.0.0:8000 in your browser.
