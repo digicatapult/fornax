@@ -21,6 +21,10 @@ pip install -r requirements/dev.txt
 pip install -e .
 ``` 
 
+## View the Docs
+
+View the docs at: [fornax.readthedocs.io](http://fornax.readthedocs.io/)
+
 ## Test
 
 From the root directory
