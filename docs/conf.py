@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../fornax'))
 # -- Project information -----------------------------------------------------
 
 project = 'fornax'
-copyright = '2018, Daniel Staff'
+copyright = '2018, Digital Catapult (https://www.digicatapult.org.uk)'
 author = 'Daniel Staff'
 
 # The short X.Y version
