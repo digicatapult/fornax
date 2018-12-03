@@ -14,7 +14,7 @@ An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.
 From the root directory:
 
 ```bash
-# install dependencies
+# install dev dependencies
 pip install -r requirements/dev.txt
 
 # install fornax
