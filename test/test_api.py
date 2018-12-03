@@ -56,7 +56,7 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         names = ['adam', 'ben', 'chris']
         graph.add_nodes(name=names)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             nodes = self.session.query(fornax.model.Node).filter(
                 fornax.model.Node.graph_id == 0).all()
             nodes = sorted(nodes, key=lambda node: node.node_id)
@@ -70,7 +70,7 @@ class TestGraph(TestCaseDB):
         names = ['adam', 'ben', 'chris']
         ages = [9, 10, 11]
         graph.add_nodes(name=names, age=ages)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             nodes = session.query(fornax.model.Node).filter(
                 fornax.model.Node.graph_id == 0).all()
             nodes = sorted(nodes, key=lambda node: node.node_id)
@@ -109,7 +109,7 @@ class TestGraph(TestCaseDB):
         graph.add_nodes(name=names, age=ages)
         relationships = ['is_friend', 'is_foe']
         graph.add_edges([0, 0], [1, 2], relationship=relationships)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             edges = session.query(
                 fornax.model.Edge
             ).filter(
@@ -132,7 +132,7 @@ class TestGraph(TestCaseDB):
         types = [0, 1]
         graph.add_edges(
             [0, 0], [1, 2], relationship=relationships, type_=types)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             edges = session.query(
                 fornax.model.Edge
             ).filter(
@@ -162,7 +162,7 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(id_src=['a', 'b', 'c', 'd'])
         graph.add_edges(['a', 'b'], ['b', 'c'])
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             nodes = session.query(fornax.model.Node).all()
             self.assertEqual(
                 [n.node_id for n in nodes],
@@ -173,18 +173,18 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(id_src=['a', 'b', 'c', 'd'])
         graph.add_edges(['a', 'b'], ['b', 'c'])
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             nodes = session.query(fornax.model.Node).all()
             self.assertEqual(
                 [json.loads(n.meta)['id_src'] for n in nodes],
                 ['a', 'b', 'c', 'd']
-        )
+            )
 
     def test_add_edges_id_src(self):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(id_src=['a', 'b', 'c', 'd'])
         graph.add_edges(['a', 'b'], ['b', 'c'])
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             edges = session.query(
                 fornax.model.Edge
             ).filter(
@@ -215,7 +215,9 @@ class TestQuery(TestCaseDB):
 
     def test_create(self):
         query_graphs = [fornax.GraphHandle.create(self.conn) for _ in range(3)]
-        target_graphs = [fornax.GraphHandle.create(self.conn) for _ in range(3)]
+        target_graphs = [
+            fornax.GraphHandle.create(self.conn) for _ in range(3)
+        ]
         queries = [fornax.QueryHandle.create(
             self.conn, q, t) for q, t in zip(query_graphs, target_graphs)]
         self.assertEqual([q.query_id for q in queries], [0, 1, 2])
@@ -224,7 +226,7 @@ class TestQuery(TestCaseDB):
         query_graph = fornax.GraphHandle.create(self.conn)
         target_graph = fornax.GraphHandle.create(self.conn)
         query = fornax.QueryHandle.create(self.conn, query_graph, target_graph)
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             query_db = session.query(fornax.model.Query).filter(
                 fornax.model.Query.query_id == query.query_id).first()
             self.assertEqual(query_db.start_graph_id, query_graph.graph_id)
@@ -243,7 +245,7 @@ class TestQuery(TestCaseDB):
         query = fornax.QueryHandle.create(self.conn, query_graph, target_graph)
         query_id = query.query_id
         query.delete()
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             query_exists = session.query(fornax.model.Query).filter(
                 fornax.model.Query.query_id == query_id).scalar()
             matches_exists = session.query(fornax.model.Match).filter(
@@ -319,7 +321,7 @@ class TestQuery(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(myid=[1, 2, 3])
         graph.add_edges([0], [1])
-        with self.conn.get_session() as session:
+        with self.conn._get_session() as session:
             src = [
                 (e.start, e.end)
                 for e in session.query(fornax.model.Edge).all()
@@ -434,7 +436,7 @@ class TestExample(TestCaseDB):
         """trick fornax into using the test database setup
         """
         super().setUp(self)
-        self.maxsize = fornax.Connection.sqlite_max_size
+        self.maxsize = fornax.Connection.SQLITE_MAX_SIZE
         with fornax.Connection() as conn:
             conn.make_session = lambda: Session(self._connection)
             query_graph = fornax.GraphHandle.create(conn)

@@ -1,16 +1,20 @@
 .. fornax documentation master file, created by
-   sphinx-quickstart on Fri Nov 16 10:25:34 2018.
+   sphinx-quickstart on Wed Nov 28 10:27:45 2018.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. automodule:: fornax.api
-    :members: __doc__
+Welcome to fornax's documentation!
+==================================
 
-.. autoclass:: fornax.GraphHandle
-    :members:
+.. toctree::
+   :maxdepth: 2
 
-.. autoclass:: fornax.QueryHandle
-    :members:
+   guide
+   tutorial/tutorial1
+   tutorial/tutorial2
+   api
+   modules
+
 
 Indices and tables
 ==================
