@@ -1,6 +1,6 @@
-[![CircleCI](https://circleci.com/gh/CDECatapult/fornax.svg?style=svg&circle-token=2110b6bc1d713698d241fd08ae60cd925e60062f)](https://circleci.com/gh/CDECatapult/fornax)
-[![Coverage Status](https://coveralls.io/repos/github/CDECatapult/fornax/badge.svg?branch=master)](https://coveralls.io/github/CDECatapult/fornax?branch=master)
-[![Known Vulnerabilities](https://snyk.io/test/github/CDECatapult/fornax/badge.svg)](https://snyk.io/test/github/CDECatapult/fornax/badge.svg)
+[![CircleCI](https://circleci.com/gh/digicatapult/fornax.svg?style=svg&circle-token=2110b6bc1d713698d241fd08ae60cd925e60062f)](https://circleci.com/gh/digicatapult/fornax)
+[![Coverage Status](https://coveralls.io/repos/github/digicatapult/fornax/badge.svg?branch=master)](https://coveralls.io/github/digicatapult/fornax?branch=master)
+[![Known Vulnerabilities](https://snyk.io/test/github/digicatapult/fornax/badge.svg)](https://snyk.io/test/github/digicatapult/fornax/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/fornax/badge/?version=latest)](https://fornax.readthedocs.io/en/latest/?badge=latest)
 
 # Fornax

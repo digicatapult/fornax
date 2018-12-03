@@ -91,7 +91,7 @@ html_theme = 'alabaster'
 html_theme_options = {
     'github_banner': True,
     'github_repo': 'fornax',
-    'github_user': 'CDECatapult'
+    'github_user': 'digicatapult'
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
