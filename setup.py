@@ -1,12 +1,11 @@
 from setuptools import setup, find_packages
-import fornax
 
 with open('README.md') as fp:
     long_description = fp.read()
 
 setup(
     name='fornax',
-    version=fornax.__version__,
+    version='0.0.1',
     license='Apache License 2.0',
     author='Daniel Staff',
     description='Approximate fuzzy subgraph matching in polynomial time',
@@ -25,5 +24,5 @@ setup(
         'Natural Language :: English',
         'Programming Language :: SQL',
         'Topic :: Scientific/Engineering :: Information Analysis'
-    ]   
+    ]
 )
