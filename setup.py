@@ -5,7 +5,7 @@ with open('README.md') as fp:
 
 setup(
     name='fornax',
-    version=0.0.1,
+    version='0.0.1',
     license='Apache License 2.0',
     author='Daniel Staff',
     description='Approximate fuzzy subgraph matching in polynomial time',
