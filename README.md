@@ -58,9 +58,15 @@ jupyter-notebook
 
 ## Documentation
 
-### Build the Docs (requires dev dependencies)
+### Build the Docs
 
 ```bash
+# install docs dependencies
+pip install -r requirements/docs.txt
+# install fornax
+pip install .
+
+# build
 cd docs
 make html
 ```
