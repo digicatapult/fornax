@@ -17,13 +17,13 @@ setup(
     ],
     author_email='daniel.staff@digicatapult.org.uk',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
-        'Programming Language :: SQL',
         'Topic :: Scientific/Engineering :: Information Analysis'
     ]
 )
