@@ -1,11 +1,12 @@
 from setuptools import setup, find_packages
+exec(open("./fornax/version.py").read())
 
 with open('README.md') as fp:
     long_description = fp.read()
 
 setup(
     name='fornax',
-    version='0.0.1',
+    version=__version__,
     license='Apache License 2.0',
     author='Daniel Staff',
     description='Approximate fuzzy subgraph matching in polynomial time',
