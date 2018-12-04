@@ -7,7 +7,8 @@
 
 An implementation of [NeMa: Fast Graph Search with Label Similarity](http://www.vldb.org/pvldb/vol6/p181-khan.pdf) using python3 and sqlite or postgres.
 
-![FORNAX](./docs/img/fornax.png)
+<!-- do not use a relative path because it won't work on PyPI -->
+![FORNAX](https://github.com/digicatapult/fornax/raw/master/docs/img/fornax.png)
 
 ## Install
 
