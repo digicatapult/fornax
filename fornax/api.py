@@ -644,11 +644,11 @@ class QueryHandle:
         """
         self._check_exists()
         with self.conn._get_session() as session:
-            session.query(model.Query).filter(
-                model.Query.query_id == self.query_id
-            ).delete()
             session.query(model.Match).filter(
                 model.Match.query_id == self.query_id
+            ).delete()
+            session.query(model.Query).filter(
+                model.Query.query_id == self.query_id
             ).delete()
 
     def query_graph(self) -> GraphHandle:
