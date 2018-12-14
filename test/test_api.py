@@ -49,6 +49,11 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         graph.delete()
         self.assertRaises(ValueError, fornax.GraphHandle.read, self.conn, 0)
+        
+        graph = fornax.GraphHandle.create(self.conn)
+        graph.add_nodes(id_src=[0, 1, 2])
+        graph.add_edges([0, 2], [1, 1])
+        graph.delete()
 
     def test_add_nodes(self):
         """meta data is stored on a node
@@ -78,12 +83,6 @@ class TestGraph(TestCaseDB):
                 names, [json.loads(node.meta)['name'] for node in nodes])
             self.assertListEqual(
                 ages, [json.loads(node.meta)['age'] for node in nodes])
-    
-    def test_delete(self):
-        graph = fornax.GraphHandle.create(self.conn)
-        graph.add_nodes(id_src=[0, 1, 2])
-        graph.add_edges([0, 2], [1, 1])
-        graph.delete()
 
     def test_missing_attribute(self):
         """Null values for metadata must be explicit
