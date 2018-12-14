@@ -338,14 +338,14 @@ class GraphHandle:
         self._check_exists()
         with self.conn._get_session() as session:
             session.query(
-                model.Graph
-            ).filter(model.Graph.graph_id == self._graph_id).delete()
-            session.query(
                 model.Edge
             ).filter(model.Edge.graph_id == self._graph_id).delete()
             session.query(
                 model.Node
             ).filter(model.Node.graph_id == self._graph_id).delete()
+            session.query(
+                model.Graph
+            ).filter(model.Graph.graph_id == self._graph_id).delete()
 
     def _check_exists(self):
         with self.conn._get_session() as session:
