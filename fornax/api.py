@@ -63,7 +63,7 @@ class Connection:
     :type url: str, optional
     """
 
-    SQLITE_MAX_SIZE = 2147483647
+    SQLITE_MAX_SIZE = 2**63 - 1
 
     def __init__(self, url='sqlite://', **kwargs):
 
