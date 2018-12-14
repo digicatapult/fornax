@@ -856,7 +856,6 @@ class QueryHandle:
         # only include target edges that are between the target nodes above
         with self.conn._get_session() as session:
             EndMatch = sqlalchemy.alias(model.Match, "end_match")
-            EndNode = sqlalchemy.alias(model.Node, "end_node")
             StartNode = sqlalchemy.alias(model.Node, "start_node")
             edges = session.query(model.Edge).join(
                 model.Node, model.Edge.start == model.Node.node_id
