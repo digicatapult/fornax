@@ -867,6 +867,12 @@ class QueryHandle:
                 model.Query, model.Node.graph_id == model.Query.end_graph_id
             ).filter(
                 model.Edge.start < model.Edge.end
+            ).filter(
+                StartNode.c.graph_id == model.Query.end_graph_id
+            ).filter(
+                EndMatch.c.end_graph_id == model.Query.end_graph_id
+            ).filter(
+                model.Edge.graph_id == model.Query.end_graph_id
             ).order_by(model.Edge.start.asc()).all()
 
             edges = [
