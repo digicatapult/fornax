@@ -838,6 +838,10 @@ class QueryHandle:
                 model.Query.query_id == self.query_id
             ).join(
                 model.Match, model.Node.node_id == model.Match.end
+            ).filter(
+                model.Match.end_graph_id == model.Node.graph_id
+            ).filter(
+                model.Match.query_id == model.Query.query_id
             ).order_by(model.Node.node_id.asc()).all()
             nodes = [
                 Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes
