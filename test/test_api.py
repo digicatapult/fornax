@@ -201,7 +201,7 @@ class TestGraph(TestCaseDB):
                     sorted([self.conn._hash(start), self.conn._hash(end)])
                     for start, end in [('a', 'b'), ('b', 'c')]
                 )
-            )
+            )            
 
 
 class TestQuery(TestCaseDB):
@@ -503,7 +503,7 @@ class TestExample(TestCaseDB):
         self.assertEqual(graph['cost'], 0)
 
     def test_first_graph_nodes(self):
-        graph = self.payload['graphs'][0]
+        graph = self.payload['graphs'][1]
         nodes = [
             {"id": 0, "type": "query", "my_id": 1},
             {"id": 1, "type": "query", "my_id": 2},
@@ -528,7 +528,7 @@ class TestExample(TestCaseDB):
 
     def test_first_graph_links(self):
 
-        graph = self.payload['graphs'][0]
+        graph = self.payload['graphs'][1]
 
         matches = [
             {"source": 0, "target": 7, "type": "match", "weight": 1.0},
@@ -580,7 +580,7 @@ class TestExample(TestCaseDB):
         self.assertEqual(graph['cost'], 0)
 
     def test_second_graph_nodes(self):
-        graph = self.payload['graphs'][1]
+        graph = self.payload['graphs'][0]
         nodes = [
             {"id": 0, "type": "query", "my_id": 1},
             {"id": 1, "type": "query", "my_id": 2},
@@ -605,7 +605,7 @@ class TestExample(TestCaseDB):
         )
 
     def test_second_graph_links(self):
-        graph = self.payload['graphs'][1]
+        graph = self.payload['graphs'][0]
         matches = [
             {"source": 0, "target": 7, "type": "match", "weight": 1.0},
             {"source": 1, "target": 8, "type": "match", "weight": 1.0},

@@ -103,12 +103,9 @@ class Base(np.recarray):
     types = []
 
     def __new__(cls, *args, **kwargs):
-        a = np.atleast_2d(np.array(*args, **kwargs))
-        dtype = np.dtype(list(zip(cls.columns, cls.types)))
-        r = np.recarray(shape=a.shape[0], dtype=dtype)
-        for i, col in enumerate(cls.columns):
-            setattr(r, col, a[:, i])
-        return r.view(cls)
+        dtype = list(zip(cls.columns, cls.types))
+        a = np.array([tuple(row) for row in args[0]], dtype=dtype)
+        return a.view(cls)
 
 
 class QueryResult(Base):
@@ -116,7 +113,7 @@ class QueryResult(Base):
     """Represents a query from the database as a numpy rec array"""
 
     columns = 'v u vv uu dist_v dist_u weight'.split()
-    types = [np.int32, np.int32, np.int32, np.int32,
+    types = [np.int64, np.int64, np.int64, np.int64,
              np.float32, np.float32, np.float32]
 
     @property
@@ -548,7 +545,7 @@ def _get_matching_costs(
     arr = np.unique(
         np.rec.fromarrays(
             (query_result.v, query_result.vv, prox_v),
-            dtype=[('v', int), ('vv', int), ('prox_v', float)]
+            dtype=[('v', np.int64), ('vv', np.int64), ('prox_v', float)]
         ),
         axis=0
     )
@@ -556,15 +553,18 @@ def _get_matching_costs(
     vs, groups = group_by('v', arr)
     beta_ = {v[0]: sum(group['prox_v']) for v, group in zip(vs, groups)}
     beta = np.vectorize(lambda x: beta_[x])
-    neighbourhood_matching_costs = NeighbourHoodMatchingCosts(
-        np.array([
+    neighbourhood_matching_costs = np.rec.fromarrays([
             query_result.v,
             query_result.u,
             query_result.vv,
             query_result.uu,
             cost
-        ]).transpose()
-    )
+        ],
+        dtype=list(zip(
+            NeighbourHoodMatchingCosts.columns,
+            NeighbourHoodMatchingCosts.types
+        ))
+    ).view(NeighbourHoodMatchingCosts)
     return neighbourhood_matching_costs, query_result, beta
 
 
@@ -583,9 +583,14 @@ def _get_partial_inference_costs(
     """
 
     grouped = group_by_first(['v', 'u', 'vv'], neighbourhood_matching_costs)
-    partial_matching_costs = PartialMatchingCosts(
-        np.array([grouped.v, grouped.u, grouped.vv, grouped.cost]).transpose()
-    )
+    partial_matching_costs = np.rec.fromarrays([
+            grouped.v, grouped.u, grouped.vv, grouped.cost
+        ],
+        dtype=list(zip(
+            PartialMatchingCosts.columns,
+            PartialMatchingCosts.types
+        ))
+    ).view(PartialMatchingCosts)
     partial_matching_costs.cost /= beta(partial_matching_costs.v)
     return partial_matching_costs
 
@@ -608,8 +613,7 @@ def _get_inference_costs(
         lambda key, group: (key[0], key[1], np.sum(group.cost) / len(group)),
         zip(keys, groups)
     )
-    columns = np.vstack(summed)
-    return InferenceCost(columns)
+    return InferenceCost(summed)
 
 
 def _get_optimal_match(inference_costs: InferenceCost) -> OptimalMatch:
@@ -659,7 +663,8 @@ def solve(records: List[tuple], max_iters=10, hopping_distance=2):
         partial_inference_costs = _get_partial_inference_costs(
             neighbourhood_matching_costs, beta)
         inference_costs = _get_inference_costs(partial_inference_costs)
-        inference_costs.cost += label_costs_func(inference_costs[['v', 'u']])
+        additional_costs = np.array([label_costs.get(tuple(x)) for x in inference_costs[['v', 'u']]], dtype=np.float32)
+        inference_costs.cost += additional_costs
 
         # second optimisation
         inference_costs = np.sort(inference_costs, order=['v', 'cost'])
