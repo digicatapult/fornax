@@ -5,7 +5,7 @@ from typing import Tuple
 from collections import Iterable
 
 
-def neighbours(h: int, start) -> Query:
+def neighbours(h: int, start: bool, query_id: int) -> Query:
 
     if start:
         seed = Query([
@@ -19,6 +19,8 @@ def neighbours(h: int, start) -> Query:
                 Node.node_id == Match.start,
                 Node.graph_id == Match.start_graph_id
             )
+        ).filter(
+            Match.query_id == query_id
         )
     else:
         seed = Query([
@@ -32,6 +34,8 @@ def neighbours(h: int, start) -> Query:
                 Node.node_id == Match.end,
                 Node.graph_id == Match.end_graph_id
             )
+        ).filter(
+            Match.query_id == query_id
         )
 
     n = seed.union(_neighbours(seed, 1, h)).subquery()
@@ -70,8 +74,8 @@ def _neighbours(seed: Query, h, max_=None) -> Query:
 
 def join(query_id: int, h: int, offsets: Tuple[int, int]=None) -> Query:
 
-    left = neighbours(h, True).subquery()
-    right = neighbours(h, False).subquery()
+    left = neighbours(h, True, query_id).subquery()
+    right = neighbours(h, False, query_id).subquery()
     NeighbourMatch = alias(Match, "neighbour_match")
 
     left_joined = Query([

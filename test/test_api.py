@@ -50,6 +50,11 @@ class TestGraph(TestCaseDB):
         graph.delete()
         self.assertRaises(ValueError, fornax.GraphHandle.read, self.conn, 0)
 
+        graph = fornax.GraphHandle.create(self.conn)
+        graph.add_nodes(id_src=[0, 1, 2])
+        graph.add_edges([0, 2], [1, 1])
+        graph.delete()
+
     def test_add_nodes(self):
         """meta data is stored on a node
         """
@@ -241,8 +246,13 @@ class TestQuery(TestCaseDB):
 
     def test_delete(self):
         query_graph = fornax.GraphHandle.create(self.conn)
+        query_graph.add_nodes(id_src=[0, 1])
+        query_graph.add_edges([0], [1])
         target_graph = fornax.GraphHandle.create(self.conn)
+        target_graph.add_nodes(id_src=[1, 2])
+        target_graph.add_edges([2], [1])
         query = fornax.QueryHandle.create(self.conn, query_graph, target_graph)
+        query.add_matches([0, 1], [2, 1], [1, 1])
         query_id = query.query_id
         query.delete()
         with self.conn._get_session() as session:

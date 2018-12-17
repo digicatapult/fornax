@@ -11,6 +11,7 @@ class Graph(Base):
     """ A graph containing nodes and edges """
     __tablename__ = 'graph'
     graph_id = Column(Integer, primary_key=True)
+    Index('graph_id')
 
 
 class Query(Base):
@@ -27,6 +28,7 @@ class Query(Base):
         Integer, ForeignKey("graph.graph_id"), nullable=False, index=True)
     Index(
         'query_idx', 'query_id', 'start_graph_id', 'end_graph_id', unique=True)
+    Index('query_id')
 
 
 class Match(Base):
@@ -55,6 +57,7 @@ class Match(Base):
     end_graph_id = Column(Integer)
     query_id = Column(Integer)
     meta = Column(String, nullable=True)
+    Index('query_id')
 
     weight = Column(
         Float,
@@ -98,6 +101,7 @@ class Node(Base):
     )
     graph_id = Column(Integer, ForeignKey("graph.graph_id"))
     meta = Column(String, nullable=True)
+    Index('graph_id')
 
     def neighbours(self):
         return [x.end_node for x in self.start_edges]
