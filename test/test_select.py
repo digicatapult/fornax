@@ -157,7 +157,7 @@ class TestSelect(TestCaseDB):
         )
 
     def test_neighbours_1(self):
-        query = select.neighbours(1, True)
+        query = select.neighbours(1, True, 0)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
@@ -171,7 +171,7 @@ class TestSelect(TestCaseDB):
         )
 
     def test_neighbours_2(self):
-        query = select.neighbours(2, True)
+        query = select.neighbours(2, True, 0)
         records = query.with_session(self.session).all()
         self.assertListEqual(
             sorted(records),
