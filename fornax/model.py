@@ -3,7 +3,7 @@ from sqlalchemy import PrimaryKeyConstraint, Index, UniqueConstraint
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-
+from sqlalchemy.types import BigInteger
 Base = declarative_base()
 
 
@@ -51,8 +51,8 @@ class Match(Base):
         )
     )
 
-    start = Column(Integer)
-    end = Column(Integer)
+    start = Column(BigInteger)
+    end = Column(BigInteger)
     start_graph_id = Column(Integer)
     end_graph_id = Column(Integer)
     query_id = Column(Integer)
@@ -96,7 +96,7 @@ class Node(Base):
         PrimaryKeyConstraint('graph_id', 'node_id'),
     )
     node_id = Column(
-        Integer,
+        BigInteger,
         CheckConstraint("node_id>=0", name="q_min_id_check")
     )
     graph_id = Column(Integer, ForeignKey("graph.graph_id"))
@@ -127,8 +127,8 @@ class Edge(Base):
         )
     )
 
-    start = Column(Integer)
-    end = Column(Integer)
+    start = Column(BigInteger)
+    end = Column(BigInteger)
     graph_id = Column(Integer)
     meta = Column(String, nullable=True)
 
