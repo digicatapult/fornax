@@ -9,7 +9,7 @@ from unittest import TestCase
 
 class TestConnection(TestCaseDB):
 
-    def DummyException(Exception):
+    class DummyException(Exception):
         pass
 
     def test_rollback(self):
