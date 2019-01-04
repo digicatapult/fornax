@@ -7,26 +7,30 @@ from sqlalchemy.orm.session import Session
 from unittest import TestCase
 
 
-class TestConnection(TestCaseDB):
+class DummyException(Exception):
+    pass
 
-    def DummyException(Exception):
-        pass
+
+class TestConnection(TestCaseDB):
 
     def test_rollback(self):
         """ Test than the connection rolls back
         transactions if theres an exception
         """
+        dburl = 'sqlite://'
         try:
             # raise an exception afer creatiion
             # then raise an exception
-            with fornax.Connection() as conn:
+            with fornax.Connection(dburl) as conn:
                 graph = fornax.GraphHandle.create(conn)
                 names = ['adam', 'ben', 'chris']
                 graph.add_nodes(name=names)
                 raise DummyException
+        except DummyException:
+            pass
         finally:
             # everything should be gone
-            with fornax.Connection() as conn:
+            with fornax.Connection(dburl) as conn:
                 n_nodes = conn.session.query(fornax.model.Node).count()
                 n_graphs = conn.session.query(fornax.model.Graph).count()
             self.assertEqual(n_nodes, 0)
