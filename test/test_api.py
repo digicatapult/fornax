@@ -7,10 +7,11 @@ from sqlalchemy.orm.session import Session
 from unittest import TestCase
 
 
-class TestConnection(TestCaseDB):
+class DummyException(Exception):
+    pass
 
-    class DummyException(Exception):
-        pass
+
+class TestConnection(TestCaseDB):
 
     def test_rollback(self):
         """ Test than the connection rolls back
@@ -25,6 +26,8 @@ class TestConnection(TestCaseDB):
                 names = ['adam', 'ben', 'chris']
                 graph.add_nodes(name=names)
                 raise DummyException
+        except DummyException:
+            pass
         finally:
             # everything should be gone
             with fornax.Connection(dburl) as conn:
