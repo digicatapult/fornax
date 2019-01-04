@@ -103,7 +103,8 @@ class Connection:
         if exc_type is not None:
             # rollback the session and raise the recieved exception
             self.session.rollback()
-            return True
+            self.session.close()
+            return False
         # otherwise end the transaction and close the connection
         self.session.commit()
         self.session.close()
