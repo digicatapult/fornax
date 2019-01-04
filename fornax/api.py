@@ -63,13 +63,12 @@ class Connection:
             graph = fornax.GraphHandle.create(conn)
 
     :param url: dialect[+driver]://user:password@host/dbname[?key=value..]
-    :type url: str, optional
+    :type url: str
     """
 
     SQLITE_MAX_SIZE = 2**63 - 1
 
-    def __init__(self, url='sqlite://', **kwargs):
-
+    def __init__(self, url, **kwargs):
         self.url = url
         self.engine = sqlalchemy.create_engine(self.url, **kwargs)
         self.make_session = sqlalchemy.orm.sessionmaker(bind=self.engine)
