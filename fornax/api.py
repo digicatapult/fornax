@@ -56,8 +56,11 @@ class Connection:
     Currrently sqlite and postgresql are activly supported
     as backend databases.
 
-    In addition to the open, close syntax
-    Connection supports the context manager syntax::
+    In addition to the open/close syntax, Connection
+    supports the context manager syntax where the context
+    is treaded as a transaction.
+    Any changes will be automatically rolled back
+    in the event of an exception::
 
         with Connection("postgres:://user/0.0.0.0./mydb") as conn:
             graph = fornax.GraphHandle.create(conn)
