@@ -208,7 +208,7 @@ matches
 # In[10]:
 
 
-conn = fornax.Connection()
+conn = fornax.Connection('sqlite://')
 conn.open()
 
 
