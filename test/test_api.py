@@ -16,17 +16,18 @@ class TestConnection(TestCaseDB):
         """ Test than the connection rolls back
         transactions if theres an exception
         """
+        dburl = 'sqlite://'
         try:
             # raise an exception afer creatiion
             # then raise an exception
-            with fornax.Connection() as conn:
+            with fornax.Connection(dburl) as conn:
                 graph = fornax.GraphHandle.create(conn)
                 names = ['adam', 'ben', 'chris']
                 graph.add_nodes(name=names)
                 raise DummyException
         finally:
             # everything should be gone
-            with fornax.Connection() as conn:
+            with fornax.Connection(dburl) as conn:
                 n_nodes = conn.session.query(fornax.model.Node).count()
                 n_graphs = conn.session.query(fornax.model.Graph).count()
             self.assertEqual(n_nodes, 0)
