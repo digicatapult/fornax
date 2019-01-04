@@ -208,34 +208,29 @@ matches
 # In[10]:
 
 
-conn = fornax.Connection('sqlite://')
-conn.open()
-
-
-# In[11]:
-
-
-target_graph = fornax.GraphHandle.create(conn)
-target_graph.add_nodes(
-    # use id_src to set a custom id on each node 
-    id_src=nodes_df['target_id'],
-    # use other keyword arguments to attach arbitrary metadata to each node
-    label=nodes_df['target_label'],
-    # the type keyword is reserved to we use target_type
-    target_type=nodes_df['target_type']
-    # meta data must be json serialisable
-)
-target_graph.add_edges(edges_df['start'], edges_df['end'])
+with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    target_graph = fornax.GraphHandle.create(conn)
+    target_graph.add_nodes(
+        # use id_src to set a custom id on each node 
+        id_src=nodes_df['target_id'],
+        # use other keyword arguments to attach arbitrary metadata to each node
+        label=nodes_df['target_label'],
+        # the type keyword is reserved to we use target_type
+        target_type=nodes_df['target_type']
+        # meta data must be json serialisable
+    )
+    target_graph.add_edges(edges_df['start'], edges_df['end'])
 
 
 # We can use the `graph_id` to access our graph in the future.
 
-# In[12]:
+# In[11]:
 
 
-target_graph.graph_id
-another_target_graph_handle = fornax.GraphHandle.read(conn, target_graph.graph_id)
-another_target_graph_handle == target_graph
+with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    target_graph.graph_id
+    another_target_graph_handle = fornax.GraphHandle.read(conn, target_graph.graph_id)
+    print(another_target_graph_handle == target_graph)
 
 
 # ## Creating a query graph
@@ -244,27 +239,28 @@ another_target_graph_handle == target_graph
 # For example `groot` and `star` could both be members of a team called `guardians`.
 # Let's create another small graph that represents this situation:
 
-# In[13]:
+# In[12]:
 
 
-# create a new graph
-query_graph = fornax.GraphHandle.create(conn)
+with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    # create a new graph
+    query_graph = fornax.GraphHandle.create(conn)
 
-# insert the three nodes: 
-#   'guardians' (id=0), 'star' (id=1), 'groot' (id=2)
-query_graph.add_nodes(label=query_labels)
+    # insert the three nodes: 
+    #   'guardians' (id=0), 'star' (id=1), 'groot' (id=2)
+    query_graph.add_nodes(label=query_labels)
 
-# alternatively:
-#    query_graph.add_nodes(id_src=query_labels)
-# since id_src can use any unique hashable items
+    # alternatively:
+    #    query_graph.add_nodes(id_src=query_labels)
+    # since id_src can use any unique hashable items
 
-edges = [
-    (0, 1), # edge between groot and guardians
-    (0, 2)  # edge between star and guardians
-]
+    edges = [
+        (0, 1), # edge between groot and guardians
+        (0, 2)  # edge between star and guardians
+    ]
 
-sources, targets = zip(*edges)
-query_graph.add_edges(sources, targets)
+    sources, targets = zip(*edges)
+    query_graph.add_edges(sources, targets)
 
 
 # ## Search
@@ -274,20 +270,22 @@ query_graph.add_edges(sources, targets)
 # To create a useful query we need to insert the string similarity scores we computed in part 1.
 # Fornax will use these scores and the graph edges to execute the query.
 
-# In[14]:
+# In[13]:
 
 
-query = fornax.QueryHandle.create(conn, query_graph, target_graph)
-query.add_matches(matches['query_id'], matches['target_id'], matches['score'])
+with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    query = fornax.QueryHandle.create(conn, query_graph, target_graph)
+    query.add_matches(matches['query_id'], matches['target_id'], matches['score'])
 
 
 # Finally we can execute the query using a variety of options.
 # We specify we want the top 5 best matches between the query graph and the target graph.
 
-# In[15]:
+# In[14]:
 
 
-get_ipython().run_line_magic('time', 'results = query.execute(n=5)')
+with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    get_ipython().run_line_magic('time', 'results = query.execute(n=5)')
 
 
 # ## Visualise
@@ -296,7 +294,7 @@ get_ipython().run_line_magic('time', 'results = query.execute(n=5)')
 # Of primary interest is the `graph` field which contains a list of graphs in `node_link_graph` format.
 # We can use networkx to draw these graphs and visualise the results.
 
-# In[16]:
+# In[15]:
 
 
 def draw(graph):
@@ -322,7 +320,7 @@ def draw(graph):
 # However, we can see that our query graph is really similar to Groot and Star-Lord from Guardians of the Galaxy.
 # Since this is the best match we know that 
 
-# In[17]:
+# In[16]:
 
 
 for i, graph in enumerate(results['graphs'][:1]):
@@ -336,7 +334,7 @@ for i, graph in enumerate(results['graphs'][:1]):
 
 # Results 2-4 have a lower score because `star` matches to a different node not adjacent to Guardians of the Galaxy. Further inspection would show that `star` has matched aliases of Star-Lord which are near Guardians of the Galaxy but not ajacent to it.
 
-# In[18]:
+# In[17]:
 
 
 for i, graph in enumerate(results['graphs'][1:4]):
@@ -350,7 +348,7 @@ for i, graph in enumerate(results['graphs'][1:4]):
 
 # The final match pairs `guardians` and `star` to two nodes that do not have similar edges to the target graph. `groot` is not found in the target graph. The result gets a much lower score than the preceding results and we can be sure that any additional results will also be poor because the result are ordered.
 
-# In[19]:
+# In[18]:
 
 
 for i, graph in enumerate(results['graphs'][4:]):
