@@ -10,7 +10,7 @@ from unittest import TestCase
 class TestGraph(TestCaseDB):
 
     def run(self, result=None):
-        with fornax.Connection() as conn:
+        with fornax.Connection('sqlite://') as conn:
             self.conn = conn
             self.conn.make_session = lambda: Session(self._connection)
             super().run(result)
@@ -207,7 +207,7 @@ class TestGraph(TestCaseDB):
 class TestQuery(TestCaseDB):
 
     def run(self, result=None):
-        with fornax.Connection() as conn:
+        with fornax.Connection('sqlite://') as conn:
             self.conn = conn
             self.conn.make_session = lambda: Session(self._connection)
             super().run(result)
@@ -447,7 +447,7 @@ class TestExample(TestCaseDB):
         """
         super().setUp(self)
         self.maxsize = fornax.Connection.SQLITE_MAX_SIZE
-        with fornax.Connection() as conn:
+        with fornax.Connection('sqlite://') as conn:
             conn.make_session = lambda: Session(self._connection)
             query_graph = fornax.GraphHandle.create(conn)
             query_graph.add_nodes(my_id=range(1, 6))
