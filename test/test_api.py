@@ -87,12 +87,11 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         names = ['adam', 'ben', 'chris']
         graph.add_nodes(name=names)
-        with self.conn._get_session() as session:
-            nodes = self.session.query(fornax.model.Node).filter(
-                fornax.model.Node.graph_id == 0).all()
-            nodes = sorted(nodes, key=lambda node: node.node_id)
-            self.assertListEqual(
-                names, [json.loads(node.meta)['name'] for node in nodes])
+        nodes = self.conn.session.query(fornax.model.Node).filter(
+            fornax.model.Node.graph_id == 0).all()
+        nodes = sorted(nodes, key=lambda node: node.node_id)
+        self.assertListEqual(
+            names, [json.loads(node.meta)['name'] for node in nodes])
 
     def test_add_nodes_more_meta(self):
         """multiple metadata is stored on a node
@@ -101,14 +100,13 @@ class TestGraph(TestCaseDB):
         names = ['adam', 'ben', 'chris']
         ages = [9, 10, 11]
         graph.add_nodes(name=names, age=ages)
-        with self.conn._get_session() as session:
-            nodes = session.query(fornax.model.Node).filter(
-                fornax.model.Node.graph_id == 0).all()
-            nodes = sorted(nodes, key=lambda node: node.node_id)
-            self.assertListEqual(
-                names, [json.loads(node.meta)['name'] for node in nodes])
-            self.assertListEqual(
-                ages, [json.loads(node.meta)['age'] for node in nodes])
+        nodes = self.conn.session.query(fornax.model.Node).filter(
+            fornax.model.Node.graph_id == 0).all()
+        nodes = sorted(nodes, key=lambda node: node.node_id)
+        self.assertListEqual(
+            names, [json.loads(node.meta)['name'] for node in nodes])
+        self.assertListEqual(
+            ages, [json.loads(node.meta)['age'] for node in nodes])
 
     def test_missing_attribute(self):
         """Null values for metadata must be explicit
@@ -140,17 +138,16 @@ class TestGraph(TestCaseDB):
         graph.add_nodes(name=names, age=ages)
         relationships = ['is_friend', 'is_foe']
         graph.add_edges([0, 0], [1, 2], relationship=relationships)
-        with self.conn._get_session() as session:
-            edges = session.query(
-                fornax.model.Edge
-            ).filter(
-                fornax.model.Edge.graph_id == graph.graph_id
-            ).filter(
-                fornax.model.Edge.start < fornax.model.Edge.end
-            ).all()
-            edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
-            self.assertListEqual(relationships, [json.loads(
-                edge.meta)['relationship'] for edge in edges])
+        edges = self.conn.session.query(
+            fornax.model.Edge
+        ).filter(
+            fornax.model.Edge.graph_id == graph.graph_id
+        ).filter(
+            fornax.model.Edge.start < fornax.model.Edge.end
+        ).all()
+        edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
+        self.assertListEqual(relationships, [json.loads(
+            edge.meta)['relationship'] for edge in edges])
 
     def test_add_edges_more_meta(self):
         """store multiple metadata on edges
@@ -163,19 +160,18 @@ class TestGraph(TestCaseDB):
         types = [0, 1]
         graph.add_edges(
             [0, 0], [1, 2], relationship=relationships, type_=types)
-        with self.conn._get_session() as session:
-            edges = session.query(
-                fornax.model.Edge
-            ).filter(
-                fornax.model.Edge.graph_id == graph.graph_id
-            ).filter(
-                fornax.model.Edge.start < fornax.model.Edge.end
-            ).all()
-            edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
-            self.assertListEqual(relationships, [json.loads(
-                edge.meta)['relationship'] for edge in edges])
-            self.assertListEqual(
-                types, [json.loads(edge.meta)['type_'] for edge in edges])
+        edges = self.conn.session.query(
+            fornax.model.Edge
+        ).filter(
+            fornax.model.Edge.graph_id == graph.graph_id
+        ).filter(
+            fornax.model.Edge.start < fornax.model.Edge.end
+        ).all()
+        edges = sorted(edges, key=lambda edge: (edge.start, edge.end))
+        self.assertListEqual(relationships, [json.loads(
+            edge.meta)['relationship'] for edge in edges])
+        self.assertListEqual(
+            types, [json.loads(edge.meta)['type_'] for edge in edges])
 
     def test_simple_graph(self):
         """Test for a simple graph.
@@ -193,41 +189,38 @@ class TestGraph(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(id_src=['a', 'b', 'c', 'd'])
         graph.add_edges(['a', 'b'], ['b', 'c'])
-        with self.conn._get_session() as session:
-            nodes = session.query(fornax.model.Node).all()
-            self.assertEqual(
-                [n.node_id for n in nodes],
-                [self.conn._hash(item) for item in ('a', 'b', 'c', 'd')]
-            )
+        nodes = self.conn.session.query(fornax.model.Node).all()
+        self.assertEqual(
+            [n.node_id for n in nodes],
+            [self.conn._hash(item) for item in ('a', 'b', 'c', 'd')]
+        )
 
     def test_add_nodes_id_src_meta(self):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(id_src=['a', 'b', 'c', 'd'])
         graph.add_edges(['a', 'b'], ['b', 'c'])
-        with self.conn._get_session() as session:
-            nodes = session.query(fornax.model.Node).all()
-            self.assertEqual(
-                [json.loads(n.meta)['id_src'] for n in nodes],
-                ['a', 'b', 'c', 'd']
-            )
+        nodes = self.conn.session.query(fornax.model.Node).all()
+        self.assertEqual(
+            [json.loads(n.meta)['id_src'] for n in nodes],
+            ['a', 'b', 'c', 'd']
+        )
 
     def test_add_edges_id_src(self):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(id_src=['a', 'b', 'c', 'd'])
         graph.add_edges(['a', 'b'], ['b', 'c'])
-        with self.conn._get_session() as session:
-            edges = session.query(
-                fornax.model.Edge
-            ).filter(
-                fornax.model.Edge.start < fornax.model.Edge.end
-            ).all()
-            self.assertEqual(
-                sorted([e.start, e.end] for e in edges),
-                sorted(
-                    sorted([self.conn._hash(start), self.conn._hash(end)])
-                    for start, end in [('a', 'b'), ('b', 'c')]
-                )
-            )            
+        edges = self.conn.session.query(
+            fornax.model.Edge
+        ).filter(
+            fornax.model.Edge.start < fornax.model.Edge.end
+        ).all()
+        self.assertEqual(
+            sorted([e.start, e.end] for e in edges),
+            sorted(
+                sorted([self.conn._hash(start), self.conn._hash(end)])
+                for start, end in [('a', 'b'), ('b', 'c')]
+            )
+        )          
 
 
 class TestQuery(TestCaseDB):
@@ -257,11 +250,10 @@ class TestQuery(TestCaseDB):
         query_graph = fornax.GraphHandle.create(self.conn)
         target_graph = fornax.GraphHandle.create(self.conn)
         query = fornax.QueryHandle.create(self.conn, query_graph, target_graph)
-        with self.conn._get_session() as session:
-            query_db = session.query(fornax.model.Query).filter(
-                fornax.model.Query.query_id == query.query_id).first()
-            self.assertEqual(query_db.start_graph_id, query_graph.graph_id)
-            self.assertEqual(query_db.end_graph_id, target_graph.graph_id)
+        query_db = self.conn.session.query(fornax.model.Query).filter(
+            fornax.model.Query.query_id == query.query_id).first()
+        self.assertEqual(query_db.start_graph_id, query_graph.graph_id)
+        self.assertEqual(query_db.end_graph_id, target_graph.graph_id)
 
     def test_read(self):
         query_graph = fornax.GraphHandle.create(self.conn)
@@ -281,11 +273,10 @@ class TestQuery(TestCaseDB):
         query.add_matches([0, 1], [2, 1], [1, 1])
         query_id = query.query_id
         query.delete()
-        with self.conn._get_session() as session:
-            query_exists = session.query(fornax.model.Query).filter(
-                fornax.model.Query.query_id == query_id).scalar()
-            matches_exists = session.query(fornax.model.Match).filter(
-                fornax.model.Match.query_id == query_id).scalar()
+        query_exists = self.conn.session.query(fornax.model.Query).filter(
+            fornax.model.Query.query_id == query_id).scalar()
+        matches_exists = self.conn.session.query(fornax.model.Match).filter(
+            fornax.model.Match.query_id == query_id).scalar()
         self.assertFalse(query_exists)
         self.assertFalse(matches_exists)
 
@@ -357,11 +348,10 @@ class TestQuery(TestCaseDB):
         graph = fornax.GraphHandle.create(self.conn)
         graph.add_nodes(myid=[1, 2, 3])
         graph.add_edges([0], [1])
-        with self.conn._get_session() as session:
-            src = [
-                (e.start, e.end)
-                for e in session.query(fornax.model.Edge).all()
-            ]
+        src = [
+            (e.start, e.end)
+            for e in self.conn.session.query(fornax.model.Edge).all()
+        ]
         self.assertListEqual(sorted(src), [(0, 1), (1, 0)])
 
     def test_target_edges(self):
@@ -399,7 +389,7 @@ class TestQuery(TestCaseDB):
         targets = [1, 2]
         weights = [1, 1]
         query.add_matches(sources, targets, weights, my_id=uids)
-        matches = self.session.query(fornax.model.Match).filter(
+        matches = self.conn.session.query(fornax.model.Match).filter(
             fornax.model.Match.query_id == query.query_id
         ).order_by(fornax.model.Match.end.asc())
         self.assertEqual(sources, [m.start for m in matches])

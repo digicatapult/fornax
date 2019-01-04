@@ -1,7 +1,6 @@
 import fornax.select
 import fornax.opt
 import sqlalchemy
-import contextlib
 import itertools
 import collections
 import json
@@ -11,6 +10,7 @@ import hashlib
 
 import typing
 from sqlalchemy import event
+from contextlib import contextmanager
 from sqlalchemy.engine import Engine
 import fornax.model as model
 
@@ -90,26 +90,18 @@ class Connection:
 
     def __enter__(self):
         self.open()
+        self.session = self.make_session()
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_val, traceback):
+        if exc_type is not None:
+            # rollback the session and raise the recieved exception
+            self.session.rollback()
+            return True
+        # otherwise end the transaction and close the connection
+        self.session.commit()
+        self.session.close()
         self.close()
-
-    @contextlib.contextmanager
-    def _get_session(self):
-        """
-        Provide a transactional scope around a series of db operations.
-        Transactions will be rolled back in the case of an exception.
-        """
-        session = self.make_session()
-        try:
-            yield session
-            session.commit()
-        except Exception:
-            session.rollback()
-            raise
-        finally:
-            session.close()
 
     def _hash(self, item: str) -> int:
         """An unsalted hash function with a range between 0 and self.maxsize
@@ -298,18 +290,17 @@ class GraphHandle:
         :rtype: GraphHandle
         """
 
-        with connection._get_session() as session:
+        query = connection.session.query(
+            sqlalchemy.func.max(model.Graph.graph_id)
+        ).first()
+        graph_id = query[0]
 
-            query = session.query(
-                sqlalchemy.func.max(model.Graph.graph_id)
-            ).first()
-            graph_id = query[0]
-
-            if graph_id is None:
-                graph_id = 0
-            else:
-                graph_id += 1
-            session.add(model.Graph(graph_id=graph_id))
+        if graph_id is None:
+            graph_id = 0
+        else:
+            graph_id += 1
+        connection.session.add(model.Graph(graph_id=graph_id))
+        connection.session.commit()
         return GraphHandle(connection, graph_id)
 
     @classmethod
@@ -336,22 +327,22 @@ class GraphHandle:
         """
 
         self._check_exists()
-        with self.conn._get_session() as session:
-            session.query(
-                model.Edge
-            ).filter(model.Edge.graph_id == self._graph_id).delete()
-            session.query(
-                model.Node
-            ).filter(model.Node.graph_id == self._graph_id).delete()
-            session.query(
-                model.Graph
-            ).filter(model.Graph.graph_id == self._graph_id).delete()
+        self.conn.session.query(
+            model.Edge
+        ).filter(model.Edge.graph_id == self._graph_id).delete()
+        self.conn.session.query(
+            model.Node
+        ).filter(model.Node.graph_id == self._graph_id).delete()
+        self.conn.session.query(
+            model.Graph
+        ).filter(model.Graph.graph_id == self._graph_id).delete()
+        self.conn.session.commit()
 
     def _check_exists(self):
-        with self.conn._get_session() as session:
-            exists = session.query(sqlalchemy.exists().where(
-                model.Graph.graph_id == self._graph_id
-            )).scalar()
+
+        exists = self.conn.session.query(sqlalchemy.exists().where(
+            model.Graph.graph_id == self._graph_id
+        )).scalar()
         if not exists:
             raise ValueError(
                 'cannot read graph with graph id: {}'.format(self._graph_id)
@@ -415,9 +406,8 @@ class GraphHandle:
             for node_id, values in zipped
         )
         nodes = self._check_nodes(nodes)
-        with self.conn._get_session() as session:
-            session.add_all(nodes)
-            session.commit()
+        self.conn.session.add_all(nodes)
+        self.conn.session.commit()
 
     def add_edges(
         self, sources: typing.Iterable, targets: typing.Iterable, **kwargs
@@ -489,9 +479,8 @@ class GraphHandle:
             for start, end, *values in zipped
         )
         edges = self._check_edges(edges)
-        with self.conn._get_session() as session:
-            session.add_all(edges)
-            session.commit()
+        self.conn.session.add_all(edges)
+        self.conn.session.commit()
 
     def _check_nodes(self, nodes) -> typing.Generator:
         """Guard against invalid nodes by raising an InvalidNodeError for
@@ -573,9 +562,8 @@ class QueryHandle:
             {int} -- Count of matching edges
         """
         self._check_exists()
-        with self.conn._get_session() as session:
-            count = session.query(model.Match).filter(
-                model.Match.query_id == self.query_id).count()
+        count = self.conn.session.query(model.Match).filter(
+            model.Match.query_id == self.query_id).count()
         return count
 
     def _check_exists(self):
@@ -584,10 +572,10 @@ class QueryHandle:
         Raises:
             ValueError -- Raised if the query had been deleted
         """
-        with self.conn._get_session() as session:
-            exists = session.query(model.Query).filter(
-                model.Query.query_id == self.query_id
-            ).scalar()
+
+        exists = self.conn.session.query(model.Query).filter(
+            model.Query.query_id == self.query_id
+        ).scalar()
         if not exists:
             raise ValueError(
                 'cannot read query with query id {}'.format(self.query_id)
@@ -609,20 +597,21 @@ class QueryHandle:
         :return: new QueryHandle
         :rtype: QueryHandle
         """
-        with connection._get_session() as session:
-            query_id = session.query(
-                sqlalchemy.func.max(model.Query.query_id)
-            ).first()[0]
-            if query_id is None:
-                query_id = 0
-            else:
-                query_id += 1
-            new_query = model.Query(
-                query_id=query_id,
-                start_graph_id=query_graph.graph_id,
-                end_graph_id=target_graph.graph_id
-            )
-            session.add(new_query)
+
+        query_id = connection.session.query(
+            sqlalchemy.func.max(model.Query.query_id)
+        ).first()[0]
+        if query_id is None:
+            query_id = 0
+        else:
+            query_id += 1
+        new_query = model.Query(
+            query_id=query_id,
+            start_graph_id=query_graph.graph_id,
+            end_graph_id=target_graph.graph_id
+        )
+        connection.session.add(new_query)
+        connection.session.commit()
         return QueryHandle(connection, query_id)
 
     @classmethod
@@ -643,13 +632,13 @@ class QueryHandle:
         """Delete this query and any associated matches
         """
         self._check_exists()
-        with self.conn._get_session() as session:
-            session.query(model.Match).filter(
-                model.Match.query_id == self.query_id
-            ).delete()
-            session.query(model.Query).filter(
-                model.Query.query_id == self.query_id
-            ).delete()
+        self.conn.session.query(model.Match).filter(
+            model.Match.query_id == self.query_id
+        ).delete()
+        self.conn.session.query(model.Query).filter(
+            model.Query.query_id == self.query_id
+        ).delete()
+        self.conn.session.commit()
 
     def query_graph(self) -> GraphHandle:
         """Get a QueryHandle for the query graph
@@ -659,13 +648,12 @@ class QueryHandle:
         """
 
         self._check_exists()
-        with self.conn._get_session() as session:
-            start_graph = session.query(
-                model.Graph
-            ).join(
-                model.Query, model.Graph.graph_id == model.Query.start_graph_id
-            ).filter(model.Query.query_id == self.query_id).first()
-            graph_id = start_graph.graph_id
+        start_graph = self.conn.session.query(
+            model.Graph
+        ).join(
+            model.Query, model.Graph.graph_id == model.Query.start_graph_id
+        ).filter(model.Query.query_id == self.query_id).first()
+        graph_id = start_graph.graph_id
         return GraphHandle(self.conn, graph_id)
 
     def target_graph(self) -> GraphHandle:
@@ -676,13 +664,12 @@ class QueryHandle:
         """
 
         self._check_exists()
-        with self.conn._get_session() as session:
-            end_graph = session.query(
-                model.Graph
-            ).join(
-                model.Query, model.Graph.graph_id == model.Query.end_graph_id
-            ).filter(model.Query.query_id == self.query_id).first()
-            graph_id = end_graph.graph_id
+        end_graph = self.conn.session.query(
+            model.Graph
+        ).join(
+            model.Query, model.Graph.graph_id == model.Query.end_graph_id
+        ).filter(model.Query.query_id == self.query_id).first()
+        graph_id = end_graph.graph_id
         return GraphHandle(self.conn, graph_id)
 
     def add_matches(
@@ -754,9 +741,8 @@ class QueryHandle:
             for start, end, weight, *values in zipped
         )
         matches = self._check_matches(matches)
-        with self.conn._get_session() as session:
-            session.add_all(matches)
-            session.commit()
+        self.conn.session.add_all(matches)
+        self.conn.session.commit()
 
     @staticmethod
     def _check_matches(
@@ -806,46 +792,43 @@ class QueryHandle:
             yield match
 
     def _query_nodes(self):
-        with self.conn._get_session() as session:
-            nodes = session.query(model.Node).join(
-                model.Query, model.Node.graph_id == model.Query.start_graph_id
-            ).filter(model.Query.query_id == self.query_id).all()
-            nodes = [
-                Node(n.node_id, 'query', json.loads(n.meta)) for n in nodes
-            ]
+        nodes = self.conn.session.query(model.Node).join(
+            model.Query, model.Node.graph_id == model.Query.start_graph_id
+        ).filter(model.Query.query_id == self.query_id).all()
+        nodes = [
+            Node(n.node_id, 'query', json.loads(n.meta)) for n in nodes
+        ]
         return nodes
 
     def _query_edges(self):
-        with self.conn._get_session() as session:
-            edges = session.query(model.Edge).join(
-                model.Query, model.Edge.graph_id == model.Query.start_graph_id
-            ).filter(
-                model.Query.query_id == self.query_id
-            ).filter(
-                model.Edge.start < model.Edge.end
-            )
-            edges = [
-                Edge(e.start, e.end, 'query', json.loads(e.meta))
-                for e in edges
-            ]
+        edges = self.conn.session.query(model.Edge).join(
+            model.Query, model.Edge.graph_id == model.Query.start_graph_id
+        ).filter(
+            model.Query.query_id == self.query_id
+        ).filter(
+            model.Edge.start < model.Edge.end
+        )
+        edges = [
+            Edge(e.start, e.end, 'query', json.loads(e.meta))
+            for e in edges
+        ]
         return edges
 
     def _target_nodes(self):
-        with self.conn._get_session() as session:
-            nodes = session.query(model.Node).join(
-                model.Query, model.Node.graph_id == model.Query.end_graph_id
-            ).filter(
-                model.Query.query_id == self.query_id
-            ).join(
-                model.Match, model.Node.node_id == model.Match.end
-            ).filter(
-                model.Match.end_graph_id == model.Node.graph_id
-            ).filter(
-                model.Match.query_id == model.Query.query_id
-            ).order_by(model.Node.node_id.asc()).all()
-            nodes = [
-                Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes
-            ]
+        nodes = self.conn.session.query(model.Node).join(
+            model.Query, model.Node.graph_id == model.Query.end_graph_id
+        ).filter(
+            model.Query.query_id == self.query_id
+        ).join(
+            model.Match, model.Node.node_id == model.Match.end
+        ).filter(
+            model.Match.end_graph_id == model.Node.graph_id
+        ).filter(
+            model.Match.query_id == model.Query.query_id
+        ).order_by(model.Node.node_id.asc()).all()
+        nodes = [
+            Node(n.node_id, 'target', json.loads(n.meta)) for n in nodes
+        ]
         return nodes
 
     @staticmethod
@@ -854,39 +837,37 @@ class QueryHandle:
 
     def _target_edges(self, target_nodes, target_edges_arr):
         # only include target edges that are between the target nodes above
-        with self.conn._get_session() as session:
-            EndMatch = sqlalchemy.alias(model.Match, "end_match")
-            StartNode = sqlalchemy.alias(model.Node, "start_node")
-            edges = session.query(model.Edge).join(
-                model.Node, model.Edge.start == model.Node.node_id
-            ).join(
-                StartNode, model.Edge.end == StartNode.c.node_id
-            ).join(
-                EndMatch, EndMatch.c.end == model.Node.node_id
-            ).join(
-                model.Query, model.Node.graph_id == model.Query.end_graph_id
-            ).filter(
-                model.Edge.start < model.Edge.end
-            ).filter(
-                StartNode.c.graph_id == model.Query.end_graph_id
-            ).filter(
-                EndMatch.c.end_graph_id == model.Query.end_graph_id
-            ).filter(
-                model.Edge.graph_id == model.Query.end_graph_id
-            ).order_by(model.Edge.start.asc()).all()
+        EndMatch = sqlalchemy.alias(model.Match, "end_match")
+        StartNode = sqlalchemy.alias(model.Node, "start_node")
+        edges = self.conn.session.query(model.Edge).join(
+            model.Node, model.Edge.start == model.Node.node_id
+        ).join(
+            StartNode, model.Edge.end == StartNode.c.node_id
+        ).join(
+            EndMatch, EndMatch.c.end == model.Node.node_id
+        ).join(
+            model.Query, model.Node.graph_id == model.Query.end_graph_id
+        ).filter(
+            model.Edge.start < model.Edge.end
+        ).filter(
+            StartNode.c.graph_id == model.Query.end_graph_id
+        ).filter(
+            EndMatch.c.end_graph_id == model.Query.end_graph_id
+        ).filter(
+            model.Edge.graph_id == model.Query.end_graph_id
+        ).order_by(model.Edge.start.asc()).all()
 
-            edges = [
-                Edge(e.start, e.end, 'target', json.loads(e.meta))
-                for e in edges
-            ]
+        edges = [
+            Edge(e.start, e.end, 'target', json.loads(e.meta))
+            for e in edges
+        ]
         return edges
 
     def _optimise(self, hopping_distance, max_iters, offsets):
-        with self.conn._get_session() as session:
-            sql_query = fornax.select.join(
-                self.query_id, h=hopping_distance, offsets=offsets
-            )
-            records = sql_query.with_session(session).all()
+        sql_query = fornax.select.join(
+            self.query_id, h=hopping_distance, offsets=offsets
+        )
+        records = sql_query.with_session(self.conn.session).all()
 
         packed = fornax.opt.solve(
             records,
