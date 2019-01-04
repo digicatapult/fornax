@@ -20,6 +20,9 @@ import fornax.model as model
 # enforce foreign key constrains in SQLite
 @event.listens_for(Engine, "connect")
 def _set_sqlite_pragma(dbapi_connection, connection_record):
+    dialect_name = connection_record._ConnectionRecord__pool._dialect.name
+    if dialect_name != 'sqlite':
+        return
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
