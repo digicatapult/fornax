@@ -55,12 +55,12 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py verify
-      - run:
-          name: init .pypirc
-          command: |
-            echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+      # - run:
+      #     name: init .pypirc
+      #     command: |
+      #       echo -e "[pypi]" >> ~/.pypirc
+      #       echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
+      #       echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
       - run:
           name: create packages
           command: |
@@ -69,4 +69,4 @@ jobs:
           name: upload to pypi
           command: |
             . venv/bin/activate
-            twine upload --repository-url https://test.pypi.org/legacy/ --config-file ~/.pypirc dist/*
+            twine upload --repository-url https://test.pypi.org/legacy/ -u PYPI_USERNAME -p $PYPI_PASSWORD dist/*
