@@ -44,6 +44,12 @@ jobs:
       - image: circleci/python:3-stretch-browsers
     steps:
       - run:
+        name: install python dependencies
+        command: |
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install -r requirements/dev.txt
+      - run:
           name: verify git tag vs. version
           command: |
             python3 -m venv venv
