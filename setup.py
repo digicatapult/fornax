@@ -4,7 +4,8 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 # circleci.py version
-VERSION = "0.0"
+exec(open("./fornax/version.py").read())
+VERSION = __version__
 
 with open('README.md') as fp:
     long_description = fp.read()
