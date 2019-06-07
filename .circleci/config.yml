@@ -43,6 +43,7 @@ jobs:
     docker:
       - image: circleci/python:3-stretch-browsers
     steps:
+      - checkout
       - run:
         name: install python dependencies
         command: |
