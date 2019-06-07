@@ -69,4 +69,4 @@ jobs:
           name: upload to pypi
           command: |
             . venv/bin/activate
-            twine upload --repository-url https://test.pypi.org/legacy/ -u PYPI_USERNAME -p $PYPI_PASSWORD dist/*
+            twine upload --repository-url -u PYPI_USERNAME -p $PYPI_PASSWORD dist/*
