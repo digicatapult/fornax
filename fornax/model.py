@@ -3,7 +3,7 @@ from sqlalchemy import PrimaryKeyConstraint, Index, UniqueConstraint
 from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-
+from sqlalchemy.types import BigInteger
 Base = declarative_base()
 
 
@@ -11,6 +11,7 @@ class Graph(Base):
     """ A graph containing nodes and edges """
     __tablename__ = 'graph'
     graph_id = Column(Integer, primary_key=True)
+    Index('graph_id')
 
 
 class Query(Base):
@@ -27,6 +28,7 @@ class Query(Base):
         Integer, ForeignKey("graph.graph_id"), nullable=False, index=True)
     Index(
         'query_idx', 'query_id', 'start_graph_id', 'end_graph_id', unique=True)
+    Index('query_id')
 
 
 class Match(Base):
@@ -49,12 +51,13 @@ class Match(Base):
         )
     )
 
-    start = Column(Integer)
-    end = Column(Integer)
+    start = Column(BigInteger)
+    end = Column(BigInteger)
     start_graph_id = Column(Integer)
     end_graph_id = Column(Integer)
     query_id = Column(Integer)
     meta = Column(String, nullable=True)
+    Index('query_id')
 
     weight = Column(
         Float,
@@ -93,11 +96,12 @@ class Node(Base):
         PrimaryKeyConstraint('graph_id', 'node_id'),
     )
     node_id = Column(
-        Integer,
+        BigInteger,
         CheckConstraint("node_id>=0", name="q_min_id_check")
     )
     graph_id = Column(Integer, ForeignKey("graph.graph_id"))
     meta = Column(String, nullable=True)
+    Index('graph_id')
 
     def neighbours(self):
         return [x.end_node for x in self.start_edges]
@@ -123,8 +127,8 @@ class Edge(Base):
         )
     )
 
-    start = Column(Integer)
-    end = Column(Integer)
+    start = Column(BigInteger)
+    end = Column(BigInteger)
     graph_id = Column(Integer)
     meta = Column(String, nullable=True)
 
