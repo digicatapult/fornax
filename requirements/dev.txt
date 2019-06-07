@@ -2,4 +2,5 @@
 xmlrunner
 coveralls
 sphinx>=1.4
+twine
 nbsphinx

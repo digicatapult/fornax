@@ -1,4 +1,19 @@
-version: 2
+version: 2.1
+workflows:
+  build_and_deploy:
+    jobs:
+      - build:
+        filters:
+          tags:
+            only: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
 jobs:
   build:
     docker:
@@ -24,3 +39,28 @@ jobs:
             coveralls
       - store_test_results:
           path: test-reports/
+  deploy:
+    docker:
+      - image: circleci/python:3-stretch-browsers
+    steps:
+      - checkout
+      - run:
+          name: install python dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements/dev.txt
+      - run:
+          name: verify git tag vs. version
+          command: |
+            . venv/bin/activate
+            python setup.py verify
+      - run:
+          name: create packages
+          command: |
+            make package
+      - run:
+          name: upload to pypi
+          command: |
+            . venv/bin/activate
+            twine upload -u $PYPI_USERNAME -p $PYPI_PASSWORD --repository-url https://upload.pypi.org/legacy/ --verbose dist/*
