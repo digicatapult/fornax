@@ -46,7 +46,7 @@ jobs:
           name: upload to pypi
           command: |
             . venv/bin/activate
-            twine upload dist/*
+            twine upload --repository-url https://test.pypi.org/legacy/ dist/*
     requires:
       - build
     filters:
