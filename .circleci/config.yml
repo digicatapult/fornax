@@ -55,12 +55,6 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py verify
-      # - run:
-      #     name: init .pypirc
-      #     command: |
-      #       echo -e "[pypi]" >> ~/.pypirc
-      #       echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
-      #       echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
       - run:
           name: create packages
           command: |
