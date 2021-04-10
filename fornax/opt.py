@@ -68,7 +68,7 @@ def group_by(columns, arr):
     split = np.split(arr, indices)
     filtered = list(filter(lambda x: len(x), split))
     keys = map(lambda x: x[columns][0].tolist(), filtered)
-    stacked = np.vstack(v for v in keys)
+    stacked = np.vstack([v for v in keys])
     return stacked, filtered
 
 
