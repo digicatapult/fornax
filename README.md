@@ -1,4 +1,8 @@
 # Fornax
+## Deprecation Notice
+This application was deprecated on April 5th 2024, there will be no further dependency or security updates.
+---
+
 
 [![CircleCI](https://circleci.com/gh/digicatapult/fornax.svg?style=svg&circle-token=2110b6bc1d713698d241fd08ae60cd925e60062f)](https://circleci.com/gh/digicatapult/fornax)
 [![Coverage Status](https://coveralls.io/repos/github/digicatapult/fornax/badge.svg?branch=master)](https://coveralls.io/github/digicatapult/fornax?branch=master)
